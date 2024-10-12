@@ -10,6 +10,8 @@
 
 `include "sys_defs.svh"
 
+// comment comment blub blub hehe
+
 module cpu (
     input clock, // System clock
     input reset, // System reset
