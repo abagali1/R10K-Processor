@@ -389,5 +389,13 @@ typedef struct packed {
     logic   valid;
 } COMMIT_PACKET;
 
+typedef struct packed {
+    logic     [6:0] op_code;
+    logic     [4:0] t;
+    logic     [4:0] t_old; // look up t_old in arch map table to get arch reg and update to t on retire
+    logic           complete;
+    logic           valid;
+} ROB_ENTRY_PACKET;
+
 
 `endif // __SYS_DEFS_SVH__
