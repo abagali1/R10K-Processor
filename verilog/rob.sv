@@ -36,6 +36,7 @@ module ROB(
         next_tail = (tail + num_accept) % DEPTH;
 
         open_entries = (tail >= head) ? (DEPTH - tail + head) : (head - tail);
+        retiring_data = '0;
 
         // Dependent for-loop to retire instructions. 
         // We must retire instructions first in order to accept the highest # of incoming instructions
