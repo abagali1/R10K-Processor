@@ -81,38 +81,55 @@ module ROB_tb();
   initial begin
       clock = 0;
       reset = 1;
+      @(posedge clock)
 
       // initially reset the rob
       #30 reset = 0;
-      @(negedge clock)
 
       // test 1: write one entry
       // wr_data initiallized to have an arbitrary op_code, t=4, t_old=1, complete=0, valid=1
       // DISPATCH
       wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-      complete_t[0] = 5'd1;
+      complete_t[0] = 5'd1; // this line shouldn't do anything, we complete with "t" not "t_old"
       num_accept = 2'd1;
       @(negedge clock)
-      check_open_entries(DEPTH - 1);
+
+      check_open_entries(DEPTH);
+      check_retired_entries(0);
       @(posedge clock)
+
       // COMPLETE
+      wr_data[0] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
       num_accept = 2'd0;
-      complete_t[0] = 5'd4;
       @(negedge clock)
+
+      check_open_entries(DEPTH-1);
+      check_retired_entries(0);
+      @(posedge clock) // Instruction marked complete
+
+      complete_t[0] = 5'd4; // mark previously inserted instruction as complete
+      @(negedge clock)
+
+      check_open_entries(DEPTH-1);
+      check_retired_entries(0);
+      @(posedge clock)
+
       // RETIRE
       complete_t[0] = 5'd1;
+      
+      @(negedge clock)
       check_open_entries(DEPTH);
       check_retired_entries(1);
-      @(negedge clock)
+
+      @(posedge clock)
       
       //test2: write 2 entries
 
 
 
-      // check_completed_entries();
-      // check_retired_entries();
-
-      // test 3: read entries
+      // check_completed_entries();check_open_entries(DEPTH);
+      @(negedge clock)
+      check_retired_entries(0);      // test 3: read entries
 
       // test 4: write when full
 
@@ -132,6 +149,7 @@ module ROB_tb();
 
   always @(posedge clock) begin
     $display("Time=%0t", $time);
+    $display("Reset=%0d", reset);
     $display("open_entries=%0d", open_entries);
     $display("number of entries retired=%0d", num_retired);
     `ifdef DEBUG

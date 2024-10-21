@@ -53,7 +53,7 @@ module ROB #(
         // We must retire instructions first in order to accept the highest # of incoming instructions
         for (int i = 0; i < N; ++i) begin
             tmp_head = (head+i) % DEPTH;
-            if (entries[tmp_head].complete) begin
+            if (entries[tmp_head].valid & entries[tmp_head].complete) begin
                 retiring_data[i] = entries[tmp_head];
                 next_entries[tmp_head] = '0;
                 next_head = (tmp_head + 1) % DEPTH;
@@ -73,8 +73,8 @@ module ROB #(
             end
 
             for(int k=0; k < DEPTH; ++k) begin
-                if(entries[j].t == complete_t[k]) begin
-                    next_entries[j].complete = 'b1;
+                if(entries[k].valid & entries[k].t == complete_t[j]) begin
+                    next_entries[k].complete = 'b1;
                 end
             end
         end
