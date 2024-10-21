@@ -40,14 +40,16 @@ module ROB_tb();
   // Instantiate the ROB
   ROB #(
     .DEPTH(DEPTH),
-    .WIDTH(WIDTH),
     .N(N)
   ) rob_inst (
+    // inputs
     .clock(clock),
     .reset(reset),
     .wr_data(wr_data),
     .complete_t(complete_t),
     .num_accept(num_accept),
+
+    // outputs
     .retiring_data(retiring_data),
     .open_entries(open_entries)
   );
@@ -63,31 +65,28 @@ module ROB_tb();
       clock = 0;
       reset = 1;
 
-      // need to define wr_data to be the input struct right?
-      wr_data.op_code = RV32_Rtype(`7'b0110011,3'b000,7'b0000000);
-      wr_data.t = 4;
-      wr_data.t_old = 1;
-      complete_t = 0;
-      num_accept = 1;
-
       // initially reset the rob
-      #20 reset = 0;
+      #30 reset = 0;
 
       // test 1: write entries
-      #10;
-      for (int i = 0; i < N; i++) begin
-        wr_data[i].op_code = i + 1;
-        wr_data[i].t = i + 1;
-        wr_data[i].t_old = i;
-        wr_data[i].complete = 0;
-        wr_data[i].valid = 1;
-      end
-      num_accept = N;
       #30;
+      // need to define wr_data to be the input struct right? yes
+      wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
+      complete_t[0] = 5'd0;
+      num_accept = 1;
+      #30;
+      num_accept = 1;
+      complete_t[0] = 5'd1;
+      #30
+      num_accept = 1;
+      complete_t[0] = 5'd4;
+      #30
+      #30
+      #30
+
       // check_completed_entries();
       // check_retired_entries();
-      
-
+    
       $finish;
     end
 
