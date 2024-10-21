@@ -7,18 +7,25 @@
 //                                                                     //
 /////////////////////////////////////////////////////////////////////////
 
-
+// typedef struct packed {
+//     logic     [6:0] op_code;
+//     logic     [4:0] t;
+//     logic     [4:0] t_old; // look up t_old in arch map table to get arch reg and update to t on retire
+//     logic           complete;
+//     logic           valid;
+// } ROB_ENTRY_PACKET;
 
 `timescale 1ns/1ps
 
 `include "sys_defs.svh"
+`include "ISA.svh"
 
 module ROB_tb();
 
   // Parameters
   parameter DEPTH = 32;
   parameter WIDTH = 32;
-  parameter N = 2;
+  parameter N = 1;
   localparam LOG_DEPTH = $clog2(DEPTH);
 
   // Signals
@@ -51,19 +58,22 @@ module ROB_tb();
         clock = ~clock;
     end
 
-  // Test stimulus
+
   initial begin
       clock = 0;
       reset = 1;
 
-      wr_data = '{default:0};
-      complete_t = '{default:0};
-      num_accept = 0;
+      // need to define wr_data to be the input struct right?
+      wr_data.op_code = RV32_Rtype(`7'b0110011,3'b000,7'b0000000);
+      wr_data.t = 4;
+      wr_data.t_old = 1;
+      complete_t = 0;
+      num_accept = 1;
 
-      // Reset the ROB
+      // initially reset the rob
       #20 reset = 0;
 
-      // Test 1: Write entries
+      // test 1: write entries
       #10;
       for (int i = 0; i < N; i++) begin
         wr_data[i].op_code = i + 1;
@@ -73,14 +83,15 @@ module ROB_tb();
         wr_data[i].valid = 1;
       end
       num_accept = N;
-      #10;
+      #30;
+      // check_completed_entries();
+      // check_retired_entries();
+      
 
       $finish;
     end
 
-    
 
-  // Monitor
   always @(posedge clock) begin
     $display("Time=%0t", $time);
     $display("open_entries=%0d", open_entries);
@@ -91,5 +102,30 @@ module ROB_tb();
     end
     $display("----------------------");
   end
+
+
+
+  function void check_open_entries(int expected);
+    if (open_entries != expected) begin
+      $error("Open entries error: expected %0d, but got %0d", expected, open_entries);
+    end
+  endfunction
+
+  function void check_completed_entries();
+    for (int i = 0; i < N; i++) begin
+      if (!retiring_data[i].complete) begin
+        $error("Completion error: retiring_data[%0d] should be complete, but it's not", i);
+      end
+    end
+  endfunction
+
+  function void check_retired_entries();
+    for (int i = 0; i < N; i++) begin
+      if (retiring_data[i].op_code != i + 1 || retiring_data[i].t != i + 1 || retiring_data[i].t_old != i) begin
+        $error("Retirement error: retiring_data[%0d] doesn't match expected values", i);
+      end
+    end
+    check_open_entries(DEPTH);
+  endfunction
 
 endmodule
