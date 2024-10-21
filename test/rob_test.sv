@@ -87,24 +87,23 @@ module ROB_tb();
       @(negedge clock)
 
       // test 1: write one entry
-      
       // wr_data initiallized to have an arbitrary op_code, t=4, t_old=1, complete=0, valid=1
+      // DISPATCH
       wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
       complete_t[0] = 5'd1;
       num_accept = 2'd1;
       @(negedge clock)
+      check_open_entries(DEPTH - 1);
+      @(posedge clock)
+      // COMPLETE
       num_accept = 2'd0;
-      complete_t[0] = 5'd1;
-      @(negedge clock)
-      num_accept = 2'd0;
-      // completes
       complete_t[0] = 5'd4;
       @(negedge clock)
+      // RETIRE
       complete_t[0] = 5'd1;
+      check_open_entries(DEPTH);
+      check_retired_entries(1);
       @(negedge clock)
-      @(negedge clock)
-      @(negedge clock)
-
       
       //test2: write 2 entries
 
@@ -125,7 +124,8 @@ module ROB_tb();
 
       // test 8: read and write in concurrent cycles when full, but
 
-    
+
+      $display("@@@ PASSED");
       $finish;
     end
 
@@ -158,25 +158,34 @@ module ROB_tb();
 
   function void check_open_entries(int expected);
     if (open_entries != expected) begin
+      $error("@@@ FAILED");
       $error("Open entries error: expected %0d, but got %0d", expected, open_entries);
+      $finish;
     end
   endfunction
 
   function void check_completed_entries();
     for (int i = 0; i < N; i++) begin
       if (!retiring_data[i].complete) begin
+        $error("@@@ FAILED");
         $error("Completion error: retiring_data[%0d] should be complete, but it's not", i);
+        $finish;
       end
     end
   endfunction
 
-  function void check_retired_entries();
-    for (int i = 0; i < N; i++) begin
-      if (retiring_data[i].op_code != i + 1 || retiring_data[i].t != i + 1 || retiring_data[i].t_old != i) begin
-        $error("Retirement error: retiring_data[%0d] doesn't match expected values", i);
-      end
+  function void check_retired_entries(int expected);
+    if(num_retired != expected) begin
+      $error("@@@ FAILED");
+      $error("Retirement error: num_retired (%0d) != %0d!", num_retired, expected);
+      $finish;
     end
-    check_open_entries(DEPTH);
+    // for (int i = 0; i < N; i++) begin
+    //   if (retiring_data[i].op_code != i + 1 || retiring_data[i].t != i + 1 || retiring_data[i].t_old != i) begin
+    //     $error("Retirement error: retiring_data[%0d] doesn't match expected values", i);
+    //   end
+    // end
+    // check_open_entries(DEPTH);
   endfunction
 
 endmodule
