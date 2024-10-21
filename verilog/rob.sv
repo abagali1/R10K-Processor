@@ -29,7 +29,7 @@ module ROB #(
 
     //typedef enum logic [1:0] {EMPTY, LOAD, FULL} STATE;
 
-    logic [LOG_DEPTH-1:0] head, next_head;
+    logic [LOG_DEPTH-1:0] head, next_head, tmp_head;
     logic [LOG_DEPTH-1:0] tail, next_tail;
 
     ROB_ENTRY_PACKET [DEPTH-1:0] entries, next_entries;
@@ -43,16 +43,20 @@ module ROB #(
     // output (up to N) completed entries
     always_comb begin
         next_head = head;
+        tmp_head = '0;
         retiring_data = '0;
         num_retired = '0;
         open_entries = (tail >= head) ? (DEPTH - (tail - head)) : (head - tail);
+        next_entries = entries;
 
         // Dependent for-loop to retire instructions. 
         // We must retire instructions first in order to accept the highest # of incoming instructions
         for (int i = 0; i < N; ++i) begin
-            if (entries[head+i].complete) begin
-                retiring_data[i] = entries[head];
-                next_head = (head + i + 1) % DEPTH;
+            tmp_head = (head+i) % DEPTH;
+            if (entries[tmp_head].complete) begin
+                retiring_data[i] = entries[tmp_head];
+                next_entries[tmp_head] = '0;
+                next_head = (tmp_head + 1) % DEPTH;
                 open_entries++;
                 num_retired++;
             end else begin
@@ -61,7 +65,6 @@ module ROB #(
         end
 
         // These statements are dependent on updated num_accept
-        next_entries = entries;
         next_tail = (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
 
         for(int j=0;j < N; ++j) begin
