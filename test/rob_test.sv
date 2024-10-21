@@ -15,7 +15,6 @@
 //     logic           valid;
 // } ROB_ENTRY_PACKET;
 
-`timescale 1ns/1ps
 
 `include "sys_defs.svh"
 `include "ISA.svh"
@@ -29,13 +28,14 @@ module ROB_tb();
   localparam LOG_DEPTH = $clog2(DEPTH);
 
   // Signals
-  logic clock;
-  logic reset;
-  ROB_ENTRY_PACKET [N-1:0] wr_data;
-  logic [N-1:0][4:0] complete_t;
-  logic [$clog2(N+1)-1:0] num_accept;
-  ROB_ENTRY_PACKET [N-1:0] retiring_data;
-  logic [LOG_DEPTH:0] open_entries;
+  logic                     clock;
+  logic                     reset;
+  ROB_ENTRY_PACKET          [N-1:0] wr_data;
+  PHYS_REG_IDX              [N-1:0] complete_t;
+  logic                     [$clog2(N+1)-1:0] num_accept;
+  ROB_ENTRY_PACKET          [N-1:0] retiring_data;
+  logic                     [$clog2(DEPTH+1)-1:0] open_entries;
+  logic                     [$clog2(N+1)-1:0] num_retired;
 
   // Instantiate the ROB
   ROB #(
@@ -51,7 +51,8 @@ module ROB_tb();
 
     // outputs
     .retiring_data(retiring_data),
-    .open_entries(open_entries)
+    .open_entries(open_entries),
+    .num_retired(num_retired)
   );
 
   // Generate System Clock
@@ -60,6 +61,10 @@ module ROB_tb();
         clock = ~clock;
     end
 
+  always @(posedge clock) begin
+    #(`CLOCK_PERIOD * 0.5);
+  end
+  
 
   initial begin
       clock = 0;
@@ -80,13 +85,18 @@ module ROB_tb();
       complete_t[0] = 5'd1;
       @(negedge clock)
       num_accept = 2'd0;
+      // completes
       complete_t[0] = 5'd4;
+      @(negedge clock)
+      complete_t[0] = 5'd1;
       @(negedge clock)
       @(negedge clock)
       @(negedge clock)
 
-      //test2: write 2 entries
       
+      //test2: write 2 entries
+
+
 
       // check_completed_entries();
       // check_retired_entries();
@@ -111,6 +121,15 @@ module ROB_tb();
   always @(posedge clock) begin
     $display("Time=%0t", $time);
     $display("open_entries=%0d", open_entries);
+    $display("number of entries retired=%0d", num_retired);
+    $display("entries: ");
+    for (int j = 0; j < N; j++) begin
+      $display("entry_data[%0d]:  op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
+               j, entry_data[j].op_code, entry_data[j].t, entry_data[j].t_old,
+               entry_data[j].complete, entry_data[j].valid);
+    end
+
+    $display("retiring data: ");
     for (int i = 0; i < N; i++) begin
       $display("retiring_data[%0d]: op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
                i, retiring_data[i].op_code, retiring_data[i].t, retiring_data[i].t_old,
