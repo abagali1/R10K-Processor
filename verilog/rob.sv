@@ -35,10 +35,7 @@ module ROB #(
     // DONE
     // output (up to N) completed entries
     always_comb begin
-        next_entries = entries;
         next_head = head;
-        next_tail = (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
-
         retiring_data = '0;
         open_entries = (tail >= head) ? (DEPTH - (tail - head)) : (head - tail);
 
@@ -53,6 +50,10 @@ module ROB #(
                 break;
             end
         end
+
+        // These statements are dependent on updated num_accept
+        next_entries = entries;
+        next_tail = (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
 
         for(int j=0;j < N; ++j) begin
             if(j < num_accept) begin
