@@ -4,15 +4,19 @@
 
 `include "sys_defs.svh"
 
-module ROB(
+module ROB #(
+    parameter DEPTH = `PHYS_REG_SZ_R10K,
+    parameter N = `N
+)
+(
     input                           clock, 
     input                           reset,
     input ROB_ENTRY_PACKET          [N-1:0] wr_data, 
     input                           [N-1:0][4:0] complete_t, // comes from the FU
-    input                           [$clog2(N)-1:0] num_accept, // input signal from min block, also controls how many entries are dispatched
+    input                           [$clog2(N+1)-1:0] num_accept, // input signal from min block, dependent on open_entries 
     
     output ROB_ENTRY_PACKET         [N-1:0] retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
-    output logic                    [$clog2(PHYS_REG_SZ_R10K)-1:0] open_entries // min(open_entries, N, open RS entries)
+    output logic                    [$clog2(DEPTH)-1:0] open_entries // number of open entires AFTER retirement
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
@@ -33,10 +37,10 @@ module ROB(
     always_comb begin
         next_entries = entries;
         next_head = head;
-        next_tail = (tail + num_accept) % DEPTH;
+        next_tail = (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
 
-        open_entries = (tail >= head) ? (DEPTH - tail + head) : (head - tail);
         retiring_data = '0;
+        open_entries = (tail >= head) ? (DEPTH - (tail - head)) : (head - tail);
 
         // Dependent for-loop to retire instructions. 
         // We must retire instructions first in order to accept the highest # of incoming instructions
@@ -51,12 +55,12 @@ module ROB(
         end
 
         for(int j=0;j < N; ++j) begin
-            if(wr_data[j].valid) begin
-                next_entries[tail+j] = wr_data[j];
+            if(j < num_accept) begin
+                next_entries[(tail+j) % DEPTH] = wr_data[j];
             end
 
             for(int k=0; k < DEPTH; ++k) begin
-                if(entries[j].valid && entries[j].t == complete_t[k]) begin
+                if(entries[j].t == complete_t[k]) begin
                     next_entries[j].complete = 'b1;
                 end
             end
