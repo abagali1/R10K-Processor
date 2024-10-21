@@ -20,6 +20,9 @@
 // some starting parameters that you should set
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
+
+`define DEBUG `TRUE
+
 // superscalar width
 `define N 1
 `define CDB_SZ `N // This MUST match your superscalar width
@@ -57,6 +60,7 @@
 typedef logic [31:0] ADDR;
 typedef logic [31:0] DATA;
 typedef logic [4:0] REG_IDX;
+typedef logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] PHYS_REG_IDX;
 
 // the zero register
 // In RISC-V, any read of this register returns zero and any writes are thrown away

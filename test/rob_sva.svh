@@ -13,31 +13,69 @@ module ROB_sva
     input                           clock, 
     input                           reset,
     input ROB_ENTRY_PACKET          [N-1:0] wr_data, 
-    input                           [N-1:0][4:0] complete_t,
+    input PHYS_REG_IDX              [N-1:0] complete_t,
     input                           [$clog2(N+1)-1:0] num_accept,
     
     output ROB_ENTRY_PACKET         [N-1:0] retiring_data,
-    output logic                    [$clog2(DEPTH):0] open_entries
+    output logic                    [$clog2(DEPTH+1)-1:0] open_entries,
+    output logic                    [$clog2(N+1)-1:0] num_retired
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
-    
-    logic [$clog2(DEPTH+1)-1:0] entries;    // how full the buffer should be
-    int                        rd_count;   // number of reads complete
 
-    logic rd_valid_c, wr_valid_c;
+    PHYS_REG_IDX [DEPTH-1:0]    rob_dest_regs;  // keep track of entries independently
+    logic [DEPTH-1:0]           rob_ready_bits; // keep track of complete insts in rob (one-hot)
+    logic [$clog2(DEPTH+1)-1:0] tail, next_tail; // internal, for modifying rob_dest_regs
+    logic [$clog2(DEPTH+1)-1:0] num_entries_c; // keep track of entries independently
+    logic [$clog2(N+1)-1:0] num_retired_c; // keep track
 
-    assign rd_valid_c = rd_en && (entries != 0);
-    assign wr_valid_c = wr_en && (entries != DEPTH || rd_en);
+    // keep internal registers and tail updated
+    always_comb begin
+        next_tail = tail;
+        for (int i = 0; i < N; ++i) begin
+            if (i == num_accept | next_tail == DEPTH - 1) begin
+                break;
+            end
+            rob_dest_regs[next_tail] = complete_t[i];
+            next_tail += 1;
+        end
+    end
+
+    // keep internal ready bits updated
+    always_comb begin
+        for (int i = 0; i < N; ++i) begin
+            for (int j = 0; j < DEPTH; ++j) begin
+                if (complete_t[i] == 0) begin
+                    break;
+                end
+                if (complete_t[i] == rob_dest_regs[j]) begin
+                    rob_ready_bits[j] = 1;
+                end
+            end
+        end
+    end
+
+    // keep num_retired_c updated (number to pop)
+    always_comb begin
+        num_retired_c = N;
+        for (int i = 0; i < N; ++i) begin
+            if (rob_ready_bits[i] == 0) begin
+                num_retired_c = i;
+                break;
+            end
+        end
+    end
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            entries <= 0;
-            rd_count <= 0;
+            rob_dest_regs <= 0;
+            rob_ready_bits <= 0;
+            num_entries_c <= 0;
+            tail <= 0;
         end else begin
-            entries <= entries +
-                       (wr_en && entries != DEPTH ? 1-rd_valid_c : 0) -
-                       (rd_en && entries != 0    ? 1-wr_valid_c : 0);
-            rd_count <= rd_valid ? rd_count+1 : rd_count;
+            rob_dest_regs <= rob_dest_regs >> num_retired_c;
+            rob_ready_bits <= rob_ready_bits >> num_retired_c;
+            num_entries_c <= num_entries_c + num_accept - num_retired_c;
+            tail <= next_tail;
         end
     end
 
@@ -50,23 +88,13 @@ module ROB_sva
 
     clocking cb @(posedge clock);
         // rd_valid asserted if and only if rd_en=1 and there is valid data
-        property rd_valid_correct;
-            rd_valid_c iff rd_valid;
+        property num_entries_correct;
+            num_entries_c;
         endproperty
 
         // wr_valid asserted if and only if wr_en=1 and buffer not full
-        property wr_valid_correct;
-            wr_valid_c iff wr_valid;
-        endproperty
-
-        // full asserted if and only if buffer is full
-        property full_correct;
-            full iff entries == DEPTH;
-        endproperty
-
-        // almost full signal asserted when there are ALERT_DEPTH entries left
-        property almost_full_correct;
-            almost_full iff entries == (DEPTH-ALERT_DEPTH);
+        property num_retired_correct;
+            num_valid_c;
         endproperty
 
         // Check that data written in comes out after proper number of reads

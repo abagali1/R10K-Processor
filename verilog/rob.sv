@@ -12,11 +12,16 @@ module ROB #(
     input                           clock, 
     input                           reset,
     input ROB_ENTRY_PACKET          [N-1:0] wr_data, 
-    input                           [N-1:0][4:0] complete_t, // comes from the FU
+    input PHYS_REG_IDX              [N-1:0] complete_t, // comes from the FU
     input                           [$clog2(N+1)-1:0] num_accept, // input signal from min block, dependent on open_entries 
     
     output ROB_ENTRY_PACKET         [N-1:0] retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
-    output logic                    [$clog2(DEPTH):0] open_entries // number of open entires AFTER retirement
+    output logic                    [$clog2(DEPTH+1)-1:0] open_entries, // number of open entires AFTER retirement
+    output logic                    [$clog2(N+1)-1:0] num_retired
+
+    `ifdef `DEBUG 
+    ,    output logic [DEPTH-1:0] debug_entries
+    `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
@@ -37,6 +42,7 @@ module ROB #(
     always_comb begin
         next_head = head;
         retiring_data = '0;
+        num_retired = '0;
         open_entries = (tail >= head) ? (DEPTH - (tail - head)) : (head - tail);
 
         // Dependent for-loop to retire instructions. 
@@ -46,6 +52,7 @@ module ROB #(
                 retiring_data[i] = entries[head];
                 next_head = (head + i) % DEPTH;
                 open_entries++;
+                num_retired++;
             end else begin
                 break;
             end
@@ -66,6 +73,10 @@ module ROB #(
                 end
             end
         end
+
+        `ifdef DEBUG
+            debug_entries = entries;
+        `endif
     end
 
     // Incoming insts from dispatch (up to min(N, open_entries))
