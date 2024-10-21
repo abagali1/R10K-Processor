@@ -1,6 +1,6 @@
 `include "sys_defs.svh"
 
-module #(
+module free_list #(
     parameter N=1,
 )
 (
