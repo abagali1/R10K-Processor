@@ -31,32 +31,23 @@ module ROB #(
     logic [LOG_DEPTH-1:0] head, next_head;
     logic [LOG_DEPTH-1:0] tail, next_tail;
 
-    logic ROB_ENTRY_PACKET [DEPTH-1:0] entries;
+    logic ROB_ENTRY_PACKET [DEPTH-1:0] entries, next_entries;
 
-    assign num_entries = (tail >= head) ? (tail - head) : (DEPTH - head + tail);
-    assign open_entries = DEPTH - num_entries;
+    // use head and tail because this updates between clock cycles, so will update to correct value
+    // with head and tail on posedge
+    // keeping the original version alongside simplified comb logic
+    // assign num_entries = (tail >= head) ? (tail - head) : (DEPTH - head + tail);
+    // assign open_entries = DEPTH - num_entries;
+    assign open_entries = (tail >= head) ? (DEPTH - tail + head) : (head - tail);
 
-    // Update completed tags
-    always_ff @(posedge clock) begin
-        if (reset) begin
-            entries <= '0;
-        end else begin
-            for (int i = 0; i < DEPTH; ++i) begin
-                for (int j = 0; j < N; ++j) begin
-                    if (entries[i].t == complete_t[j]) begin
-                        entries[i].complete <= 1;
-                    end
-                end
-            end
-        end
-    end
-
+    // DONE
     // output (up to N) completed entries
-    always_ff @(posedge clock) begin    
+    always_comb begin
+        next_head = head;
         for (int i = 0; i < N; ++i) begin
             if (entries[head+i].complete) begin
-                rd_data[i] <= entries[head];
-                next_head <= head + i;
+                retiring_data[i] = entries[head];
+                next_head = (head + i) % DEPTH;
             end else begin
                 break;
             end
@@ -66,17 +57,17 @@ module ROB #(
     // Incoming insts from dispatch (up to min(N, open_entries))
     // advance tail, num_entries += num_accept
 
-    // writing incoming packets into entries
-    always_ff @(posedge clock) begin
-        if (reset) begin
-            entries <= '0;
-        end else begin
-            for (int i = 0; i < N; ++j) begin
-                if (wr_data[i].valid) begin
-                    entries[tail+i] <= wr_data[i];
-                    next_tail <= tail + i;
-                end else begin
-                    break;
+    always_comb begin
+        next_entries = entries;
+        next_tail = (tail + num_accept) % DEPTH;
+
+        for (int j = 0; j < N; ++j) begin
+            if (wr_data[j].valid) begin
+                next_entries[tail+j] = wr_data[j];
+            end
+            for(int k=0; k < DEPTH; ++k) begin
+                if(entries[j].t == complete_t[k]) begin
+                    next_entries[j].complete = 'b1;
                 end
             end
         end
@@ -88,10 +79,12 @@ module ROB #(
             //state <= EMPTY;
             head <= '0;
             tail <= '0;
+            entries <= '0;
         end else begin
             //state <= next_state;
             head <= next_head;
             tail <= next_tail;
+            entries <= next_entries;
         end
     end
 
