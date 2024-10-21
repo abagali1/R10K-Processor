@@ -19,8 +19,10 @@ module ROB #(
     output logic                    [$clog2(DEPTH+1)-1:0] open_entries, // number of open entires AFTER retirement
     output logic                    [$clog2(N+1)-1:0] num_retired
 
-    `ifdef `DEBUG 
-    ,    output logic [DEPTH-1:0] debug_entries
+    `ifdef DEBUG
+    ,   output logic [DEPTH-1:0] debug_entries,
+        output logic [$clog2(DEPTH)-1:0] debug_head,
+        output logic [$clog2(DEPTH)-1:0] debug_tail
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -50,7 +52,7 @@ module ROB #(
         for (int i = 0; i < N; ++i) begin
             if (entries[head+i].complete) begin
                 retiring_data[i] = entries[head];
-                next_head = (head + i) % DEPTH;
+                next_head = (head + i + 1) % DEPTH;
                 open_entries++;
                 num_retired++;
             end else begin
@@ -76,6 +78,8 @@ module ROB #(
 
         `ifdef DEBUG
             debug_entries = entries;
+            debug_head = head;
+            debug_tail = tail;
         `endif
     end
 
