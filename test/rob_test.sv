@@ -18,7 +18,7 @@ module ROB_tb();
   // Parameters
   parameter DEPTH = 32;
   parameter WIDTH = 32;
-  parameter N = 4;
+  parameter N = 2;
   localparam LOG_DEPTH = $clog2(DEPTH);
 
   // Signals
@@ -53,27 +53,30 @@ module ROB_tb();
 
   // Test stimulus
   initial begin
-    clock = 0;
-    reset = 1;
+      clock = 0;
+      reset = 1;
 
-    wr_data = '{default:0};
-    complete_t = '{default:0};
-    num_accept = 0;
+      wr_data = '{default:0};
+      complete_t = '{default:0};
+      num_accept = 0;
 
-    // Reset the ROB
-    #20 reset = 0;
+      // Reset the ROB
+      #20 reset = 0;
 
-    // Test 1: Write entries
-    #10;
-    for (int i = 0; i < N; i++) begin
-      wr_data[i].op_code = i + 1;
-      wr_data[i].t = i + 1;
-      wr_data[i].t_old = i;
-      wr_data[i].complete = 0;
-      wr_data[i].valid = 1;
+      // Test 1: Write entries
+      #10;
+      for (int i = 0; i < N; i++) begin
+        wr_data[i].op_code = i + 1;
+        wr_data[i].t = i + 1;
+        wr_data[i].t_old = i;
+        wr_data[i].complete = 0;
+        wr_data[i].valid = 1;
+      end
+      num_accept = N;
+      #10;
+
+      $finish;
     end
-    num_accept = N;
-    #10;
 
     
 

@@ -2,13 +2,7 @@
 
 // Input: wr_data, N array of packets with [0] being the oldest, [N-1] being the youngest
 
-typedef struct packed {
-    logic     [6:0] op_code;
-    logic     [4:0] t;
-    logic     [4:0] t_old, // look up t_old in arch map table to get arch reg and update to t on retire
-    logic           complete,
-    logic           valid
-} ROB_ENTRY_PACKET;
+
 
 module ROB #(
     parameter DEPTH = 32,
@@ -22,7 +16,7 @@ module ROB #(
     input                           [$clog2(N)-1:0] num_accept, // input signal from min block, also controls how many entries are dispatched
     
     output ROB_ENTRY_PACKET         [N-1:0] retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
-    output logic                    [LOG_DEPTH-1:0] open_entries // min(open_entries, N, open RS entries)
+    output logic                    [$clog2(DEPTH)-1:0] open_entries // min(open_entries, N, open RS entries)
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
@@ -31,7 +25,7 @@ module ROB #(
     logic [LOG_DEPTH-1:0] head, next_head;
     logic [LOG_DEPTH-1:0] tail, next_tail;
 
-    logic ROB_ENTRY_PACKET [DEPTH-1:0] entries, next_entries;
+    ROB_ENTRY_PACKET [DEPTH-1:0] entries, next_entries;
 
     // use head and tail because this updates between clock cycles, so will update to correct value
     // with head and tail on posedge
