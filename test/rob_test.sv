@@ -33,9 +33,9 @@ module ROB_tb();
   logic reset;
   ROB_ENTRY_PACKET [N-1:0] wr_data;
   logic [N-1:0][4:0] complete_t;
-  logic [$clog2(N)-1:0] num_accept;
+  logic [$clog2(N+1)-1:0] num_accept;
   ROB_ENTRY_PACKET [N-1:0] retiring_data;
-  logic [LOG_DEPTH-1:0] open_entries;
+  logic [LOG_DEPTH:0] open_entries;
 
   // Instantiate the ROB
   ROB #(
@@ -67,25 +67,42 @@ module ROB_tb();
 
       // initially reset the rob
       #30 reset = 0;
+      @(negedge clock)
 
-      // test 1: write entries
-      #30;
-      // need to define wr_data to be the input struct right? yes
+      // test 1: write one entry
+      
+      // wr_data initiallized to have an arbitrary op_code, t=4, t_old=1, complete=0, valid=1
       wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-      complete_t[0] = 5'd0;
-      num_accept = 1;
-      #30;
-      num_accept = 1;
       complete_t[0] = 5'd1;
-      #30
-      num_accept = 1;
+      num_accept = 2'd1;
+      @(negedge clock)
+      num_accept = 2'd0;
+      complete_t[0] = 5'd1;
+      @(negedge clock)
+      num_accept = 2'd0;
       complete_t[0] = 5'd4;
-      #30
-      #30
-      #30
+      @(negedge clock)
+      @(negedge clock)
+      @(negedge clock)
+
+      //test2: write 2 entries
+      
 
       // check_completed_entries();
       // check_retired_entries();
+
+      // test 3: read entries
+
+      // test 4: write when full
+
+      // test 5: read when empty
+
+      // test 6: read and write in concurrent cycles
+
+      // test 7: read and write in concurrent cycles when full
+
+      // test 8: read and write in concurrent cycles when full, but
+
     
       $finish;
     end
