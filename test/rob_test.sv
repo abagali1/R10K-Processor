@@ -37,6 +37,12 @@ module ROB_tb();
   logic                     [$clog2(DEPTH+1)-1:0] open_entries;
   logic                     [$clog2(N+1)-1:0] num_retired;
 
+  `ifdef DEBUG
+  ROB_ENTRY_PACKET [DEPTH-1:0] entry_data;
+  logic [LOG_DEPTH-1:0] debug_head;
+  logic [LOG_DEPTH-1:0] debug_tail;
+  `endif
+
   // Instantiate the ROB
   ROB #(
     .DEPTH(DEPTH),
@@ -53,6 +59,12 @@ module ROB_tb();
     .retiring_data(retiring_data),
     .open_entries(open_entries),
     .num_retired(num_retired)
+
+    `ifdef DEBUG
+    , .debug_entries(entry_data),
+    .debug_head(debug_head),
+    .debug_tail(debug_tail)
+    `endif
   );
 
   // Generate System Clock
@@ -62,7 +74,7 @@ module ROB_tb();
     end
 
   always @(posedge clock) begin
-    #(`CLOCK_PERIOD * 0.5);
+    #(`CLOCK_PERIOD * 0.2);
   end
   
 
@@ -122,12 +134,16 @@ module ROB_tb();
     $display("Time=%0t", $time);
     $display("open_entries=%0d", open_entries);
     $display("number of entries retired=%0d", num_retired);
-    $display("entries: ");
-    for (int j = 0; j < N; j++) begin
-      $display("entry_data[%0d]:  op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
-               j, entry_data[j].op_code, entry_data[j].t, entry_data[j].t_old,
-               entry_data[j].complete, entry_data[j].valid);
-    end
+    `ifdef DEBUG
+      $display("entries: ");
+      for (int j = 0; j < N; j++) begin
+        $display("entry_data[%0d]:  op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
+                j, entry_data[j].op_code, entry_data[j].t, entry_data[j].t_old,
+                entry_data[j].complete, entry_data[j].valid);
+      end
+      $display("head=%0d", debug_head);
+      $display("tail=%0d", debug_tail);
+    `endif
 
     $display("retiring data: ");
     for (int i = 0; i < N; i++) begin
