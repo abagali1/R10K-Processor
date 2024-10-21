@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 
-`define DEBUG `TRUE
+`define DEBUG '1
 
 // superscalar width
 `define N 1
