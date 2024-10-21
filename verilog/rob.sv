@@ -16,7 +16,7 @@ module ROB #(
     input                           [$clog2(N+1)-1:0] num_accept, // input signal from min block, dependent on open_entries 
     
     output ROB_ENTRY_PACKET         [N-1:0] retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
-    output logic                    [$clog2(DEPTH)-1:0] open_entries // number of open entires AFTER retirement
+    output logic                    [$clog2(DEPTH):0] open_entries // number of open entires AFTER retirement
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
