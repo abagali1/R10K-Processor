@@ -84,7 +84,7 @@ module ROB_tb();
       @(posedge clock)
 
       // initially reset the rob
-      #30 reset = 0;
+      #5 reset = 0;
 
       // test 1: write one entry
       // wr_data initiallized to have an arbitrary op_code, t=4, t_old=1, complete=0, valid=1
