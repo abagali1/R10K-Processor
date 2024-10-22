@@ -7,15 +7,6 @@
 //                                                                     //
 /////////////////////////////////////////////////////////////////////////
 
-// typedef struct packed {
-//     logic     [6:0] op_code;
-//     logic     [4:0] t;
-//     logic     [4:0] t_old; // look up t_old in arch map table to get arch reg and update to t on retire
-//     logic           complete;
-//     logic           valid;
-// } ROB_ENTRY_PACKET;
-
-
 `include "sys_defs.svh"
 `include "ISA.svh"
 
@@ -37,6 +28,7 @@ module ROB_queue_tb();
   logic                     [$clog2(DEPTH+1)-1:0] open_entries;
   logic                     [$clog2(N+1)-1:0] num_retired;
 
+  // Debugging
   `ifdef DEBUG
     ROB_ENTRY_PACKET [DEPTH-1:0] entry_data;
     logic [LOG_DEPTH-1:0] debug_head;
@@ -48,6 +40,7 @@ module ROB_queue_tb();
     .DEPTH(DEPTH),
     .N(N)
   ) rob_inst (
+
     // inputs
     .clock(clock),
     .reset(reset),
@@ -60,6 +53,7 @@ module ROB_queue_tb();
     .open_entries(open_entries),
     .num_retired(num_retired)
 
+    // debugging
     `ifdef DEBUG
     , .debug_entries(entry_data),
     .debug_head(debug_head),
@@ -67,90 +61,86 @@ module ROB_queue_tb();
     `endif
   );
 
+  // Queue Instantiations
   ROB_ENTRY_PACKET rob_model [$:(DEPTH - 1)];
   ROB_ENTRY_PACKET inst_buff [$:(DEPTH*2)-1];
-
 
   // Generate System Clock
   always begin
     #(`CLOCK_PERIOD/2.0);
-        clock = ~clock;
-    end
+      clock = ~clock;
+  end
 
   always @(posedge clock) begin
     #(`CLOCK_PERIOD * 0.2);
   end
   
-
   initial begin
-      clock = 0;
-      reset = 1;
-      reset();
-      @(posedge clock)
+    clock = 0;
+    reset = 1;
+    reset();
+    @(posedge clock)
 
-      // initially reset the rob
-      #5 reset = 0;
+    // initially reset the rob
+    #5 reset = 0;
 
-      // TESTBENCHES //
+    //*** TESTBENCHES ***//
 
-      // add N instructions, when the ROB is empty, complete ALL => exepct AL retired
-      fetch_entries();
+    // TESTBENCH 1
+
+    // add N instructions, when the ROB is empty, complete ALL => exepct AL retired
+    fetch_entries();
+    add_entries(N);
+    @(negedge clock);
+
+    check_open_entries();
+    check_retired_entries();
+
+    set_complete(N);
+
+
+    reset();
+    @(posedge clock)
+
+    #5 reset = 0;
+
+  /*
+    // add N instructions, when the ROB is full
+    for (int i = 0; i < (DEPTH / N); i++) begin
       add_entries(N);
-      @(negedge clock);
+    end
 
-      check_open_entries();
-      check_retired_entries();
+    reset();
+    @(posedge clock)
 
-      set_complete(N);
+    #5 reset = 0;
 
+    // add N instructions, when the ROB has stuff but not full
 
-      reset();
-      @(posedge clock)
+    reset();
+    @(posedge clock)
 
-      #5 reset = 0;
+    #5 reset = 0;
+    // add less than N instructions, when the ROB is empty
+    
+    reset();
+    @(posedge clock)
 
-    /*
-      // add N instructions, when the ROB is full
-      for (int i = 0; i < (DEPTH / N); i++) begin
-        add_entries(N);
-      end
+    #5 reset = 0;
+    // add less than N instructions, when the ROB is full
+    
+    reset();
+    @(posedge clock)
 
-      reset();
-      @(posedge clock)
+    #5 reset = 0;
+    // add less than N instructions, when the ROB has stuff but not full
 
-      #5 reset = 0;
+    reset();
+    @(posedge clock)
 
-      // add N instructions, when the ROB has stuff but not full
+    #5 reset = 0; */
 
-      reset();
-      @(posedge clock)
-
-      #5 reset = 0;
-      // add less than N instructions, when the ROB is empty
-      
-      reset();
-      @(posedge clock)
-
-      #5 reset = 0;
-      // add less than N instructions, when the ROB is full
-      
-      reset();
-      @(posedge clock)
-
-      #5 reset = 0;
-      // add less than N instructions, when the ROB has stuff but not full
-
-      reset();
-      @(posedge clock)
-
-      #5 reset = 0; */
-
-      // functions:
-      // add N to queue
-      // set complete bits for an instruction
-      // retire an instruction and check the value
   end 
-
 
   always @(posedge clock) begin
     $display("Time=%0t", $time);
@@ -176,8 +166,6 @@ module ROB_queue_tb();
     end
     $display("----------------------");
   end
-
-// wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
 
   function void fetch_entries() 
     for(int i=0;i<DEPTH*2;i++) begin
@@ -243,30 +231,5 @@ module ROB_queue_tb();
       $finish;
     end
   endfunction
-
-  
-    
-    /*function void check_retired_data(ROB_ENTRY_PACKET [N-1:0] expected);
-    for(int i = 0; i < N; ++i) begin
-        if (retiring_data[i].valid) begin
-            if (retiring_data[i].op_code != expected[i].op_code) begin
-            $error("@@@ FAILED");
-            $error("Retirement data error: opcode expected (%0d), but got %0d!", expected[i].op_code, retiring_data[i].op_code);
-            $finish;
-            end
-            if (retiring_data[i].t != expected[i].t) begin
-            $error("@@@ FAILED");
-            $error("Retirement data error: t expected (%0d), but got %0d!", expected[i].t, retiring_data[i].t);
-            $finish;
-            end
-            if (retiring_data[i].t_old != expected[i].t_old) begin
-            $error("@@@ FAILED");
-            $error("Retirement data error: t_old expected (%0d), but got %0d!", expected[i].t_old, retiring_data[i].t_old);
-            $finish;
-            end
-        end
-    end
-    
-  endfunction*/
 
 endmodule

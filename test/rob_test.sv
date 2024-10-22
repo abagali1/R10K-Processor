@@ -24,7 +24,7 @@ module ROB_queue_tb();
   // Parameters
   parameter DEPTH = 8;
   parameter WIDTH = 32;
-  parameter N = 1;
+  parameter N = 3;
   localparam LOG_DEPTH = $clog2(DEPTH);
 
   // Signals
@@ -60,6 +60,7 @@ module ROB_queue_tb();
     .open_entries(open_entries),
     .num_retired(num_retired)
 
+    // debugging
     `ifdef DEBUG
     , .debug_entries(entry_data),
     .debug_head(debug_head),
@@ -67,15 +68,15 @@ module ROB_queue_tb();
     `endif
   );
 
+  // Queue Instantiations
   ROB_ENTRY_PACKET rob_model [$:(DEPTH - 1)];
   ROB_ENTRY_PACKET inst_buff [$:(DEPTH*2)-1];
-
 
   // Generate System Clock
   always begin
     #(`CLOCK_PERIOD/2.0);
-        clock = ~clock;
-    end
+      clock = ~clock;
+  end
 
   always @(posedge clock) begin
     #(`CLOCK_PERIOD * 0.2);
@@ -89,7 +90,7 @@ module ROB_queue_tb();
       @(posedge clock)
       #5 reset = 0;
 
-      // TESTBENCHES //
+      //*** TESTBENCHES ***//
 
 
       // TEST 1
@@ -107,7 +108,7 @@ module ROB_queue_tb();
       check_open_entries();
       check_retired_entries();
 
-      set_complete(N); // COMPLETE
+      set_complete(get_complete_regs(0, N)); // COMPLETE
       @(negedge clock)
 
       @(posedge clock)
@@ -118,6 +119,8 @@ module ROB_queue_tb();
       //print_inst_buffer();
       print_rob_model();
       $display("PASSED TEST 1");
+
+      
       // TEST 2: 
       reset_state();
       reset = 1;
@@ -126,7 +129,9 @@ module ROB_queue_tb();
 
       @(negedge clock)
       
+      $display("@@@ PASSED TEST 2");
 
+      
   
       $display("@@@ PASSED");
       $finish;
@@ -264,6 +269,7 @@ module ROB_queue_tb();
       end
     end
   endfunction
+  
 
   function void check_retired_entries();
     int expected = 0;
@@ -310,10 +316,10 @@ module ROB_queue_tb();
   endfunction
   
   
-  function void get_complete_regs(int start_inst, int end_inst)
+  function PHYS_REG_IDX[N-1:0] get_complete_regs(int start_insts, int end_insts);
     PHYS_REG_IDX[N-1:0] idxs;
     for(int i=start_insts; i <=end_insts;i++) begin
-      idxs[i-start_insts] = (i + 1) % DEPTH
+      idxs[i-start_insts] = (i + 1) % DEPTH;
     end
     return idxs;
   endfunction
