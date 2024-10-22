@@ -310,7 +310,13 @@ module ROB_queue_tb();
   endfunction
   
   
-
+  function void get_complete_regs(int start_inst, int end_inst)
+    PHYS_REG_IDX[N-1:0] idxs;
+    for(int i=start_insts; i <=end_insts;i++) begin
+      idxs[i-start_insts] = (i + 1) % DEPTH
+    end
+    return idxs;
+  endfunction
   
     
     /*function void check_retired_data(ROB_ENTRY_PACKET [N-1:0] expected);
