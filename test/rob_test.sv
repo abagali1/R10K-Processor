@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////
 //                                                                     //
-//   Modulename :  rob_test.sv                                         //
+//   Modulename :  rob_queue_test.sv                                   //
 //                                                                     //
 //  Description :  Testbench module for the N-way ROB module           //
 //                                                                     //
@@ -19,12 +19,12 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
 
-module ROB_tb();
+module ROB_queue_tb();
 
   // Parameters
   parameter DEPTH = 8;
   parameter WIDTH = 32;
-  parameter N = 2;
+  parameter N = 1;
   localparam LOG_DEPTH = $clog2(DEPTH);
 
   // Signals
@@ -38,9 +38,9 @@ module ROB_tb();
   logic                     [$clog2(N+1)-1:0] num_retired;
 
   `ifdef DEBUG
-  ROB_ENTRY_PACKET [DEPTH-1:0] entry_data;
-  logic [LOG_DEPTH-1:0] debug_head;
-  logic [LOG_DEPTH-1:0] debug_tail;
+    ROB_ENTRY_PACKET [DEPTH-1:0] entry_data;
+    logic [LOG_DEPTH-1:0] debug_head;
+    logic [LOG_DEPTH-1:0] debug_tail;
   `endif
 
   // Instantiate the ROB
@@ -67,8 +67,12 @@ module ROB_tb();
     `endif
   );
 
+  ROB_ENTRY_PACKET rob_model [$:(DEPTH - 1)];
+  ROB_ENTRY_PACKET inst_buff [$:(DEPTH*2)-1];
+
+
   // Generate System Clock
-    always begin
+  always begin
     #(`CLOCK_PERIOD/2.0);
         clock = ~clock;
     end
@@ -80,519 +84,95 @@ module ROB_tb();
 
   initial begin
       clock = 0;
+      reset_state();
       reset = 1;
       @(posedge clock)
-
-      // initially reset the rob
       #5 reset = 0;
 
+      // TESTBENCHES //
+
+
+      // TEST 1
       
+      // add N instructions, when the ROB is empty, complete ALL => exepct AL retired
+      fetch_entries();
+
+      add_entries(N); // DISPATCH
+      //print_inst_buffer();
+
+      print_rob_model();
+
+      @(negedge clock)
+      @(posedge clock)
+      check_open_entries();
+      check_retired_entries();
+
+      set_complete(N); // COMPLETE
+      @(negedge clock)
+
+      @(posedge clock)
+      check_open_entries();
+      check_retired_entries();
+
+      @(negedge clock)
+      //print_inst_buffer();
+      print_rob_model();
+      $display("PASSED TEST 1");
+      // TEST 2: 
+      reset_state();
+      reset = 1;
+      @(posedge clock)
+      reset = 0;
+
+      @(negedge clock)
       
 
-
-        /* 
-          TEST 1: write and complete one entry
-          N: 1
-          Current State: Empty
-        */
-
-        // wr_data initiallized to have an arbitrary op_code, t=4, t_old=1, complete=0, valid=1
-        // DISPATCH
-        wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t[0] = 5'd1; // this line shouldn't do anything, we complete with "t" not "t_old"
-        num_accept = 2'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // COMPLETE
-        wr_data[0] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        num_accept = 2'd0;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-1);
-        check_retired_entries(0);
-        @(posedge clock) // Instruction marked complete
-
-        complete_t[0] = 5'd4; // mark previously inserted instruction as complete
-        @(negedge clock)
-
-        check_open_entries(DEPTH-1);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // RETIRE
-        complete_t[0] = 5'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(1);
-        check_retired_data('{'{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}, '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b1, valid: 1'b1}});
-        @(posedge clock)
-
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-        $display("PASSED TEST 1");
-        
-        /*
-          TEST 2: Write two entries, then complete two entries in order
-          N: 2
-          Current State: Empty
-        */
-
-        // Reset ROB
-        reset = 1;
-        @(posedge clock);
-        reset = 0;
-
-        // Write first entry
-        wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t[0] = 5'd1;
-        num_accept = 2'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Write second entry
-        wr_data[0] = '{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t[0] = 5'd1;
-        num_accept = 2'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-1);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Write nothing, check both entries are in
-        wr_data[0] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        num_accept = 2'd0;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Complete first entry
-        complete_t[0] = 5'd4; 
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Complete second entry, check first entry is retired
-        complete_t[0] = 5'd5;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-1);
-        check_retired_entries(1);
-        check_retired_data('{'{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0},'{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b1, valid: 1'b1}});
-        @(posedge clock)
-
-        // Check second entry is retired
-        complete_t[0] = 5'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(1);
-        check_retired_data('{'{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0},'{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b1, valid: 1'b1}});
-        @(posedge clock)
-
-        @(negedge clock)
-        
-        // Check cleared ROB
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-        $display("PASSED TEST 2");
-
-
-        /*
-          TEST 3: Write two entries, then complete two entries out of order
-          N: 1
-          Current State: Empty
-        */
-
-        // Reset ROB
-        reset = 1;
-        @(posedge clock);
-        reset = 0;
-
-        // Write first entry
-        wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t[0] = 5'd1;
-        num_accept = 2'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Write second entry
-        wr_data[0] = '{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t[0] = 5'd1;
-        num_accept = 2'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-1);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Write nothing, check both entries are in
-        wr_data[0] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        num_accept = 2'd0;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Complete second entry
-        complete_t[0] = 5'd5; 
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Complete first entry
-        complete_t[0] = 5'd4;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Check first entry is retired
-        complete_t[0] = 5'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(2);
-        check_retired_data('{'{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b1, valid: 1'b1},'{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b1, valid: 1'b1}});
-        @(posedge clock)
-
-        @(negedge clock)
-        
-        // Check cleared ROB
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-        $display("PASSED TEST 3");
-        
-
-      /*
-          TEST 4: Write two entries at the same time (change num_accept=2)
-          N: 2
-          Current State: Empty
-        */
-
-        // Reset ROB
-        reset = 1;
-        @(posedge clock);
-        reset = 0;
-
-        // Write first entry
-        wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        // Write second entry
-        wr_data[1] = '{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t = '{5'd1, 5'd1};
-        // accept 2 entries at a time
-        num_accept = 2'd2;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Write nothing, check both entries are in
-        wr_data[0] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        wr_data[1] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        num_accept = 2'd0;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-        $display("LINE 316");
-
-
-        // Complete first entry
-        complete_t = '{5'd4, 5'd1}; 
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Complete second entry, check first entry is retired
-        complete_t = '{5'd5, 5'd1};
-        @(negedge clock)
-
-        check_open_entries(DEPTH-1);
-        check_retired_entries(1);
-        check_retired_data('{'{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0},'{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b1, valid: 1'b1}});
-        @(posedge clock)
-
-        // Check second entry is retired
-        complete_t = '{5'd1, 5'd1};
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(1);
-        check_retired_data('{'{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0},'{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b1, valid: 1'b1}});
-        @(posedge clock)
-
-        @(negedge clock)
-        
-        // Check cleared ROB
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        $display("@@@ TEST 4 PASSED");
-
-      /*
-          TEST 5: 
-          N: 2
-          Current State: Empty
-        */
-
-        // Reset ROB
-        reset = 1;
-        @(posedge clock);
-        reset = 0;
-
-        // Write first and second entry
-        wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        wr_data[1] = '{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t = '{5'd1, 5'd1};
-        num_accept = 2'd2;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Write third and fourth entry
-        wr_data[0] = '{op_code: 7'b1110000, t: 5'd6, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        wr_data[1] = '{op_code: 7'b0000111, t: 5'd7, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t[0] = 5'd1;
-        complete_t[1] = 5'd1;
-        num_accept = 2'd2;
-        @(negedge clock)
-
-        //TODO
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-        $display("AFTER LINE 392");
-
-        wr_data[0] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        wr_data[1] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        num_accept = 0;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-4);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Complete third and fourth entry
-        complete_t[0] = 5'd6; 
-        complete_t[1] = 5'd7; 
-        @(negedge clock)
-
-        check_open_entries(DEPTH-4);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Complete first and second entry
-        complete_t[0] = 5'd4; 
-        complete_t[1] = 5'd5; 
-        @(negedge clock)
-
-        check_open_entries(DEPTH-4);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        @(negedge clock)
-
-        //TODO
-        check_open_entries(DEPTH-2);
-        $display("after LINE 428");
-        check_retired_entries(2);
-        check_retired_data('{'{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b0, valid: 1'b1},'{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1}});
-        @(posedge clock)
-
-        // Check second entry is retired
-        complete_t[0] = 5'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(2);
-        check_retired_data('{'{op_code: 7'b0000111, t: 5'd7, t_old: 5'd1, complete: 1'b0, valid: 1'b1},'{op_code: 7'b1110000, t: 5'd6, t_old: 5'd1, complete: 1'b0, valid: 1'b1}});
-        @(posedge clock)
-
-        @(negedge clock)
-        
-        // Check cleared ROB
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        $display("@@@ TEST 5 PASSED");
-
-
-        /*
-          TEST 6: Write two entries at the same time (change num_accept=2), complete two entries at the same time in order
-          N: 2
-          Current State: Empty
-        */
-
-        // Reset ROB
-        reset = 1;
-        @(posedge clock);
-        reset = 0;
-
-        // Write first entry
-        wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        // Write second entry
-        wr_data[1] = '{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t = '{5'd1, 5'd1};
-        // accept 2 entries at a time
-        num_accept = 2'd2;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // Write nothing, check both entries are in
-        wr_data[0] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        wr_data[1] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        num_accept = 2'd0;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-        $display("AFTER LINE 483");
-
-        // TODO: ask in OH: having this negedge causes the test case to fail. why?
-        @(negedge clock)
-
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-        // TODO: to here
-
-        // Complete both entries
-        complete_t = '{5'd4, 5'd5}; 
-        @(negedge clock)
-
-        //TODO
-        check_open_entries(DEPTH-2);
-        check_retired_entries(0);
-        @(posedge clock)
-        $display("AFTER LINE 495");
-
-        complete_t = '{5'd1, 5'd1}; 
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(2);
-        check_retired_data('{'{op_code: 7'b0101010, t: 5'd5, t_old: 5'd1, complete: 1'b0, valid: 1'b1},'{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b1, valid: 1'b1}});
-        @(posedge clock)
-
-        @(negedge clock)
-        
-        // Check cleared ROB
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        $display("@@@ TEST 6 PASSED");
-        
-
-        // ??? test 5: read when empty ???
-
-        // test 6: read and write in concurrent cycles
-
-        // test 7: read and write in concurrent cycles when full
-
-        // test 8: read and write in concurrent cycles when full, but
-
-        
-        // REMAINING TESTS 
-        // - head and tail wrappings around end of buffer
-        // - full ROB simultaneous read and write
-
-      
-      
-    /*
-      if (N == 2) begin
-        
-          TEST 1: write and complete one entry
-          N: 2
-          Current State: Empty
-        
-
-        // wr_data initiallized to have an arbitrary op_code, t=4, t_old=1, complete=0, valid=1
-        // DISPATCH
-        wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
-        complete_t[0] = 5'd1; // this line shouldn't do anything, we complete with "t" not "t_old"
-        num_accept = 2'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // COMPLETE
-        wr_data[0] = '{op_code: 7'b0000000, t: 5'd0, t_old: 5'd0, complete: 1'b0, valid: 1'b0}; // overwrite with 0s
-        num_accept = 2'd0;
-        @(negedge clock)
-
-        check_open_entries(DEPTH-1);
-        check_retired_entries(0);
-        @(posedge clock) // Instruction marked complete
-
-        complete_t[0] = 5'd4; // mark previously inserted instruction as complete
-        @(negedge clock)
-
-        check_open_entries(DEPTH-1);
-        check_retired_entries(0);
-        @(posedge clock)
-
-        // RETIRE
-        complete_t[0] = 5'd1;
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(1);
-        check_retired_data('{'{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b1, valid: 1'b1}});
-        @(posedge clock)
-
-        @(negedge clock)
-
-        check_open_entries(DEPTH);
-        check_retired_entries(0);
-        @(posedge clock)
-
-      end
-    */
-
-
+  
       $display("@@@ PASSED");
       $finish;
-    end
+
+
+    /*
+      // add N instructions, when the ROB is full
+      for (int i = 0; i < (DEPTH / N); i++) begin
+        add_entries(N);
+      end
+
+      reset();
+      @(posedge clock)
+
+      #5 reset = 0;
+
+      // add N instructions, when the ROB has stuff but not full
+
+      reset();
+      @(posedge clock)
+
+      #5 reset = 0;
+      // add less than N instructions, when the ROB is empty
+      
+      reset();
+      @(posedge clock)
+
+      #5 reset = 0;
+      // add less than N instructions, when the ROB is full
+      
+      reset();
+      @(posedge clock)
+
+      #5 reset = 0;
+      // add less than N instructions, when the ROB has stuff but not full
+
+      reset();
+      @(posedge clock)
+
+      #5 reset = 0; */
+
+      // functions:
+      // add N to queue
+      // set complete bits for an instruction
+      // retire an instruction and check the value
+  end 
 
 
   always @(posedge clock) begin
@@ -620,9 +200,50 @@ module ROB_tb();
     $display("----------------------");
   end
 
+// wr_data[0] = '{op_code: 7'b0110011, t: 5'd4, t_old: 5'd1, complete: 1'b0, valid: 1'b1};
 
+  function void fetch_entries();
+    integer i;
+    logic [6:0] op;
+    for(i = 0; i < (DEPTH*2); i++) begin
+      op = i[6:0];
+      //ROB_ENTRY_PACKET inst = '{op_code: op, t: (i+1) % DEPTH, t_old: i % DEPTH, complete: 1'b0, valid: 1'b1 };
+      inst_buff.push_back('{op_code: op, t: (i+1) % DEPTH, t_old: i % DEPTH, complete: 1'b0, valid: 1'b1 });
+    end
+  endfunction
 
-  function void check_open_entries(int expected);
+  function void reset_state();
+    inst_buff.delete();
+    rob_model.delete();
+    wr_data = '0;
+    complete_t = '0;
+    num_accept = '0;
+    reset = '1;
+  endfunction
+
+  function void add_entries(int num_add);
+    for (int i = 0; i < num_add; i++) begin
+
+        wr_data[i] = inst_buff.pop_front();
+        rob_model.push_back(wr_data[i]); // the gannon strat
+
+    end
+  endfunction
+
+  function void print_inst_buffer();
+  $display("instruction buffer");
+  $display("instruction buffer size: %d", inst_buff.size());
+    for (int i = 0; i < inst_buff.size(); i++) begin
+      $display("inst_buff[%0d]: op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
+               i, inst_buff[i].op_code, inst_buff[i].t, inst_buff[i].t_old,
+               inst_buff[i].complete, inst_buff[i].valid);
+    end
+  $display("instruction buffer completed");
+  endfunction
+  
+  function void check_open_entries();
+    int expected = (DEPTH - rob_model.size());
+    
     if (open_entries != expected) begin
       $error("@@@ FAILED");
       $error("Open entries error: expected %0d, but got %0d", expected, open_entries);
@@ -630,51 +251,89 @@ module ROB_tb();
     end
   endfunction
 
-  function void check_completed_entries();
-    for (int i = 0; i < N; i++) begin
-      if (!retiring_data[i].complete) begin
-        $error("@@@ FAILED");
-        $error("Completion error: retiring_data[%0d] should be complete, but it's not", i);
-        $finish;
+
+
+   function void set_complete(PHYS_REG_IDX [N-1:0] complete_idx);
+    complete_t = complete_idx;
+
+    for (int j = 0; j < N; j++) begin
+      for (int k=0; k < rob_model.size(); ++k) begin
+        if(rob_model[k].t == complete_idx[j]) begin
+            rob_model[k].complete = 'b1;
+        end
       end
     end
   endfunction
 
-  function void check_retired_entries(int expected);
+  function void check_retired_entries();
+    int expected = 0;
+    for (int i = 0; i < num_retired; i++) begin
+        ROB_ENTRY_PACKET inst = rob_model.pop_front();
+        if (inst.op_code != retiring_data[i].op_code) begin
+          $error("@@@ FAILED");
+          $error("Retirement data error: opcode expected (%0d), but got %0d!", inst.op_code, retiring_data[i].op_code);
+          $finish;
+        end
+        if (inst.t != retiring_data[i].t) begin
+          $error("@@@ FAILED");
+          $error("Retirement data error: t expected (%0d), but got %0d!", inst.t, retiring_data[i].t);
+          $finish;
+        end
+        if (inst.t_old != retiring_data[i].t_old) begin
+          $error("@@@ FAILED");
+          $error("Retirement data error: t_old expected (%0d), but got %0d!", inst.t_old, retiring_data[i].t_old);
+          $finish;
+        end
+        if (rob_model[0].complete) begin
+            expected++;
+            rob_model.pop_front();
+        end else begin 
+            break;
+        end
+    end
+
     if(num_retired != expected) begin
       $error("@@@ FAILED");
       $error("Retirement error: expected (%0d) retires, but got %0d!", expected, num_retired);
       $finish;
     end
-    // for (int i = 0; i < N; i++) begin
-    //   if (retiring_data[i].op_code != i + 1 || retiring_data[i].t != i + 1 || retiring_data[i].t_old != i) begin
-    //     $error("Retirement error: retiring_data[%0d] doesn't match expected values", i);
-    //   end
-    // end
-    // check_open_entries(DEPTH);
   endfunction
 
-  function void check_retired_data(ROB_ENTRY_PACKET [N-1:0] expected);
+  function void print_rob_model();
+    $display("rob model");
+    for (int j = 0; j < rob_model.size(); j++) begin
+        $display("rob_model[%0d]:  op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
+                j, rob_model[j].op_code, rob_model[j].t, rob_model[j].t_old,
+                rob_model[j].complete, rob_model[j].valid);
+    end
+    $display("rob model completed");
+  endfunction
+  
+  
+
+  
+    
+    /*function void check_retired_data(ROB_ENTRY_PACKET [N-1:0] expected);
     for(int i = 0; i < N; ++i) begin
-      if (retiring_data[i].valid) begin
-        if (retiring_data[i].op_code != expected[i].op_code) begin
-          $error("@@@ FAILED");
-          $error("Retirement data error: opcode expected (%0d), but got %0d!", expected[i].op_code, retiring_data[i].op_code);
-          $finish;
+        if (retiring_data[i].valid) begin
+            if (retiring_data[i].op_code != expected[i].op_code) begin
+            $error("@@@ FAILED");
+            $error("Retirement data error: opcode expected (%0d), but got %0d!", expected[i].op_code, retiring_data[i].op_code);
+            $finish;
+            end
+            if (retiring_data[i].t != expected[i].t) begin
+            $error("@@@ FAILED");
+            $error("Retirement data error: t expected (%0d), but got %0d!", expected[i].t, retiring_data[i].t);
+            $finish;
+            end
+            if (retiring_data[i].t_old != expected[i].t_old) begin
+            $error("@@@ FAILED");
+            $error("Retirement data error: t_old expected (%0d), but got %0d!", expected[i].t_old, retiring_data[i].t_old);
+            $finish;
+            end
         end
-        if (retiring_data[i].t != expected[i].t) begin
-          $error("@@@ FAILED");
-          $error("Retirement data error: t expected (%0d), but got %0d!", expected[i].t, retiring_data[i].t);
-          $finish;
-        end
-        if (retiring_data[i].t_old != expected[i].t_old) begin
-          $error("@@@ FAILED");
-          $error("Retirement data error: t_old expected (%0d), but got %0d!", expected[i].t_old, retiring_data[i].t_old);
-          $finish;
-        end
-      end
     end
     
-  endfunction
+  endfunction*/
 
 endmodule

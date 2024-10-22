@@ -95,16 +95,14 @@ module ROB_queue_tb();
 
       // add N instructions, when the ROB is empty, complete ALL => exepct AL retired
       fetch_entries();
-      add_entries(N); // (t, t_old) [(1, 0), (2, 1), (3, 2), ..., (N, N-1)]
+      add_entries(N);
       @(negedge clock);
 
       check_open_entries();
       check_retired_entries();
 
-      set_complete(get_phys_reg_range(0, N));
-      @(negedge clock);
+      set_complete(N);
 
-      
 
       reset();
       @(posedge clock)
@@ -217,14 +215,6 @@ module ROB_queue_tb();
       $error("Open entries error: expected %0d, but got %0d", expected, open_entries);
       $finish;
     end
-  endfunction
-
-  function PHYS_REG_IDX[N-1:0] get_phys_reg_range(int inst_start, int inst_end)
-    PHYS_REG_IDX[N-1:0] idxs;
-    for(int i=inst_start, i<=inst_end; i++) begin
-      idxs[i - start_reg] = (i+1) % DEPTH
-    end
-    return idxs;
   endfunction
 
   function void set_complete(PHYS_REG_IDX [N-1:0] complete_idx);
