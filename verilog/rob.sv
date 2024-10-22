@@ -20,7 +20,7 @@ module ROB #(
     output logic                    [$clog2(N+1)-1:0] num_retired
 
     `ifdef DEBUG
-    ,   output logic [DEPTH-1:0] debug_entries,
+    ,   output ROB_ENTRY_PACKET [DEPTH-1:0] debug_entries,
         output logic [$clog2(DEPTH)-1:0] debug_head,
         output logic [$clog2(DEPTH)-1:0] debug_tail
     `endif
