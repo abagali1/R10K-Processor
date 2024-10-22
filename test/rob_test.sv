@@ -198,6 +198,8 @@ module ROB_tb();
       check_retired_entries(1);
       @(posedge clock)
 
+      @(negedge clock)
+      
       // Check cleared ROB
       check_open_entries(DEPTH);
       check_retired_entries(0);
