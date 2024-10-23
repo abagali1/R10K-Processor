@@ -111,32 +111,67 @@ module ROB_queue_tb();
     $display("PASSED TEST 1");
 
     // TEST 2: 
-    reset_state();
-    clear_entry_data();
-    reset = 1;
-    @(posedge clock)
-    #5 reset = 0;
-
-    /*
-    fetch_entries();
-
-
-    while (inst_buff.size() > 0) begin
-      int next_num = inst_buff.size() ? N : inst_buff.size();
-      add_entries(next_num); // add up to N instructions
-      set_complete(get_complete_regs(idx, idx+next_num));
-      idx += 3;
-      @(negedge clock)
-
-      check_open_entries();
-      check_retired_entries();
-      @(posedge clock)
-      clear_entry_data();
-    end 
-    */
+    // reset_state();
+    // clear_entry_data();
+    // reset = 1;
+    // @(posedge clock)
+    // #5 reset = 0;
 
     
-    $display("@@@ PASSED TEST 2");
+     // TEST 2: add N instructions, when the ROB is full
+    reset_state();
+    @(posedge clock)
+    #5 reset = '0;
+
+    fetch_entries();
+    @(negedge clock)
+    $display("AFTER LINE 125");
+
+    // verify rob is empty
+    @(posedge clock)
+    check_open_entries(); // should be all open
+    check_retired_entries(); // none should retire
+    @(negedge clock)
+    $display("AFTER LINE 130");
+    @(posedge clock)
+
+    // fill the rob mostly with entries
+    for (int i = 0; i < (DEPTH / N); i++) begin
+      @(posedge clock);
+      add_entries(N);
+    end
+
+    // @(negedge clock)
+    // clear_entry_data();
+
+    @(posedge clock)
+    // finish filling the rob with what is left over
+    add_entries(DEPTH % N);
+    $display("NUM_ACCEPT=%0d", num_accept);
+ 
+    @(negedge clock)
+    $display("AFTER LINE 142");
+
+    // verify rob is full
+    @(posedge clock)
+    @(posedge clock)
+    check_open_entries();
+    check_retired_entries();
+    $display("AFTER LINE 144");
+
+    // set N entries to complete
+    set_complete(get_complete_regs(0, N));
+    @(negedge clock)
+    add_entries(N-1);
+    $display("AFTER LINE 151");
+    
+    @(posedge clock)
+    // should be of DEPTH - 1 entries
+    check_open_entries();
+    check_retired_entries();
+    $display("AFTER LINE 157");
+
+    $display("@@@ TEST 2 PASSED");
 
     $display("@@@ PASSED");
     $finish;
@@ -185,18 +220,18 @@ module ROB_queue_tb();
     $display("  open_entries=%0d", open_entries);
     $display("  number of entries retired=%0d", num_retired);
     `ifdef DEBUG
+      $display("  head=%0d", debug_head);
+      $display("  tail=%0d", debug_tail);
       $display("  entries: ");
-      for (int j = 0; j < N; j++) begin
+      for (int j = 0; j < DEPTH-open_entries; j++) begin
         $display("    entry_data[%0d]:  op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
                 j, entry_data[j].op_code, entry_data[j].t, entry_data[j].t_old,
                 entry_data[j].complete, entry_data[j].valid);
       end
-      $display("  head=%0d", debug_head);
-      $display("  tail=%0d", debug_tail);
     `endif
 
     $display("  retiring data: ");
-    for (int i = 0; i < N; i++) begin
+    for (int i = 0; i < num_retired; i++) begin
       $display("    retiring_data[%0d]: op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
                i, retiring_data[i].op_code, retiring_data[i].t, retiring_data[i].t_old,
                retiring_data[i].complete, retiring_data[i].valid);
