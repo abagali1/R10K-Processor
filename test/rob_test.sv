@@ -126,7 +126,7 @@ module ROB_tb();
         $display("PASSED TEST 2");
 
         // ------------------------------ Test 3 ------------------------------ //
-        $display("\nTest 3: Insert DEPTH entries, then complete them out of order");
+        $display("\nTest 3: Insert DEPTH entries, then complete them in backwards order");
         generate_instructions(DEPTH);
 
         $display("\nInsert DEPTH instructions");
@@ -159,7 +159,57 @@ module ROB_tb();
         $display("PASSED TEST 3");
 
         // ------------------------------ Test 4 ------------------------------ //
-        // TODO
+        $display("\nTest 4: Insert DEPTH entries, then complete every other, then every other");
+        generate_instructions(DEPTH);
+
+        $display("\nInsert DEPTH instructions");
+        while (inst_buf.size() > 0) begin
+            add_entries(N);
+            @(negedge clock);
+            clear_inputs();
+        end
+
+        $display("\nSet every other instruction to complete");
+        for (int i = 0; i < DEPTH;) begin
+            for (int j = 0; j < N; j++) begin
+                if (i < DEPTH) begin
+                    complete_t[j] = complete_queue[i];
+                    i += 2;
+                end else begin
+                    break;
+                end
+            end
+            @(negedge clock);
+            clear_inputs();
+        end
+
+        $display("\nSet every other, other instruction to complete");
+        for (int i = 1; i < DEPTH;) begin
+            for (int j = 0; j < N; j++) begin
+                if (i < DEPTH) begin
+                    complete_t[j] = complete_queue[i];
+                    i += 2;
+                end else begin
+                    break;
+                end
+            end
+            @(negedge clock);
+            clear_inputs();
+        end
+
+        $display("\nWaiting for ROB to flush");
+        while (rob_model.size() > 0) begin
+            @(negedge clock);
+        end
+
+        // Empty complete queue, as test is complete
+        while (complete_queue.size() > 0) begin
+            complete_queue.pop_front();
+        end
+
+        @(negedge clock);
+        assert_empty();
+        $display("PASSED TEST 4");
 
 
 
