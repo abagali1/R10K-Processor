@@ -31,6 +31,7 @@ module ROB #(
 
     logic [LOG_DEPTH-1:0] head, next_head, tmp_head;
     logic [LOG_DEPTH-1:0] tail, next_tail;
+    logic [LOG_DEPTH:0] num_entries, next_num_entries;
 
     ROB_ENTRY_PACKET [DEPTH-1:0] entries, next_entries;
 
@@ -38,7 +39,7 @@ module ROB #(
     // with head and tail on posedge
     // keeping the original version alongside simplified comb logic
     // assign num_entries = (tail >= head) ? (tail - head) : (DEPTH - head + tail);
-    // assign open_entries = DEPTH - num_entries;
+    assign open_entries = DEPTH - num_entries + num_retired;
     // DONE
     // output (up to N) completed entries
     always_comb begin
@@ -46,7 +47,7 @@ module ROB #(
         tmp_head = '0;
         retiring_data = '0;
         num_retired = '0;
-        open_entries = (tail >= head) ? (DEPTH - (tail - head)) : (head - tail);
+        next_num_entries = num_entries;
         next_entries = entries;
 
         // Dependent for-loop to retire instructions. 
@@ -57,7 +58,7 @@ module ROB #(
                 retiring_data[i] = entries[tmp_head];
                 next_entries[tmp_head] = '0;
                 next_head = (tmp_head + 1) % DEPTH;
-                open_entries++;
+                next_num_entries--;
                 num_retired++;
             end else begin
                 break;
@@ -66,6 +67,7 @@ module ROB #(
 
         // These statements are dependent on updated num_accept
         next_tail = (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
+        next_num_entries += num_accept;
 
         for(int j=0;j < N; ++j) begin
             if(j < num_accept) begin
@@ -92,12 +94,12 @@ module ROB #(
     // update state
     always_ff @(posedge clock) begin
         if (reset) begin
-            //state <= EMPTY;
+            num_entries <= '0;
             head <= '0;
             tail <= '0;
             entries <= '0;
         end else begin
-            //state <= next_state;
+            num_entries <= next_num_entries;
             head <= next_head;
             tail <= next_tail;
             entries <= next_entries;
