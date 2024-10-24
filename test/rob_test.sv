@@ -104,9 +104,8 @@ module ROB_tb();
         $display("PASSED TEST 1");
 
         // ------------------------------ Test 2 ------------------------------ //
-        $display("\nTest 2: Insert DEPTH Entries, wait, then complete 8 in order");
+        $display("\nTest 2: Insert DEPTH Entries, then complete 8 in order");
         generate_instructions(DEPTH);
-        @(negedge clock);
 
         $display("\nInsert DEPTH instructions");
         while (inst_buf.size() > 0) begin
@@ -127,14 +126,41 @@ module ROB_tb();
         $display("PASSED TEST 2");
 
         // ------------------------------ Test 3 ------------------------------ //
-        $display("\nTest 3: ");
+        $display("\nTest 3: Insert DEPTH entries, then complete them out of order");
         generate_instructions(DEPTH);
 
-        // TODO test 3
+        $display("\nInsert DEPTH instructions");
+        while (inst_buf.size() > 0) begin
+            add_entries(N);
+            @(negedge clock);
+            clear_inputs();
+        end
+
+        $display("\nSet all instructions to complete, but backwards");
+        while (complete_queue.size() > 0) begin
+            for (int i = 0; i < N; i++) begin
+                if (complete_queue.size() > 0) begin
+                    complete_t[i] = complete_queue.pop_back();
+                end else begin
+                    break;
+                end
+            end
+            @(negedge clock);
+            clear_inputs();
+        end
+
+        $display("\nWaiting for ROB to flush");
+        while (rob_model.size() > 0) begin
+            @(negedge clock);
+        end
 
         @(negedge clock);
         assert_empty();
         $display("PASSED TEST 3");
+
+        // ------------------------------ Test 4 ------------------------------ //
+        // TODO
+
 
 
         $display("@@@ PASSED ALL TESTS @@@");
@@ -206,7 +232,6 @@ module ROB_tb();
     function void check_retired_entries();
         ROB_ENTRY_PACKET inst;
         for (int i = 0; i < num_retired; i++) begin
-            $display("INSIDE LOOP: i=%0d", i);
             inst = rob_model.pop_front();
             if (inst.op_code != retiring_data[i].op_code) begin
                 $error("@@@ FAILED @@@");
