@@ -79,10 +79,10 @@ module ROB_tb();
 
         // ---------- Test 1 ---------- //
         $display("\nTest 1: Write and Read 1 Entry with a 1 cycle wait");
+        generate_instructions(1);
 
         $display("Write 1 value");
         num_accept = 1;
-        generate_instructions(1);
         add_entries(1);
         @(negedge clock);
         clear_inputs();
@@ -98,8 +98,41 @@ module ROB_tb();
         $display("Retire instruction");
         @(negedge clock);
 
+        @(negedge clock);
+        assert_empty();
+        $display("PASSED TEST 1");
+
         // ---------- Test 2 ---------- //
-        $display("\nTest 2:");
+        $display("\nTest 2: Insert DEPTH Entries, wait, then complete 8 in order");
+        generate_instructions(DEPTH);
+
+        $display("\nInsert DEPTH instructions")
+        while (inst_buf.size() > 0) begin
+            add_entries(N);
+            @(negedge clock);
+            clear_inputs();
+        end
+
+        $display("Set all instructions to complete");
+        while (rob_model.size() > 0) begin
+            set_complete(N);
+            @(negedge clock);
+            clear_inputs();
+        end
+
+        @(negedge clock);
+        assert_empty();
+        $display("PASSED TEST 2");
+
+        // ---------- Test 3 ---------- //
+        $display("\nTest 3: ");
+        generate_instructions(DEPTH);
+
+        // TODO test 3
+
+        @(negedge clock);
+        assert_empty();
+        $display("PASSED TEST 3");
 
 
         $display("@@@ PASSED ALL TESTS @@@");
@@ -122,15 +155,20 @@ module ROB_tb();
     endfunction
 
     // Helper function that adds entries to rob_model and writes them to wr_data, also adds tag to complete queue
-    function void add_entry(int num);
-        for (int i = 0; i < (num < N ? num : N); i++) begin
+    function void add_entries(int num);
+        if (N < num) begin
+            $error("@@@ FAILED @@@");
+            $error("Test Error: tried to add %0d entries, but N=%0d", num, N);
+            $finish;
+        end
+        for (int i = 0; i < (num < inst_buf.size() ? num : inst_buf.size()); i++) begin
             wr_data[i] = inst_buf.pop_front();
             rob_model.push_back(wr_data[i]);
             complete_queue.push_back(wr_data[i].t);
         end
     endfunction
 
-    // Generates N instructions and adds them to the instruction buffer
+    // Generates N instructions and adds them to the instruction buffer, complete tags go from 1-DEPTH
     function void generate_instructions(int num);
         integer i;
         logic [6:0] op;
@@ -142,7 +180,7 @@ module ROB_tb();
 
     // Helper Function to set complete_t
     function void set_complete(int num);
-        for (int i = 0; i < num; i++) begin
+        for (int i = 0; i < (num < complete_queue.size() ? num : complete_queue.size()); i++) begin
             complete_t[i] = complete_queue.pop_front();
         end
     endfunction
@@ -180,6 +218,15 @@ module ROB_tb();
                 $error("Retirement data error: opcode[%0d]: instruction not marked complete", inst.op_code);
                 $finish;
             end
+        end
+    endfunction
+
+    // Ensure ROB is empty
+    function void assert_empty();
+        if (open_entries != DEPTH) begin
+            $error("@@@ FAILED @@@");
+            $error("Open entries error: expected %0d, but got %0d", DEPTH, open_entries);
+           $finish;
         end
     endfunction
 
