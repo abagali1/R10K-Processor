@@ -32,9 +32,9 @@ module ROB_tb();
         logic            [LOG_DEPTH-1:0] debug_tail;
     `endif
 
-    ROB_ENTRY_PACKET rob_model [$:(DEPTH-1)];
-    ROB_ENTRY_PACKET inst_buf [$:((DEPTH-1)*2)];
-    PHYS_REG_IDX complete_queue [$:(DEPTH-1)];
+    ROB_ENTRY_PACKET rob_model [$:(DEPTH)];
+    ROB_ENTRY_PACKET inst_buf [$:((DEPTH)*2)];
+    PHYS_REG_IDX complete_queue [$:(DEPTH)];
 
     ROB_ENTRY_PACKET empty_packet = '{op_code: 0, t: 0, t_old: 0, complete: 0, valid: 0};
 
@@ -82,7 +82,6 @@ module ROB_tb();
         generate_instructions(1);
 
         $display("Write 1 value");
-        num_accept = 1;
         add_entries(1);
         @(negedge clock);
         clear_inputs();
@@ -107,6 +106,7 @@ module ROB_tb();
         // ------------------------------ Test 2 ------------------------------ //
         $display("\nTest 2: Insert DEPTH Entries, wait, then complete 8 in order");
         generate_instructions(DEPTH);
+        @(negedge clock);
 
         $display("\nInsert DEPTH instructions");
         while (inst_buf.size() > 0) begin
@@ -156,14 +156,15 @@ module ROB_tb();
         complete_t = 0;
     endfunction
 
-    // Helper function that adds entries to rob_model and writes them to wr_data, also adds tag to complete queue
+    // Helper function that adds entries to rob_model, writes them to wr_data, sets num_accept, also adds tag to complete queue
     function void add_entries(int num);
-        if (N < num) begin
+        if (num > N) begin
             $error("@@@ FAILED @@@");
             $error("Test Error: tried to add %0d entries, but N=%0d", num, N);
             $finish;
         end
-        for (int i = 0; i < (num < inst_buf.size() ? num : inst_buf.size()); i++) begin
+        num_accept = num < inst_buf.size() ? num : inst_buf.size();
+        for (int i = 0; i < num_accept; i++) begin
             wr_data[i] = inst_buf.pop_front();
             rob_model.push_back(wr_data[i]);
             complete_queue.push_back(wr_data[i].t);
@@ -176,7 +177,7 @@ module ROB_tb();
         logic [6:0] op;
         for (i = 0; i < num; i++) begin
             op = i[6:0];
-            inst_buf.push_back('{op_code: op, t: (i+1) % DEPTH, t_old: 5'b0, complete: 1'b0, valid: 1'b1});
+            inst_buf.push_back('{op_code: op, t: ((i % DEPTH)+1), t_old: 5'b0, complete: 1'b0, valid: 1'b1});
         end
     endfunction
 
@@ -194,8 +195,6 @@ module ROB_tb();
 
     // Open entries validation
     function void check_open_entries();
-        $display("ROB MODEL SIZE: %0d", rob_model.size());
-        $display("NUM RETIRED: %0d", num_retired);
         if (open_entries != (DEPTH - rob_model.size())) begin
             $error("@@@ FAILED @@@");
             $error("Open entries error: expected %0d, but got %0d", (DEPTH - rob_model.size()), open_entries);
@@ -206,7 +205,6 @@ module ROB_tb();
     // Retired Entries Validation
     function void check_retired_entries();
         ROB_ENTRY_PACKET inst;
-        $display("RETIRED NUM RETIRED: %0d", num_retired);
         for (int i = 0; i < num_retired; i++) begin
             $display("INSIDE LOOP: i=%0d", i);
             inst = rob_model.pop_front();
