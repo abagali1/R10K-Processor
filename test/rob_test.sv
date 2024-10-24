@@ -32,9 +32,9 @@ module ROB_tb();
         logic            [LOG_DEPTH-1:0] debug_tail;
     `endif
 
-    ROB_ENTRY_PACKET rob_model [$:(DEPTH)];
-    ROB_ENTRY_PACKET inst_buf [$:(DEPTH*2)];
-    PHYS_REG_IDX complete_queue [$:(DEPTH)];
+    ROB_ENTRY_PACKET rob_model [$:(DEPTH-1)];
+    ROB_ENTRY_PACKET inst_buf [$:((DEPTH-1)*2)];
+    PHYS_REG_IDX complete_queue [$:(DEPTH-1)];
 
     ROB_ENTRY_PACKET empty_packet = '{op_code: 0, t: 0, t_old: 0, complete: 0, valid: 0};
 
@@ -96,6 +96,8 @@ module ROB_tb();
         clear_inputs();
 
         $display("Retire instruction");
+        // posedge 
+        // fail here
         @(negedge clock);
 
         @(negedge clock);
@@ -106,7 +108,7 @@ module ROB_tb();
         $display("\nTest 2: Insert DEPTH Entries, wait, then complete 8 in order");
         generate_instructions(DEPTH);
 
-        $display("\nInsert DEPTH instructions")
+        $display("\nInsert DEPTH instructions");
         while (inst_buf.size() > 0) begin
             add_entries(N);
             @(negedge clock);
@@ -143,8 +145,8 @@ module ROB_tb();
     // Correctness Verification
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
-        check_open_entries();
         check_retired_entries();
+        check_open_entries();
     end
 
     // Helper function to clear inputs to ROB
@@ -178,8 +180,13 @@ module ROB_tb();
         end
     endfunction
 
-    // Helper Function to set complete_t
+    // Helper Function to set complete_t, pops num completes off of the queue
     function void set_complete(int num);
+        if (num > N) begin
+            $error("@@@ FAILED @@@");
+            $error("Test Error: tried to complete %0d entries, but N=%0d", num, N);
+            $finish;
+        end
         for (int i = 0; i < (num < complete_queue.size() ? num : complete_queue.size()); i++) begin
             complete_t[i] = complete_queue.pop_front();
         end
@@ -187,17 +194,22 @@ module ROB_tb();
 
     // Open entries validation
     function void check_open_entries();
-        if (open_entries != (DEPTH - rob_model.size() + num_retired)) begin
+        $display("ROB MODEL SIZE: %0d", rob_model.size());
+        $display("NUM RETIRED: %0d", num_retired);
+        if (open_entries != (DEPTH - rob_model.size())) begin
             $error("@@@ FAILED @@@");
-            $error("Open entries error: expected %0d, but got %0d", (DEPTH - rob_model.size() + num_retired), open_entries);
+            $error("Open entries error: expected %0d, but got %0d", (DEPTH - rob_model.size()), open_entries);
             $finish;
         end
     endfunction
 
     // Retired Entries Validation
     function void check_retired_entries();
+        ROB_ENTRY_PACKET inst;
+        $display("RETIRED NUM RETIRED: %0d", num_retired);
         for (int i = 0; i < num_retired; i++) begin
-            ROB_ENTRY_PACKET inst = rob_model.pop_front();
+            $display("INSIDE LOOP: i=%0d", i);
+            inst = rob_model.pop_front();
             if (inst.op_code != retiring_data[i].op_code) begin
                 $error("@@@ FAILED @@@");
                 $error("Retirement data error: opcode expected (%0d), but got %0d!", inst.op_code, retiring_data[i].op_code);
@@ -234,7 +246,7 @@ module ROB_tb();
     int cycle_number = 0;
     always @(posedge clock) begin
         $display("------------------------------------------------------------");
-        $display("@@@ Cycle Number: %0d @@@");
+        $display("@@@ Cycle Number: %0d @@@", cycle_number);
         $display("   Time: %0t", $time);
         $display("   Reset: %0d\n", reset);
         $display("   Open Entries: %0d", open_entries);
@@ -245,6 +257,14 @@ module ROB_tb();
             $display("      wr_data[%0d]: op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
                 i, wr_data[i].op_code, wr_data[i].t, wr_data[i].t_old, wr_data[i].complete, wr_data[i].valid
             );
+        end
+        $display("");
+
+        $display("   Complete Data:");
+        for (int i = 0; i < N; i++) begin
+            if (complete_t[i] != 0) begin
+                $display("      complete_t[%0d]: t=%0d", i, complete_t[i]);
+            end
         end
         $display("");
 
