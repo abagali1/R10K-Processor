@@ -77,7 +77,7 @@ module ROB_tb();
         @(negedge clock);
         reset = 0;
 
-        // ---------- Test 1 ---------- //
+        // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Write and Read 1 Entry with a 1 cycle wait");
         generate_instructions(1);
 
@@ -102,7 +102,7 @@ module ROB_tb();
         assert_empty();
         $display("PASSED TEST 1");
 
-        // ---------- Test 2 ---------- //
+        // ------------------------------ Test 2 ------------------------------ //
         $display("\nTest 2: Insert DEPTH Entries, wait, then complete 8 in order");
         generate_instructions(DEPTH);
 
@@ -124,7 +124,7 @@ module ROB_tb();
         assert_empty();
         $display("PASSED TEST 2");
 
-        // ---------- Test 3 ---------- //
+        // ------------------------------ Test 3 ------------------------------ //
         $display("\nTest 3: ");
         generate_instructions(DEPTH);
 
