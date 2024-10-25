@@ -14,10 +14,14 @@ module ROB #(
     input ROB_ENTRY_PACKET          [N-1:0] wr_data, 
     input PHYS_REG_IDX              [N-1:0] complete_t, // comes from the FU
     input                           [$clog2(N+1)-1:0] num_accept, // input signal from min block, dependent on open_entries 
-    
+    input logic                     [$clog2(DEPTH)-1:0] br_tail,
+    input logic                     br_en,                        
+
     output ROB_ENTRY_PACKET         [N-1:0] retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
     output logic                    [$clog2(DEPTH+1)-1:0] open_entries, // number of open entires AFTER retirement
-    output logic                    [$clog2(N+1)-1:0] num_retired
+    output logic                    [$clog2(N+1)-1:0] num_retired,
+    output logic                    [$clog2(DEPTH)-1:0] out_tail
+
 
     `ifdef DEBUG
     ,   output ROB_ENTRY_PACKET [DEPTH-1:0] debug_entries,
@@ -44,7 +48,6 @@ module ROB #(
     // output (up to N) completed entries
     always_comb begin
         next_head = head;
-        tmp_head = '0;
         retiring_data = '0;
         num_retired = '0;
         next_num_entries = num_entries;
@@ -53,11 +56,10 @@ module ROB #(
         // Dependent for-loop to retire instructions. 
         // We must retire instructions first in order to accept the highest # of incoming instructions
         for (int i = 0; i < N; ++i) begin
-            tmp_head = (head+i) % DEPTH;
-            if (entries[tmp_head].valid & entries[tmp_head].complete) begin
-                retiring_data[i] = entries[tmp_head];
-                next_entries[tmp_head] = '0;
-                next_head = (tmp_head + 1) % DEPTH;
+            if (entries[(head+i) % DEPTH].valid & entries[(head+i) % DEPTH].complete) begin
+                retiring_data[i] = entries[(head+i) % DEPTH];
+                next_entries[(head+i) % DEPTH] = '0;
+                next_head = (((head+i) % DEPTH) + 1) % DEPTH;
                 next_num_entries--;
                 num_retired++;
             end else begin
@@ -66,7 +68,7 @@ module ROB #(
         end
 
         // These statements are dependent on updated num_accept
-        next_tail = (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
+        next_tail = (br_en) ? br_tail : (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
         next_num_entries += num_accept;
 
         for(int j=0;j < N; ++j) begin
@@ -81,6 +83,11 @@ module ROB #(
             end
         end
 
+        // two assumptions:
+        // - branch is the first instruction in the the dispatched instruction window
+        // - only one branch per dispatched instruction window
+        out_tail = tail; 
+        
         `ifdef DEBUG
             debug_entries = entries;
             debug_head = head;
