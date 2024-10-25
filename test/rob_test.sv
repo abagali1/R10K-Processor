@@ -38,6 +38,7 @@ module ROB_tb();
 
     ROB_ENTRY_PACKET empty_packet = '{op_code: 0, t: 0, t_old: 0, complete: 0, valid: 0};
 
+    
     ROB #(
         .DEPTH(DEPTH),
         .N(N))
@@ -271,7 +272,7 @@ module ROB_tb();
 
     // Open entries validation
     function void check_open_entries();
-        if (open_entries != (DEPTH - rob_model.size())) begin
+        if (open_entries !== (DEPTH - rob_model.size())) begin
             $error("@@@ FAILED @@@");
             $error("Open entries error: expected %0d, but got %0d", (DEPTH - rob_model.size()), open_entries);
             $finish;
@@ -283,17 +284,17 @@ module ROB_tb();
         ROB_ENTRY_PACKET inst;
         for (int i = 0; i < num_retired; i++) begin
             inst = rob_model.pop_front();
-            if (inst.op_code != retiring_data[i].op_code) begin
+            if (inst.op_code !== retiring_data[i].op_code) begin
                 $error("@@@ FAILED @@@");
                 $error("Retirement data error: opcode expected (%0d), but got %0d!", inst.op_code, retiring_data[i].op_code);
                 $finish;
             end
-            if (inst.t != retiring_data[i].t) begin
+            if (inst.t !== retiring_data[i].t) begin
                 $error("@@@ FAILED @@@");
                 $error("Retirement data error: opcode[%0d]: t expected (%0d), but got %0d!", inst.op_code, inst.t, retiring_data[i].t);
                 $finish;
             end
-            if (inst.t_old != retiring_data[i].t_old) begin
+            if (inst.t_old !== retiring_data[i].t_old) begin
                 $error("@@@ FAILED @@@");
                 $error("Retirement data error: opcode[%0d]: t_old expected (%0d), but got %0d!", inst.op_code, inst.t_old, retiring_data[i].t_old);
                 $finish;
@@ -308,7 +309,7 @@ module ROB_tb();
 
     // Ensure ROB is empty
     function void assert_empty();
-        if (open_entries != DEPTH) begin
+        if (open_entries !== DEPTH) begin
             $error("@@@ FAILED @@@");
             $error("Open entries error: expected %0d, but got %0d", DEPTH, open_entries);
            $finish;
