@@ -1,12 +1,12 @@
 `include "sys_defs.svh"
 
 typedef struct packed {
-    REG_IDX reg_idx;
+    PHYS_REG_IDX reg_idx;
     logic valid;
 } FREE_LIST_PACKET;
 
 module free_list #(
-    parameter DEPTH = 32// ???
+    parameter DEPTH = PHYS_REG_SZ_R10K,
     parameter N = `N,
 )
 (
@@ -24,7 +24,7 @@ module free_list #(
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
-    logic [LOG_DEPTH-1:0] head, next_head, tmp_head;
+    logic [LOG_DEPTH-1:0] head, next_head;
     logic [LOG_DEPTH-1:0] tail, next_tail;
 
     FREE_LIST_PACKET [DEPTH-1:0] entries, next_entries;
@@ -37,15 +37,14 @@ module free_list #(
         next_entries = entries;
 
         for (int i = 0; i < N; i++) begin
-            tmp_head = (head + i) % DEPTH;
-            if (entries[tmp_head].valid) begin
-                rd_reg[i] = entries[tmp_head];
-                next_entries[tmp_head] = 0;
+            if (entries[(head + i) % DEPTH].valid) begin
+                rd_reg[i] = entries[(head + i) % DEPTH];
+                next_entries[(head + i) % DEPTH] = 0;
             end
         end
 
         for (int i = 0; i < N; i++) begin
-            next_entries[(tail + i) % DEPTH] = wr_reg[i];
+            next_entries[(tail +  i) % DEPTH] = wr_reg[i];
         end
     end
 
