@@ -30,6 +30,7 @@
 // sizes
 `define ROB_SZ 32
 `define RS_SZ 32
+`define ARCH_REG_SZ 32
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 
