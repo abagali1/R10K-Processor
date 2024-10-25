@@ -33,7 +33,7 @@ module ROB #(
 
     //typedef enum logic [1:0] {EMPTY, LOAD, FULL} STATE;
 
-    logic [LOG_DEPTH-1:0] head, next_head, tmp_head;
+    logic [LOG_DEPTH-1:0] head, next_head;
     logic [LOG_DEPTH-1:0] tail, next_tail;
     logic [LOG_DEPTH:0] num_entries, next_num_entries;
 
