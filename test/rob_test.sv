@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////
 //                                                                     //
-//   Modulename :  rob_test.sv                                   //
+//   Modulename :  rob_test.sv                                         //
 //                                                                     //
 //  Description :  Testbench module for the N-way ROB module           //
 //                                                                     //
