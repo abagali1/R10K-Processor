@@ -1,13 +1,9 @@
 `include "sys_defs.svh"
 
-typedef struct packed {
-    PHYS_REG_IDX reg_idx;
-    logic valid;
-} FREE_LIST_PACKET;
 
 module free_list #(
     parameter DEPTH = `ROB_SZ,
-    parameter N = `N,
+    parameter N = `N
 )
 (
     input                                        clock,
@@ -23,6 +19,9 @@ module free_list #(
     output logic            [$clog2(DEPTH+1)-1:0] num_avail // broadcasting number of regs available
 
     `ifdef DEBUG
+    , output logic [$clog2(DEPTH)-1:0] debug_head,
+      output logic [$clog2(DEPTH)-1:0] debug_tail
+
     `endif 
     
 );
@@ -54,6 +53,10 @@ module free_list #(
                 next_entries[(head + i) % DEPTH] = 0;
             end
         end
+        `ifdef DEBUG
+            debug_head = head;
+            debug_tail = tail;
+        `endif
     end
 
     always @(posedge clock) begin
@@ -63,6 +66,7 @@ module free_list #(
             for (int i = 0; i < DEPTH; i++) begin
                 entries[i].reg_idx <= i + `ARCH_REG_SZ;
                 entries[i].valid <= 1;
+                // should we be incrementing tail here?
             end
             num_entries <= DEPTH;
         end else begin

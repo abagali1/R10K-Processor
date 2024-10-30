@@ -402,5 +402,10 @@ typedef struct packed {
     logic           valid;
 } ROB_ENTRY_PACKET;
 
+typedef struct packed {
+    PHYS_REG_IDX reg_idx;
+    logic valid;
+} FREE_LIST_PACKET;
+
 
 `endif // __SYS_DEFS_SVH__
