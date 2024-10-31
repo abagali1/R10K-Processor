@@ -36,6 +36,7 @@ module free_list #(
     assign next_head = (head + rd_num) % DEPTH;
     assign next_tail = (tail + wr_num) % DEPTH; 
     assign num_avail = num_entries + wr_num;
+    assign min = (N < rd_num) ? N : rd_num;
 
     always_comb begin
         rd_reg = '0;
@@ -43,16 +44,17 @@ module free_list #(
         out_fl = entries;
         next_num_entries = num_entries + wr_num - rd_num;
 
-        for (int i = 0; i < N; i++) begin
+        for (int i = 0; i < wr_num; i++) begin // why is this till N? shouldn't it be limited to wr_num?
             next_entries[(tail +  i) % DEPTH] = wr_reg[i];
         end
 
-        for (int i = 0; i < N; i++) begin
+        for (int i = 0; i < min; i++) begin // why is this till N? rather than min of N and rd_num
             if (next_entries[(head + i) % DEPTH].valid) begin
                 rd_reg[i] = next_entries[(head + i) % DEPTH];
                 next_entries[(head + i) % DEPTH] = 0;
             end
         end
+
         `ifdef DEBUG
             debug_head = head;
             debug_tail = tail;
