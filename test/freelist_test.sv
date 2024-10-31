@@ -35,6 +35,7 @@ module freelist_tb();
 
     // queue declaration for free_list model
     FREE_LIST_PACKET free_list_model [$:(DEPTH)];
+    int popped;
 
     free_list #(
         .DEPTH(DEPTH),
@@ -82,24 +83,18 @@ module freelist_tb();
         $display("\nTest 1: Check Free List is Full");
         // its just a queue
         reset_free_list();
-        //print_model();
-        //print_free_list();
-
         @(negedge clock);
-        reset = 0;
-        @(negedge clock);
-        pop_n_from_free_list(1);
-        print_model();
-
-        @(negedge clock);
-        @(posedge clock);
-
-        @(negedge clock);
-        $display("PASSED TEST 1");
-
-        // ------------------------------ Test 2 ------------------------------ //
         
+        pop_n_from_free_list(1);
+        @(negedge clock);
+        
+        $display("here!!");
+        clear_inputs();
+        @(posedge clock);
+        @(negedge clock);
 
+        $display("PASSED TEST 1");
+        // ------------------------------ Test 2 ------------------------------ //
         $finish;
     end
 
@@ -107,8 +102,10 @@ module freelist_tb();
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
         // check_entries();
+        print_model();
         print_free_list();
-        $display("checked entries");
+        $display("rd_num: %d", rd_num);
+        // $display("checked entries");
     end
 
 
@@ -122,6 +119,7 @@ module freelist_tb();
     // if want to pop all, set N to size
 function void pop_n_from_free_list(int num_pop);
     rd_num = num_pop;
+    popped += num_pop;
     for (int i = 0; i < num_pop; i++) begin
         free_list_model.pop_front();
     end
@@ -137,7 +135,6 @@ endfunction
 
 // reset free_list function, add all regs + valid bits
 function void reset_free_list();
-    reset = 1;
     for (int i = 0; i < DEPTH; i++) begin
         free_list_model[i].reg_idx = i + `ARCH_REG_SZ;
         free_list_model[i].valid = 1;
@@ -154,6 +151,10 @@ endfunction
 
 // compare free list model to actual free list
 function void check_entries();
+
+    // for model read from i to DEPTH - popped
+    // for freelist read from i + popped / head to DEPTH
+
      for (int i = 0; i < DEPTH; i++) begin
         if (free_list_model[i].reg_idx != out_fl[i].reg_idx) begin
             $error("@@@ FAILED @@@");
@@ -161,7 +162,7 @@ function void check_entries();
             $finish;
         end
     end
-    
+
     // compare to actual free list from head to tail
     
 endfunction
@@ -169,18 +170,27 @@ endfunction
 function void print_model();
     $display("\nPrinting Free List Model");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("free_list_model_reg_idx[%0d]", free_list_model[i].reg_idx);
+        $display("free_list_model_reg_idx: %0d", free_list_model[i].reg_idx);
     end
 endfunction
 
 function void print_free_list();
     $display("\nPrinting Actual Free List");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("free_list_actual_reg_idx[%0d]", out_fl[i].reg_idx);
+        $display("free_list_actual_reg_idx: %0d", out_fl[i].reg_idx);
     end
     $display("\n printing head %0d", debug_head);
     $display("\n printing tail %0d", debug_tail);
     $display("\n reset %0d", reset);
+endfunction
+
+function void clear_inputs();
+    rd_num = 0;
+    wr_num = 0;
+    wr_reg = 0;
+    br_en = 0;
+    br_fl = 0;
+    reset = 0;
 endfunction
 
 endmodule
