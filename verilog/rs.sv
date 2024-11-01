@@ -21,7 +21,7 @@ module RS #(
     input logic [`NUM_FU_MULT-1:0]         fu_mult_busy,
     input logic [`NUM_FU_LD-1:0]           fu_ld_busy,
     input logic [`NUM_FU_STORE-1:0]        fu_store_busy,
-    input logic [`NUM_FU_BR-1:0]           fu_br_busy, // don't think is necessary
+    input logic [`NUM_FU_BR-1:0]           fu_br_busy, 
 
     // output packets directly to FUs (they all are pipelined)
     output RS_PACKET [`NUM_FU_ALU-1:0]          issued_alu, 
@@ -102,7 +102,7 @@ module RS #(
         .empty(br_empty)
     );
 
-    // Issue Logic
+    // Logic for assigning req to psels
     always_comb begin
         alu_req = 0;
         mult_req = 0;
@@ -110,22 +110,40 @@ module RS #(
         store_req = 0;
         br_req = 0;
         for (int i = 0; i < DEPTH; i++) begin
-            if (entries[i].fu_type == ALU_INST) begin
-                alu_req[i] = 1;
-            end else if (entries[i].fu_type == MULT_INST) begin
-                mult_req[i] = 1;
-            end else if (entries[i].fu_type == LD_INST) begin
-                ld_req[i] = 1;
-            end else if (entries[i].fu_type == STORE_INST) begin
-                store_req[i] = 1;
-            end else if (entries[i].fu_type == BR_INST) begin
-                br_req[i] = 1;
+            if (entries[i].t1.ready & entries[i].t2.ready) begin
+                if (entries[i].fu_type == ALU_INST) begin
+                    alu_req[i] = 1;
+                end else if (entries[i].fu_type == MULT_INST) begin
+                    mult_req[i] = 1;
+                end else if (entries[i].fu_type == LD_INST) begin
+                    ld_req[i] = 1;
+                end else if (entries[i].fu_type == STORE_INST) begin
+                    store_req[i] = 1;
+                end else if (entries[i].fu_type == BR_INST) begin
+                    br_req[i] = 1;
+                end
             end
         end
     end
 
     always_comb begin
         next_entries = entries;
+
+        // Marks entry tags as ready (parallelized)
+        for (int i = 0; i < N; i++) begin
+            if (cdb_in[i].valid) begin
+                for (int j = 0; j < DEPTH; j++) begin
+                    if (entries[j].valid) begin
+                        if (entries[j].t1.reg_idx == cdb_in[i].reg_idx) begin
+                            next_entries[j].t1.ready = 1;
+                        end
+                        if (entries[j].t2.reg_idx == cdb_in[i].reg_idx) begin
+                            next_entries[j].t2.ready = 1;
+                        end
+                    end
+                end
+            end
+        end
 
         // Branch mask logic
         if (br_task != NOTHING) begin
@@ -145,23 +163,6 @@ module RS #(
             end
         end
 
-
-        // Marks entry tags as ready (parallelized)
-        for (int i = 0; i < N; i++) begin
-            if (cdb_in[i].valid) begin
-                for (int j = 0; j < DEPTH; j++) begin
-                    if (entries[j].valid) begin
-                        if (entries[j].t1.reg_idx == cdb_in[i].reg_idx) begin
-                            next_entries[j].t1.ready = 1;
-                        end
-                        if (entries[j].t2.reg_idx == cdb_in[i].reg_idx) begin
-                            next_entries[j].t2.ready = 1;
-                        end
-                    end
-                end
-            end
-        end
-
         // Reads Psel logic and issues
         alu_idx = 0;
         mult_idx = 0;
@@ -171,35 +172,35 @@ module RS #(
         for (int i = 0; i < DEPTH; i++) begin
             if (alu_gnt[i]) begin
                 if (~fu_alu_busy[i]) begin
-                    issued_alu[alu_idx] = entries[i];
+                    issued_alu[alu_idx] = next_entries[i];
                     next_entries[i] = 0;
                     next_num_entries--;
                 end
                 alu_idx++;
             end else if (mult_gnt[i]) begin
                 if (~fu_mult_busy[i]) begin
-                    issued_mult[mult_idx] = entries[i];
+                    issued_mult[mult_idx] = next_entries[i];
                     next_entries[i] = 0;
                     next_num_entries--;
                 end
                 mult_idx++;
             end else if (ld_gnt[i]) begin
                 if (~fu_ld_busy[i]) begin
-                    issued_ld[ld_idx] = entries[i];
+                    issued_ld[ld_idx] = next_entries[i];
                     next_entries[i] = 0;
                     next_num_entries--;
                 end
                 ld_idx++;
             end else if (store_gnt[i]) begin
                 if (~fu_store_busy[i]) begin
-                    issued_store[store_idx] = entries[i];
+                    issued_store[store_idx] = next_entries[i];
                     next_entries[i] = 0;
                     next_num_entries--;
                 end
                 store_idx++;
             end else if (br_gnt[i]) begin
                 if (~fu_br_busy[i]) begin
-                    issued_br[br_idx] = entries[i];
+                    issued_br[br_idx] = next_entries[i];
                     next_entries[i] = 0;
                     next_num_entries--;
                 end
