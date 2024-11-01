@@ -1,8 +1,9 @@
 `include "sys_defs.svh"
+`include "psel_gen.sv"
 
 module RS #(
     parameter DEPTH = 32,
-    parameter N = `N,
+    parameter N = `N
 )
 (
     input                               clock,
@@ -29,12 +30,14 @@ module RS #(
     output RS_PACKET [`NUM_FU_STORE-1:0]        issued_store,
     output RS_PACKET [`NUM_FU_BR-1:0]           issued_br,
 
-    output logic [$clog2(DEPTH+1)-1:0]          open_entries,
+    output logic [$clog2(DEPTH+1)-1:0]          open_entries
 
     `ifdef DEBUG
     ,   output ROB_ENTRY_PACKET [DEPTH-1:0] debug_entries
     `endif
 );
+    localparam LOG_DEPTH = $clog2(DEPTH);
+
     RS_PACKET [DEPTH-1:0] entries, next_entries;
     logic [LOG_DEPTH:0] num_entries, next_num_entries;
 

@@ -41,7 +41,7 @@
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 4
 `define NUM_FU_MULT 4
-`define NUM_FU_LOAD 2
+`define NUM_FU_LD 2
 `define NUM_FU_STORE 2
 `define NUM_FU_BR 1
 
@@ -298,8 +298,9 @@ typedef enum logic [2:0] {
 typedef enum logic [2:0] {
     ALU_INST,
     MULT_INST,
-    LOAD_INST,
-    STORE_INST
+    LD_INST,
+    STORE_INST,
+    BR_INST
 } FU_TYPE;
 
 typedef enum logic [1:0] {
