@@ -36,7 +36,11 @@ module free_list #(
     assign next_head = (head + rd_num) % DEPTH;
     assign next_tail = (tail + wr_num) % DEPTH; 
     assign num_avail = num_entries + wr_num;
-    assign min = (N < rd_num) ? N : rd_num;
+    assign min = (N < rd_num) ? N : rd_num; // does there need to be signal out to indicate that not all of rd_num has been read?
+
+    // thinking:
+        // the actual freelist needs to have a head and tail wrap around to keep it within the physical restrains of the free list
+        // the model freelist can just treat the top of the model as the head? and the last element as the tail?
 
     always_comb begin
         rd_reg = '0;
@@ -44,14 +48,14 @@ module free_list #(
         out_fl = entries;
         next_num_entries = num_entries + wr_num - rd_num;
 
-        for (int i = 0; i < wr_num; i++) begin // why is this till N? shouldn't it be limited to wr_num?
+        for (int i = 0; i < wr_num; i++) begin
             next_entries[(tail +  i) % DEPTH] = wr_reg[i];
         end
 
-        for (int i = 0; i < min; i++) begin // why is this till N? rather than min of N and rd_num
+        for (int i = 0; i < min; i++) begin
             if (next_entries[(head + i) % DEPTH].valid) begin
                 rd_reg[i] = next_entries[(head + i) % DEPTH];
-                next_entries[(head + i) % DEPTH] = 0;
+                next_entries[(head + i) % DEPTH] = 0; 
             end
         end
 
