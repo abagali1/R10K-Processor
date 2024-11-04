@@ -21,14 +21,14 @@ module RS #(
     input logic [`NUM_FU_MULT-1:0]         fu_mult_busy,
     input logic [`NUM_FU_LD-1:0]           fu_ld_busy,
     input logic [`NUM_FU_STORE-1:0]        fu_store_busy,
-    input logic [`NUM_FU_BR-1:0]           fu_br_busy, 
+    //input logic [`NUM_FU_BR-1:0]           fu_br_busy, 
 
     // output packets directly to FUs (they all are pipelined)
     output RS_PACKET [`NUM_FU_ALU-1:0]          issued_alu, 
     output RS_PACKET [`NUM_FU_MULT-1:0]         issued_mult,
     output RS_PACKET [`NUM_FU_LD-1:0]           issued_ld,
     output RS_PACKET [`NUM_FU_STORE-1:0]        issued_store,
-    output RS_PACKET [`NUM_FU_BR-1:0]           issued_br,
+    output RS_PACKET                            issued_br,
 
     output logic [$clog2(DEPTH+1)-1:0]          open_entries
 
@@ -43,15 +43,23 @@ module RS #(
 
     assign open_entries = DEPTH - num_entries;
 
-    // Psel wires
+    // Issuing psel wires
     logic [DEPTH-1:0] alu_req, mult_req, ld_req, store_req, br_req;
     logic [DEPTH-1:0] alu_gnt, mult_gnt, ld_gnt, store_gnt, br_gnt;
     logic [DEPTH*N-1:0] alu_gnt_bus, mult_gnt_bus, ld_gnt_bus, store_gnt_bus, br_gnt_bus;
-    logic alu_empty, mult_empty, ld_empty, store_empty, br_empty;
 
-    logic [LOG_DEPTH:0] alu_idx, mult_idx, ld_idx, store_idx, br_idx;
+    // Free psel wires
+    logic [`NUM_FU_ALU-1:0]      f_alu_req, f_alu_gnt;
+    logic [`NUM_FU_MULT-1:0]     f_mult_req, f_mult_gnt;
+    logic [`NUM_FU_LD-1:0]       f_ld_req, f_ld_gnt;
+    logic [`NUM_FU_STORE-1:0]    f_store_req, f_store_gnt;
 
-    // Priority Selectors, one for each type of FU
+    logic [`NUM_FU_ALU*`NUM_FU_ALU-1:0]       f_alu_gnt_bus;
+    logic [`NUM_FU_MULT*`NUM_FU_MULT-1:0]     f_mult_gnt_bus;
+    logic [`NUM_FU_LD*`NUM_FU_LD-1:0]         f_ld_gnt_bus;
+    logic [`NUM_FU_STORE*`NUM_FU_STORE-1:0]   f_store_gnt_bus;
+
+    // Issuing Priority Selectors, one for each type of FU
     psel_gen #(
         .WIDTH(DEPTH),
         .REQS(`NUM_FU_ALU)) 
@@ -59,7 +67,7 @@ module RS #(
         .req(alu_req),
         .gnt(alu_gnt),
         .gnt_bus(alu_gnt_bus),
-        .empty(alu_empty)
+        .empty()
     );
 
     psel_gen #(
@@ -69,7 +77,7 @@ module RS #(
         .req(mult_req),
         .gnt(mult_gnt),
         .gnt_bus(mult_gnt_bus),
-        .empty(mult_empty)
+        .empty()
     );
 
     psel_gen #(
@@ -79,7 +87,7 @@ module RS #(
         .req(ld_req),
         .gnt(ld_gnt),
         .gnt_bus(ld_gnt_bus),
-        .empty(ld_empty)
+        .empty()
     );
 
     psel_gen #(
@@ -89,7 +97,17 @@ module RS #(
         .req(store_req),
         .gnt(store_gnt),
         .gnt_bus(store_gnt_bus),
-        .empty(store_empty)
+        .empty()
+    );
+
+    psel_gen #(
+        .WIDTH(DEPTH),
+        .REQS(`NUM_FU_STORE)) 
+    store_psel (
+        .req(store_req),
+        .gnt(store_gnt),
+        .gnt_bus(store_gnt_bus),
+        .empty()
     );
 
     psel_gen #(
@@ -99,10 +117,51 @@ module RS #(
         .req(br_req),
         .gnt(br_gnt),
         .gnt_bus(br_gnt_bus),
-        .empty(br_empty)
+        .empty()
     );
 
-    // Logic for assigning req to psels
+    // Busy Psels
+    psel_gen #(
+        .WIDTH(`NUM_FU_ALU),
+        .REQS(`NUM_FU_ALU)) 
+    f_alu_psel (
+        .req(~fu_alu_busy),
+        .gnt(f_alu_gnt),
+        .gnt_bus(f_alu_gnt_bus),
+        .empty()
+    );
+
+    psel_gen #(
+        .WIDTH(`NUM_FU_MULT),
+        .REQS(`NUM_FU_MULT)) 
+    f_mult_psel (
+        .req(~fu_mult_busy),
+        .gnt(f_mult_gnt),
+        .gnt_bus(f_mult_gnt_bus),
+        .empty()
+    );
+
+    psel_gen #(
+        .WIDTH(`NUM_FU_LD),
+        .REQS(`NUM_FU_LD)) 
+    f_ld_psel (
+        .req(~fu_ld_busy),
+        .gnt(f_ld_gnt),
+        .gnt_bus(f_ld_gnt_bus),
+        .empty()
+    );
+
+    psel_gen #(
+        .WIDTH(`NUM_FU_STORE),
+        .REQS(`NUM_FU_STORE)) 
+    f_store_psel (
+        .req(~fu_store_busy),
+        .gnt(f_store_gnt),
+        .gnt_bus(f_store_gnt_bus),
+        .empty()
+    );
+
+    // Logic for assigning req to issuing psels
     always_comb begin
         alu_req = 0;
         mult_req = 0;
@@ -110,7 +169,7 @@ module RS #(
         store_req = 0;
         br_req = 0;
         for (int i = 0; i < DEPTH; i++) begin
-            if (entries[i].t1.ready & entries[i].t2.ready) begin
+            if (entries[i].valid & entries[i].t1.ready & entries[i].t2.ready) begin
                 if (entries[i].fu_type == ALU_INST) begin
                     alu_req[i] = 1;
                 end else if (entries[i].fu_type == MULT_INST) begin
@@ -126,8 +185,10 @@ module RS #(
         end
     end
 
+    // Combinational Logic
     always_comb begin
         next_entries = entries;
+        next_num_entries = num_entries;
 
         // Marks entry tags as ready (parallelized)
         for (int i = 0; i < N; i++) begin
@@ -163,48 +224,51 @@ module RS #(
             end
         end
 
-        // Reads Psel logic and issues
-        alu_idx = 0;
-        mult_idx = 0;
-        ld_idx = 0;
-        store_idx = 0;
-        br_idx = 0;
+        // Reads Psel logic and issues (parallelized)
         for (int i = 0; i < DEPTH; i++) begin
-            if (alu_gnt[i]) begin
-                if (~fu_alu_busy[i]) begin
-                    issued_alu[alu_idx] = next_entries[i];
-                    next_entries[i] = 0;
-                    next_num_entries--;
+            for (int j = 0; j < `NUM_FU_ALU; j++) begin
+                if (alu_gnt_bus[j][i]) begin
+                    for (int k = 0; k < `NUM_FU_ALU; k++) begin
+                        if (f_alu_gnt_bus[j][k]) begin
+                            issued_alu[k] = next_entries[i];
+                            next_entries[i] = 0;
+                        end
+                    end
                 end
-                alu_idx++;
-            end else if (mult_gnt[i]) begin
-                if (~fu_mult_busy[i]) begin
-                    issued_mult[mult_idx] = next_entries[i];
-                    next_entries[i] = 0;
-                    next_num_entries--;
+            end
+            for (int j = 0; j < `NUM_FU_MULT; j++) begin
+                if (mult_gnt_bus[j][i]) begin
+                    for (int k = 0; k < `NUM_FU_MULT; k++) begin
+                        if (f_mult_gnt_bus[j][k]) begin
+                            issued_mult[k] = next_entries[i];
+                            next_entries[i] = 0;
+                        end
+                    end
                 end
-                mult_idx++;
-            end else if (ld_gnt[i]) begin
-                if (~fu_ld_busy[i]) begin
-                    issued_ld[ld_idx] = next_entries[i];
-                    next_entries[i] = 0;
-                    next_num_entries--;
+            end
+            for (int j = 0; j < `NUM_FU_LD; j++) begin
+                if (ld_gnt_bus[j][i]) begin
+                    for (int k = 0; k < `NUM_FU_LD; k++) begin
+                        if (f_ld_gnt_bus[j][k]) begin
+                            issued_ld[k] = next_entries[i];
+                            next_entries[i] = 0;
+                        end
+                    end
                 end
-                ld_idx++;
-            end else if (store_gnt[i]) begin
-                if (~fu_store_busy[i]) begin
-                    issued_store[store_idx] = next_entries[i];
-                    next_entries[i] = 0;
-                    next_num_entries--;
+            end
+            for (int j = 0; j < `NUM_FU_STORE; j++) begin
+                if (store_gnt_bus[j][i]) begin
+                    for (int k = 0; k < `NUM_FU_STORE; k++) begin
+                        if (f_store_gnt_bus[j][k]) begin
+                            issued_store[k] = next_entries[i];
+                            next_entries[i] = 0;
+                        end
+                    end
                 end
-                store_idx++;
-            end else if (br_gnt[i]) begin
-                if (~fu_br_busy[i]) begin
-                    issued_br[br_idx] = next_entries[i];
-                    next_entries[i] = 0;
-                    next_num_entries--;
-                end
-                br_idx++;
+            end
+            if (br_gnt[i]) begin
+                issued_br = next_entries[i];
+                next_entries[i] = 0;
             end
         end
 
@@ -214,9 +278,38 @@ module RS #(
                 for (int j = 0; j < DEPTH; ++j) begin
                     if (~next_entries[j].valid) begin
                         next_entries[j] = rs_in[i];
-                        next_num_entries++;
                     end
                 end
+            end
+        end
+
+        // next_num_entries logic
+        for (int i = 0; i < `NUM_FU_ALU; i++) begin
+            if (issued_alu[i].valid) begin
+                next_num_entries--;
+            end
+        end
+        for (int i = 0; i < `NUM_FU_MULT; i++) begin
+            if (issued_mult[i].valid) begin
+                next_num_entries--;
+            end
+        end
+        for (int i = 0; i < `NUM_FU_LD; i++) begin
+            if (issued_ld[i].valid) begin
+                next_num_entries--;
+            end
+        end
+        for (int i = 0; i < `NUM_FU_STORE; i++) begin
+            if (issued_store[i].valid) begin
+                next_num_entries--;
+            end
+        end
+        if (issued_br.valid) begin
+            next_num_entries--;
+        end
+        for (int i = 0; i < N; i++) begin
+            if (rs_in[i].valid) begin
+                next_num_entries++;
             end
         end
     end
