@@ -10,37 +10,51 @@ module CDB #(
     parameter N = `N
 )
 (
+    input logic         [NUM_FU-1:0] fu_done,
     input FU_PACKET     [NUM_FU-1:0] wr_data,
+    
+    input logic                      br_done,
+    input FU_PACKET                  br_data,
 
     output CDB_PACKET [N-1:0]        entries;
+    output CDB_PACKET                br_out;
     output logic      [NUM_FU-1:0]   stall_sig;          
 
 );
     localparam NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE;
+    localparam FU_PACKET_WIDTH = $bits(br_data);
+    
     CDB_PACKET [N-1:0] entries;
 
+    logic [NUM_FU-1:0] cdb_gnt;
+    logic [N-1:0][NUM_FU-1:0] cdb_gnt_bus;
 
-    always_comb begin
-        int num_completed = 0;
-        stall_sig = '0;
+    assign num_req = (br_done) ? N-1 : N;
+    assign stall_sig = ~cdb_gnt;
 
-        // so this might be an issue... since the FUs are directly mapped to the input of the
-        // CDB, the CDB might choose the same N FUs to complete and at some point this will resolve
-        // BUT... we probably will get better performance if we completed the oldest inst first
-        for (int i = 0; i < NUM_FU; i++) begin
-            if (num_completed < N & wr_data[i].completed) begin
-                entries[num_completed].reg_idx = wr_data[i].dest_reg;
-                entries[num_completed].val = wr_data[i].val;
-                entries[num_completed].valid = 1;
-                stall_sig[i] = 0;
-                num_completed++;
-            end else if (num_completed == N & wr_data[i].completed) begin
-                stall_sig[i] = 1; //outputs signal to tell FU to stall
+    psel_gen #(
+        .WIDTH(NUM_FU),
+        .REQS(num_req)) 
+    alu_psel (
+        .req(fu_done),
+        .gnt(cdb_gnt),
+        .gnt_bus(cdb_gnt_bus),
+        .empty()
+    );
+
+    logic FU_PACKET [N-1:0][NUM_FU-1:0] anded_packets;
+    logic FU_PACKET [N-1:0] selected_packet;
+
+    generate
+        genvar i, j;
+        for (i = 0; i < num_req; i = i + 1) begin
+            for (j = 0; j < NUM_FU; j = j + 1) begin
+                assign anded_packets[i][j] = wr_data[j] & '{FU_PACKET_WIDTH{one_hot[i][j]}};
             end
+            assign selected_packet[i] = |anded_packets[i];
         end
-        for (int j = num_completed; j < N; j++) begin
-            entries[j].valid = 0;
-        end
-    end
+    endgenerate
+    
+    // then set the CDB output packet for both entries and br_out
 
 endmodule
