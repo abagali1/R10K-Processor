@@ -14,20 +14,22 @@ module map_table #(
     input                                               clock,
     input                                               reset, 
     input REG_IDX                   [N-1:0]             r1_idx,
-    input REG_IDX                   [N-1:0]             r2_idx,
-    input REG_IDX                   [N-1:0]             dest_reg_idx,
-    input PHYS_REG_IDX              [N-1:0]             wr_reg_data,
-    input REG_IDX                   [N-1:0]             ready_reg_idx,
+    input REG_IDX                   [N-1:0]             r2_idx,       
+    input REG_IDX                   [N-1:0]             dest_reg_idx, // dest_regs that are getting mapped to a new phys_reg from free_list
+    input PHYS_REG_IDX              [N-1:0]             wr_reg_data,  // comes from the free list
 
-    input logic                                         arch_en,
-    input MAP_TABLE_PACKET          [`ARCH_REG_SZ-1:0]  arch_mt,
+    input REG_IDX                   [N-1:0]             ready_reg_idx,
+    input PHYS_REG_IDX              [N-1:0]             ready_phys_idx,
+
+    input logic                                         in_mt_en,
+    input MAP_TABLE_PACKET          [`ARCH_REG_SZ-1:0]  in_mt,
 
 
     output PHYS_REG_IDX             [N-1:0]             t_old_data,
     output PHYS_REG_IDX             [N-1:0]             r1_p_reg,
     output PHYS_REG_IDX             [N-1:0]             r2_p_reg,
     
-    output MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]  out_mt // output map table for architectural mt
+    output MAP_TABLE_PACKET         [`ARCH_REG_SZ-1:0]  out_mt // output map table for architectural mt
 );
 
 // r1+r2=r3 //p4
@@ -37,11 +39,11 @@ module map_table #(
 MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] entries, next_entries;
 
 always_comb begin
-    next_entries = (arch_en) ? arch_mt : entries;
+    next_entries = (in_mt_en) ? in_mt : entries;
 
-    // instruction packet in FU is going to hold dest arch reg
+    // check that the arch reg hasn't been mapped to a new register
     for (int i = 0; i < N; i++) begin
-        next_entries[ready_reg_idx[i]-1].ready = 1;
+        next_entries[ready_reg_idx[i]-1].ready = (next_entries[ready_reg_idx[i]-1].reg_idx == ready_phys_idx[i]) ? 1 : 0;
     end
 
     for (int i = 0; i < N; i++) begin
@@ -55,6 +57,7 @@ always_comb begin
         next_entries[dest_reg_idx[i]-1].ready = 0;
     end
 
+    // i'm not sure why i chose entries and not next_entries
     out_mt = entries;
 end
 
@@ -66,7 +69,7 @@ always @(posedge clock) begin
             entries[i].ready <= 1;
         end
     end else begin
-        entries <= next_num_entries;
+        entries <= next_entries;
     end
 end
 
