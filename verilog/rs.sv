@@ -46,7 +46,11 @@ module RS #(
     // Issuing psel wires
     logic [DEPTH-1:0] alu_req, mult_req, ld_req, store_req, br_req;
     logic [DEPTH-1:0] alu_gnt, mult_gnt, ld_gnt, store_gnt, br_gnt;
-    logic [DEPTH*N-1:0] alu_gnt_bus, mult_gnt_bus, ld_gnt_bus, store_gnt_bus, br_gnt_bus;
+    logic [`NUM_FU_ALU-1:0][DEPTH-1:0] alu_gnt_bus
+    logic [`NUM_FU_MULT-1:0][DEPTH-1:0] mult_gnt_bus;
+    logic [`NUM_FU_LOAD-1:0][DEPTH-1:0] ld_gnt_bus;
+    logic [`NUM_FU_STORE-1:0][DEPTH-1:0] store_gnt_bus;
+    logic [`NUM_FU_BR-1:0][DEPTH-1:0] br_gnt_bus;
 
     // Free psel wires
     logic [`NUM_FU_ALU-1:0]      f_alu_req, f_alu_gnt;
@@ -54,10 +58,10 @@ module RS #(
     logic [`NUM_FU_LD-1:0]       f_ld_req, f_ld_gnt;
     logic [`NUM_FU_STORE-1:0]    f_store_req, f_store_gnt;
 
-    logic [`NUM_FU_ALU*`NUM_FU_ALU-1:0]       f_alu_gnt_bus;
-    logic [`NUM_FU_MULT*`NUM_FU_MULT-1:0]     f_mult_gnt_bus;
-    logic [`NUM_FU_LD*`NUM_FU_LD-1:0]         f_ld_gnt_bus;
-    logic [`NUM_FU_STORE*`NUM_FU_STORE-1:0]   f_store_gnt_bus;
+    logic [`NUM_FU_ALU-1:0][`NUM_FU_ALU-1:0]       f_alu_gnt_bus;
+    logic [`NUM_FU_MULT-1:0][`NUM_FU_MULT-1:0]     f_mult_gnt_bus;
+    logic [`NUM_FU_LD-1:0][`NUM_FU_LD-1:0]         f_ld_gnt_bus;
+    logic [`NUM_FU_STORE-1:0][`NUM_FU_STORE-1:0]   f_store_gnt_bus;
 
     // Issuing Priority Selectors, one for each type of FU
     psel_gen #(
