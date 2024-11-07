@@ -289,11 +289,3 @@ module freelist_tb();
     endfunction
 
 endmodule
-
-// model to freelist
-// i = 0 to head
-// last element to tail
-
-
-// finish writing last couple of test cases
-// figure out how to compare even when smth is unitiliazed
