@@ -408,6 +408,21 @@ typedef struct packed {
 } FREE_LIST_PACKET;
 
 typedef struct packed {
+    INST        inst;
+    ADDR        PC;
+    ADDR        NPC;
+    DATA        result;
+    logic       rd_mem;
+    logic       wr_mem;
+    REG_IDX     dest_reg_idx;
+    logic       halt;
+    logic       illegal;
+    logic       csr_op;
+    MEM_SIZE    mem_size;
+    logic       valid;
+} FU_PACKET;
+
+typedef struct packed {
     PHYS_REG_IDX reg_idx;
     logic ready;
     logic valid;

@@ -7,14 +7,17 @@
 // period than straight multiplication.
 
 module mult (
-    input clock, reset, start,
-    input DATA rs1, rs2,
-    input MULT_FUNC func,
-    // input logic [TODO] dest_tag_in,
+    input               clock, 
+    input               reset,
+    input DATA          opa, 
+    input DATA          opb,
+    input RS_PACKET     rs_in,
+    input               stall_unit,
+    input               rd_in,
 
-    // output logic [TODO] dest_tag_out,
-    output DATA result,
-    output done
+    output FU_PACKET    fu_out,
+    output              data_ready,
+    output              unit_stalled
 );
 
     MULT_FUNC [`MULT_STAGES-2:0] internal_funcs;
@@ -31,8 +34,9 @@ module mult (
     mult_stage mstage [`MULT_STAGES-1:0] (
         .clock (clock),
         .reset (reset),
-        .func        ({internal_funcs,   func}),
-        .start       ({internal_dones,   start}), // forward prev done as next start
+        .stall (stall_unit),
+        .func        ({internal_funcs,   rs_in.inst.r.funct3}),
+        .start       ({internal_dones,   rd_in}), // forward prev done as next start
         .prev_sum    ({internal_sums,    64'h0}), // start the sum at 0
         .mplier      ({internal_mpliers, mplier}),
         .mcand       ({internal_mcands,  mcand}),
@@ -40,29 +44,31 @@ module mult (
         .next_mplier ({mplier_out, internal_mpliers}),
         .next_mcand  ({mcand_out,  internal_mcands}),
         .next_func   ({func_out,   internal_funcs}),
-        .done        ({done,       internal_dones}) // done when the final stage is done
+        .done        ({data_ready,       internal_dones}) // done when the final stage is done
     );
 
     // Sign-extend the multiplier inputs based on the operation
     always_comb begin
-        case (func)
-            M_MUL, M_MULH, M_MULHSU: mcand = {{(32){rs1[31]}}, rs1};
-            default:                 mcand = {32'b0, rs1};
+        case (rs_in.inst.r.funct3)
+            M_MUL, M_MULH, M_MULHSU: mcand = {{(32){opa[31]}}, opa};
+            default:                 mcand = {32'b0, opa};
         endcase
-        case (func)
-            M_MUL, M_MULH: mplier = {{(32){rs2[31]}}, rs2};
-            default:       mplier = {32'b0, rs2};
+        case (rs_in.inst.r.funct3)
+            M_MUL, M_MULH: mplier = {{(32){opb[31]}}, opb};
+            default:       mplier = {32'b0, opb};
         endcase
     end
 
     // Use the high or low bits of the product based on the output func
-    assign result = (func_out == M_MUL) ? product[31:0] : product[63:32];
+    assign fu_out.result = (func_out == M_MUL) ? product[31:0] : product[63:32];
+    assign unit_stalled = stall_unit;
 
 endmodule // mult
 
 
 module mult_stage (
     input clock, reset, start,
+    input stall,
     input [63:0] prev_sum, mplier, mcand,
     input MULT_FUNC func,
 
@@ -81,10 +87,17 @@ module mult_stage (
     assign shifted_mcand = {mcand[63-SHIFT:0], SHIFT'('b0)};
 
     always_ff @(posedge clock) begin
-        product_sum <= prev_sum + partial_product;
-        next_mplier <= shifted_mplier;
-        next_mcand  <= shifted_mcand;
-        next_func   <= func;
+        if (stall) begin
+            product_sum <= product_sum;
+            next_mplier <= next_mplier;
+            next_mcand  <= next_mcand;
+            next_func   <= next_func;
+        end else begin
+            product_sum <= prev_sum + partial_product;
+            next_mplier <= shifted_mplier;
+            next_mcand  <= shifted_mcand;
+            next_func   <= func;
+        end
     end
 
     always_ff @(posedge clock) begin
