@@ -23,6 +23,8 @@ module RS #(
     input logic [`NUM_FU_STORE-1:0]        fu_store_busy,
     //input logic [`NUM_FU_BR-1:0]           fu_br_busy, 
 
+    output logic [$clog2(N+1)-1:0]         num_accept,
+
     // output packets directly to FUs (they all are pipelined)
     output RS_PACKET [`NUM_FU_ALU-1:0]          issued_alu, 
     output RS_PACKET [`NUM_FU_MULT-1:0]         issued_mult,
@@ -30,7 +32,8 @@ module RS #(
     output RS_PACKET [`NUM_FU_STORE-1:0]        issued_store,
     output RS_PACKET                            issued_br,
 
-    output logic [$clog2(DEPTH+1)-1:0]          open_entries
+    output logic [$clog2(DEPTH+1)-1:0]          open_entries,
+
 
     `ifdef DEBUG
     ,   output ROB_ENTRY_PACKET [DEPTH-1:0] debug_entries
