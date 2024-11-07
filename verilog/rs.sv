@@ -311,11 +311,8 @@ module RS #(
         if (issued_br.valid) begin
             next_num_entries--;
         end
-        for (int i = 0; i < N; i++) begin
-            if (rs_in[i].valid) begin
-                next_num_entries++;
-            end
-        end
+        
+        next_num_entries += num_accept;
     end
 
     always_ff @(posedge clock) begin
