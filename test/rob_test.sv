@@ -25,6 +25,8 @@ module ROB_tb();
     ROB_ENTRY_PACKET [N-1:0]               retiring_data;
     logic            [$clog2(DEPTH+1)-1:0] open_entries;
     logic            [$clog2(N+1)-1:0]     num_retired;
+    logic            [$clog2(DEPTH)-1:0]   br_tail = '0;
+    logic                                  br_en = '0;
 
     `ifdef DEBUG
         ROB_ENTRY_PACKET [DEPTH-1:0]     entry_data;
@@ -48,6 +50,8 @@ module ROB_tb();
         .wr_data(wr_data),
         .complete_t(complete_t),
         .num_accept(num_accept),
+        .br_tail(br_tail),
+        .br_en(br_en),
 
         .retiring_data(retiring_data),
         .open_entries(open_entries),
