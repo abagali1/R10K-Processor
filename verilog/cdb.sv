@@ -1,7 +1,8 @@
 `include "sys_defs.svh"
 
 typedef struct packed {
-    PHYS_REG_IDX reg_idx;
+    REG_IDX reg_idx;
+    PHYS_REG_IDX p_reg_idx;
     DATA reg_val;
     logic valid;
 } CDB_PACKET;
@@ -23,7 +24,6 @@ module CDB #(
     logic [NUM_FU-1:0] cdb_gnt;
     logic [N-1:0][NUM_FU-1:0] cdb_gnt_bus;
 
-    assign num_req = (br_done) ? N-1 : N;
     assign stall_sig = ~cdb_gnt;
 
     psel_gen #(
@@ -50,7 +50,8 @@ module CDB #(
     always_comb begin
         for (int i = 0; i < N; i++) begin
             entries[i].reg_idx = selected_packets[i].reg_idx;
-            entries[i].reg_val = selected_packets[i].reg_idx;
+            entries[i].p_reg_idx = selected_packets[i].p_reg_idx;
+            entries[i].reg_val = selected_packets[i].reg_val;
             entries[i].valid = (selected_packets[i]) ? 1 : 0;
         end
     end
