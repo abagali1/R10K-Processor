@@ -12,11 +12,14 @@ module free_list #(
     input                   [$clog2(N+1)-1:0]    wr_num,  // number of regs to add back to the free list
     input FREE_LIST_PACKET  [N-1:0]              wr_reg,  // reg idxs to add to free list
     input logic                                  br_en,  // enable signal for EBR
-    input FREE_LIST_PACKET  [DEPTH-1:0]          br_fl,  // free list copy for EBR
+    input logic   [$clog2(DEPTH+1)-1:0]          head_ptr_in,  // free list copy for EBR
+
+    // save head pointer and tail pointer, instead of free list copy
 
     output FREE_LIST_PACKET [N-1:0]             rd_reg,   // displayed available reg idxs, these are always output, and only updated based on rd_num
     output FREE_LIST_PACKET [DEPTH-1:0]         out_fl,   // free list to output
-    output logic            [$clog2(DEPTH+1)-1:0] num_avail // broadcasting number of regs available
+    output logic            [$clog2(DEPTH+1)-1:0] num_avail, // broadcasting number of regs available
+    output logic            [$clog2(DEPTH+1)-1:0] head_ptr
 
     `ifdef DEBUG
     , output logic [$clog2(DEPTH)-1:0] debug_head,
@@ -32,37 +35,36 @@ module free_list #(
     logic [$clog2(DEPTH+1)-1:0] num_entries, next_num_entries;
 
     FREE_LIST_PACKET [DEPTH-1:0] entries, next_entries;
-
-    assign next_head = (head + rd_num) % DEPTH;
-    assign next_tail = (tail + wr_num) % DEPTH; 
-    assign num_avail = num_entries + wr_num;
-    assign min = (N < rd_num) ? N : rd_num; // does there need to be signal out to indicate that not all of rd_num has been read?
-
-    // thinking:
-        // the actual freelist needs to have a head and tail wrap around to keep it within the physical restrains of the free list
-        // the model freelist can just treat the top of the model as the head? and the last element as the tail?
+ 
+    assign num_avail = num_entries + wr_num; // only dependent on what is being written in, not what is being read out
 
     always_comb begin
         rd_reg = '0;
-        next_entries = (br_en) ? br_fl : entries;
+        next_entries = entries;
         out_fl = entries;
         next_num_entries = num_entries + wr_num - rd_num;
 
-        for (int i = 0; i < wr_num; i++) begin
-            next_entries[(tail +  i) % DEPTH] = wr_reg[i];
-        end
+        next_head = (br_en) ? head_ptr_in : head;
+        next_tail = (tail + wr_num) % DEPTH;
 
-        for (int i = 0; i < min; i++) begin
-            if (next_entries[(head + i) % DEPTH].valid) begin
-                rd_reg[i] = next_entries[(head + i) % DEPTH];
-                next_entries[(head + i) % DEPTH] = 0; 
+        for (int i = 0; i < N; i++) begin
+            if (i < rd_num) begin
+                rd_reg[i] = next_entries[(next_head + i) % DEPTH];
             end
         end
 
+        for (int i = 0; i < N; i++) begin
+            if (i < wr_num) begin
+                next_entries[(tail +  i) % DEPTH] = wr_reg[i];
+            end
+        end
+        
         `ifdef DEBUG
-            debug_head = head;
+            debug_head = next_head;
             debug_tail = tail;
         `endif
+
+        next_head = (next_head + rd_num) % DEPTH;
     end
 
     always @(posedge clock) begin
