@@ -1,4 +1,5 @@
 `include "sys_defs.svh"
+`include "psel_gen.sv"
 
 typedef struct packed {
     REG_IDX reg_idx;
@@ -7,18 +8,26 @@ typedef struct packed {
     logic valid;
 } CDB_PACKET;
 
+typedef struct packed {
+    REG_IDX reg_idx;
+    PHYS_REG_IDX p_reg_idx;
+    DATA reg_val;
+    logic valid;
+} FU_PACKET;
+
+
 module CDB #(
-    parameter N = `N
+    parameter N = `N,
+    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE + `NUM_FU_BR
 )
 (
     input logic         [NUM_FU-1:0] fu_done,
     input FU_PACKET     [NUM_FU-1:0] wr_data,
 
-    output CDB_PACKET   [N-1:0]      entries;
-    output logic        [NUM_FU-1:0] stall_sig;          
+    output CDB_PACKET   [N-1:0]      entries,
+    output logic        [NUM_FU-1:0] stall_sig         
 
 );
-    localparam NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE + `NUM_FU_BR;
     localparam FU_PACKET_WIDTH = $bits(wr_data[0]);
 
     logic [NUM_FU-1:0] cdb_gnt;
