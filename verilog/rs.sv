@@ -24,24 +24,24 @@ module RS #(
     input logic                     [`NUM_FU_STORE-1:0]            fu_store_busy,
     input logic                     [`NUM_FU_BR-1:0]               fu_br_busy, 
 
-    output logic                    [$clog2(N+1)-1:0]              num_accept,
+    input logic                     [$clog2(N+1)-1:0]              num_accept,
 
     // output packets directly to FUs (they all are pipelined)
     output RS_PACKET                [`NUM_FU_ALU-1:0]              issued_alu, 
     output RS_PACKET                [`NUM_FU_MULT-1:0]             issued_mult,
     output RS_PACKET                [`NUM_FU_LD-1:0]               issued_ld,
     output RS_PACKET                [`NUM_FU_STORE-1:0]            issued_store,
-    output RS_PACKET                                               issued_br,
+    output RS_PACKET                [`NUM_FU_BR-1:0]               issued_br,
 
     output logic                    [$clog2(DEPTH+1)-1:0]          open_entries
 
     `ifdef DEBUG
-    ,   output ROB_ENTRY_PACKET [DEPTH-1:0] debug_entries
+    ,   output RS_PACKET [DEPTH-1:0] debug_entries
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
-    logic [DEPTH-1:0] open_spots, next_open_spots;
+    logic [DEPTH-1:0] open_spots, next_open_spots, other_sig;
     wor [DEPTH-1:0] all_issued_insts; // also keeps track of position of instructions being issued w.r.t RS entries
 
     RS_PACKET [DEPTH-1:0] entries, next_entries;
@@ -68,6 +68,10 @@ module RS #(
     logic [$clog2(`NUM_FU_BR+1)-1:0] num_br_issued;
 
     assign open_entries = DEPTH - num_entries;
+
+    `ifdef DEBUG
+        assign debug_entries = entries;
+    `endif
 
     rs_psel #(
         .DEPTH(DEPTH),
@@ -133,7 +137,7 @@ module RS #(
         .WIDTH(DEPTH),
         .REQS(N))
     inst_psel (
-        .req(next_open_spots),
+        .req(other_sig),
         .gnt(),
         .gnt_bus(dis_entries_bus),
         .empty()
@@ -171,7 +175,9 @@ module RS #(
     always_comb begin
         next_entries = entries;
         next_num_entries = num_entries;
-        next_open_spots = open_spots | all_issued_insts;
+        //next_open_spots = open_spots | all_issued_insts;
+
+        other_sig = open_spots | all_issued_insts;
 
         // Marks entry tags as ready (parallelized)
         for (int i = 0; i < N; i++) begin
@@ -194,7 +200,7 @@ module RS #(
             for (int i = 0; i < DEPTH; i++) begin
                 if ((entries[i].b_mask & br_id) != 0) begin
                     next_entries[i] = 0;
-                    next_open_spots[i] = 1;
+                    other_sig[i] = 1;
                     next_num_entries--;
                 end
             end
@@ -208,8 +214,8 @@ module RS #(
         end
 
         // sets all issued entries to be empty
-        next_entries = next_entries & ~next_open_spots; // sussy, next_entries is of type RS_PACKET but next_open_spots is logic
-
+        next_entries = next_entries & ~other_sig; // sussy, next_entries is of type RS_PACKET but next_open_spots is logic
+        next_open_spots = other_sig; 
         // Reads in new entries (parallelized)
         for (int i = 0; i < N; ++i) begin
             if (rs_in[i].valid && dis_entries_bus[i]) begin

@@ -71,7 +71,7 @@ module ROB_tb();
 
     initial begin
         $display("\nStart Testbench");
-        
+
         clock = 0;
         reset = 1;
         num_accept = 0;
