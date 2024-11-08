@@ -407,5 +407,11 @@ typedef struct packed {
     logic valid;
 } FREE_LIST_PACKET;
 
+typedef struct packed {
+    PHYS_REG_IDX reg_idx;
+    logic valid;
+    logic ready;
+} MAP_TABLE_PACKET;
+
 
 `endif // __SYS_DEFS_SVH__
