@@ -12,7 +12,7 @@ typedef struct packed {
 } CHECKPOINT;
 
 module BR_STACK #(
-    parameter DEPTH = 32,
+    parameter DEPTH = `BRANCH_PRED_SZ,
     parameter N = `N
 )(
     input                                                               clock,
@@ -27,26 +27,26 @@ module BR_STACK #(
     input CDB_PACKET                [N-1:0]                             cdb_in,
     
     input BR_TASK                                                       br_task,
-    input logic                     [`BRANCH_PRED_SZ-1:0]               rem_b_id, // b_id to remove
+    input logic                     [DEPTH-1:0]               rem_b_id, // b_id to remove
     
     
     output CHECKPOINT                                                   cp_out,
     output logic                                                        full
 );
 
-    CHECKPOINT [`BRANCH_PRED_SZ-1:0] entries;
-    CHECKPOINT [`BRANCH_PRED_SZ-1:0] next_entries;
+    CHECKPOINT [DEPTH-1:0] entries;
+    CHECKPOINT [DEPTH-1:0] next_entries;
 
-    logic [`BRANCH_PRED_SZ-1:0] free_entries;
-    logic [`BRANCH_PRED_SZ-1:0] next_free_entries;
+    logic [DEPTH-1:0] free_entries;
+    logic [DEPTH-1:0] next_free_entries;
     
-    logic [`BRANCH_PRED_SZ-1:0] stack_gnt;
+    logic [DEPTH-1:0] stack_gnt;
 
     psel_gen #(
-        .WIDTH(`BRANCH_PRED_SZ),
+        .WIDTH(DEPTH),
         .REQS(1)
     ) stack (
-        .req(free_entries), // maybe next_free_entries
+        .req(free_entries),
         .gnt(stack_gnt),
         .gnt_bus(),
         .empty()
@@ -64,7 +64,7 @@ module BR_STACK #(
 
         // Branch clear or branch squash
         if (br_task == SQUASH) begin
-            for (int i = 0; i < `BRANCH_PRED_SZ; i++) begin
+            for (int i = 0; i < DEPTH; i++) begin
                 if (entries[i].b_id == rem_b_id) begin
                     cp_out = entries[i];
                 end
@@ -76,7 +76,7 @@ module BR_STACK #(
         end 
 
         if (br_task == CLEAR) begin
-            for (int i = 0; i < `BRANCH_PRED_SZ; i++) begin
+            for (int i = 0; i < DEPTH; i++) begin
                 // the following also might be an issue
                 // i am setting next_entries[i] twice in the case that b_id == rem_b_id and that is sus
                 if (entries[i].b_id == rem_b_id) begin
@@ -90,7 +90,7 @@ module BR_STACK #(
 
         // Set checkpoint
         if (valid_assign) begin
-            for (int k = 0; k < `BRANCH_PRED_SZ; k++) begin
+            for (int k = 0; k < DEPTH; k++) begin
                 if (stack_gnt[k]) begin
                     next_entries[k].valid = 1;
                     next_entries[k].b_id = stack_gnt;
@@ -99,7 +99,7 @@ module BR_STACK #(
                     next_entries[k].fl_head = in_fl_head;
                     next_entries[k].rob_tail = in_rob_tail;
 
-                    for (int i = 0; i < `BRANCH_PRED_SZ; i++) begin
+                    for (int i = 0; i < DEPTH; i++) begin
                         next_entries[k].b_mask |= next_entries[k + i].b_id;
                     end
 
@@ -110,7 +110,7 @@ module BR_STACK #(
 
         // Set ready bit for everything in the map table
         for (int i = 0; i < N; i++) begin
-            for (int j = 0; j < `BRANCH_PRED_SZ; j++) begin
+            for (int j = 0; j < DEPTH; j++) begin
                 if (cdb_in[i].p_reg_idx == entries[j].rec_mt[cdb_in[i].reg_idx]) begin
                     next_entries[j].rec_mt[cdb_in[i].reg_idx].ready = 1;
                 end
