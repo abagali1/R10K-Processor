@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs freelist
+MODULES = cpu mult rob rs freelist map_table
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
@@ -259,17 +259,6 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/mult.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
-synth/cpu.vg: $(CPU_SOURCES) $(CPU_HEADERS)
-build/cpu.syn.simv: $(CPU_TESTBENCH)
-# Don't need coverage for the CPU
-
-# Connect the simv and syn_simv targets for the autograder
-simv: build/cpu.simv ;
-syn_simv: build/cpu.syn.simv ;
-
-# You shouldn't need to change things below here
-
-#####################
 # ---- Running ---- #
 #####################
 
