@@ -409,8 +409,8 @@ typedef struct packed {
 
 typedef struct packed {
     PHYS_REG_IDX reg_idx;
-    logic valid;
     logic ready;
+    logic valid;
 } MAP_TABLE_PACKET;
 
 
