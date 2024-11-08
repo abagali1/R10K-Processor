@@ -1,16 +1,6 @@
 `include "sys_defs.svh"
 `include "psel_gen.sv"
 
-typedef struct packed {
-    logic valid;
-    logic [`BRANCH_PRED_SZ-1:0] b_id;
-    logic [`BRANCH_PRED_SZ-1:0] b_mask;
-    ADDR rec_PC;
-    MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] rec_mt;
-    logic [$clog2(`ROB_SZ+1)-1:0] fl_head;
-    logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] rob_tail;
-} CHECKPOINT;
-
 module BR_STACK #(
     parameter DEPTH = `BRANCH_PRED_SZ,
     parameter N = `N
@@ -26,7 +16,7 @@ module BR_STACK #(
     
     input CDB_PACKET                [N-1:0]                             cdb_in,
     
-    input BR_TASK                                                       br_task,
+    input BR_TASK                                                       br_task, // not defined here. in main sysdefs
     input logic                     [DEPTH-1:0]               rem_b_id, // b_id to remove
     
     
@@ -37,7 +27,9 @@ module BR_STACK #(
     CHECKPOINT [DEPTH-1:0] entries;
     CHECKPOINT [DEPTH-1:0] next_entries;
 
-    logic [DEPTH-1:0] free_entries;
+
+    // why is this DEPTH and not log(DEPTH) - free entries is a number?
+    logic [DEPTH-1:0] free_entries; // bit map of whether an entry is free (1 if free)
     logic [DEPTH-1:0] next_free_entries;
     
     logic [DEPTH-1:0] stack_gnt;
@@ -52,6 +44,7 @@ module BR_STACK #(
         .empty()
     );
 
+    // WE DO NOTHING IF FULL
     assign full = free_entries == 0;
 
     always_comb begin
@@ -70,18 +63,16 @@ module BR_STACK #(
                 end
                 if (entries[i].b_mask & rem_b_id) begin
                     next_entries[i] = '0;
-                    next_free_entries[i] = 0;
+                    next_free_entries[i] = 1;
                 end
             end
         end 
 
         if (br_task == CLEAR) begin
             for (int i = 0; i < DEPTH; i++) begin
-                // the following also might be an issue
-                // i am setting next_entries[i] twice in the case that b_id == rem_b_id and that is sus
                 if (entries[i].b_id == rem_b_id) begin
                     next_entries[i] = '0;
-                    next_free_entries[i] = 0;
+                    next_free_entries[i] = 1;
                 end else if (entries[i].b_mask & rem_b_id) begin
                     next_entries[i].b_mask &= ~rem_b_id;
                 end
