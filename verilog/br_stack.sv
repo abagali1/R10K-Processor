@@ -46,13 +46,13 @@ module BR_STACK #(
         .WIDTH(`BRANCH_PRED_SZ),
         .REQS(1)
     ) stack (
-        .req(free_entries),
+        .req(free_entries), // maybe next_free_entries
         .gnt(stack_gnt),
         .gnt_bus(),
         .empty()
     );
 
-    assign full = next_free_entries == 0;
+    assign full = free_entries == 0;
 
     always_comb begin
         next_entries = entries;
@@ -82,8 +82,7 @@ module BR_STACK #(
                 if (entries[i].b_id == rem_b_id) begin
                     next_entries[i] = '0;
                     next_free_entries[i] = 0;
-                end
-                if (entries[i].b_mask & rem_b_id) begin
+                end else if (entries[i].b_mask & rem_b_id) begin
                     next_entries[i].b_mask &= ~rem_b_id;
                 end
             end
