@@ -23,8 +23,8 @@ module map_table #(
 
 
     output PHYS_REG_IDX             [N-1:0]             t_old_data, //?
-    output PHYS_REG_IDX             [N-1:0]             r1_p_reg,
-    output PHYS_REG_IDX             [N-1:0]             r2_p_reg,
+    output MAP_TABLE_PACKET         [N-1:0]             r1_p_reg,
+    output MAP_TABLE_PACKET         [N-1:0]             r2_p_reg,
     
     output MAP_TABLE_PACKET         [DEPTH:0]           out_mt // output map table for architectural mt
 );
@@ -34,9 +34,9 @@ module map_table #(
 
     always_comb begin
         next_entries = (in_mt_en) ? in_mt : entries;
-        t_old_data = 0;
-        r1_p_reg = 0;
-        r2_p_reg = 0;
+        t_old_data = '0;
+        r1_p_reg = '0;
+        r2_p_reg = '0;
 
         // check that the arch reg hasn't been mapped to a new register
         // Set ready bits
@@ -50,8 +50,8 @@ module map_table #(
             if (incoming_valid[i]) begin
                 // read registers
                 t_old_data[i] = next_entries[dest_reg_idx[i]].reg_idx;
-                r1_p_reg[i] = next_entries[r1_idx[i]].reg_idx;
-                r2_p_reg[i] = next_entries[r2_idx[i]].reg_idx;
+                r1_p_reg[i] = next_entries[r1_idx[i]];
+                r2_p_reg[i] = next_entries[r2_idx[i]];
 
                 // write registers back as we read them
                 next_entries[dest_reg_idx[i]].reg_idx = free_reg[i];
