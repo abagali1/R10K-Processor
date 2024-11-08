@@ -117,8 +117,8 @@ module freelist_tb();
         // ------------------------------ Test 3 ------------------------------ //
         $display("\nTest 3: Check One Entry Written Back");
         
-        entry_one = '{reg_idx: 35, valid: 1};
-        entry_random = '{reg_idx: 35, valid: 1};
+        entry_one = '{reg_idx: 32, valid: 1};
+        entry_random = '{reg_idx: 33, valid: 1};
         pr_list[0] = entry_one;
         pr_list[1] = entry_random;
 
@@ -140,8 +140,9 @@ module freelist_tb();
         reset = 0;
 
         //free_list_model.pop_front();
-        pop_n_from_free_list(1);
+        pop_n_from_free_list(DEPTH);
         add_prs_to_free_list(pr_list, 1);
+        pop_n_from_free_list(1);
         @(negedge clock);
 
         clear_inputs();
@@ -149,8 +150,18 @@ module freelist_tb();
     
         $display("PASSED TEST 4");
 
+        // some thoughts to myself bc i am dumb
+        // write comes before read, bc we will not have the situation where we want to read something off and then write it back right after while it is full
+        // that don't make sense- instead, if it's empty i want to write first so i can read
+        // so in order to test writing and reading at the same time, start empty and then try writing and reading at the same time :D
+
         // ------------------------------ Test 5 ------------------------------ //
         $display("\nTest 5: Empty Out Free List and Add One Back ");
+
+        reset_free_list();
+        reset = 1;
+        @(negedge clock);
+        reset = 0;
 
         pop_n_from_free_list(DEPTH);
         add_prs_to_free_list(pr_list, 1);
