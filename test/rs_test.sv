@@ -46,6 +46,9 @@ module RS_tb();
 
     `ifdef DEBUG
         RS_PACKET [DEPTH-1:0] debug_entries;
+        logic     [DEPTH-1:0] debug_open_spots;
+        logic     [DEPTH-1:0] debug_other_sig;
+        logic     [N-1:0][DEPTH-1:0] debug_dis_entries_bus;
     `endif
 
     RS_PACKET model_rs[$:(DEPTH)] = '{DEPTH{0}};
@@ -83,7 +86,7 @@ module RS_tb();
         generate_alu_ops(N);
         @(negedge clock);
         clear_inputs();
-        fu_alu_busy = '1;
+        // fu_alu_busy = '1;
 
         @(negedge clock);
 
@@ -117,7 +120,7 @@ module RS_tb();
     function void model_rs_insert(RS_PACKET in);
         for(int i=0;i<DEPTH;i++) begin
             if(!model_rs[i].valid) begin
-                $display("inserting at %d", i);
+                $display("inserting [(%b) (%02d)] at %d", in.valid, in.t.reg_idx, i);
                 model_rs[i] = in;
                 return;
             end
@@ -139,26 +142,33 @@ module RS_tb();
         return count;
     endfunction
 
-    function void model_rs_print();
-        $display("Model RS Entries");
-        $display("\t#\t|\tvalid\t|   dest_idx    |\tt1\t|\tt2\t|\tb_mask\t|\tfu_type\t|");
-        for(int i=0;i<DEPTH;i++) begin
-            //          idx       valid    dest    t1        t2     bmask      op
-            $display("\t%02d\t|\t%01d\t|\t%02d\t|\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, model_rs[i].valid, model_rs[i].t.reg_idx, model_rs[i].t1.reg_idx, model_rs[i].t2.reg_idx, model_rs[i].b_mask, model_rs[i].fu_type);
-        end
+    function int model_rs_open_entries();
+        return DEPTH-model_rs_count();
     endfunction
 
     function void model_rs_update();
-        int num_alu;
+        int num_alu_ready, num_alu_issued, fu_issued_idx;
+        RS_PACKET issued_packet;
+
         issued_alu_buffer = {};
-        num_alu = `NUM_FU_ALU - $countones(fu_alu_busy);
-        $display("num_alu %d %d %b", num_alu, $countones(fu_alu_busy), fu_alu_busy);
+        num_alu_issued = 0;
+
+        num_alu_ready = `NUM_FU_ALU - $countones(fu_alu_busy);
+
+        $display("num_alu %d %d %b", num_alu_ready, $countones(fu_alu_busy), fu_alu_busy);
         for(int i=0;i<DEPTH;i++) begin
             if(model_rs[i].valid & model_rs[i].t1.ready & model_rs[i].t2.ready) begin
-                if(num_alu > 0) begin
-                    issued_alu_buffer.push_back(model_rs[i]);
+                if(num_alu_ready > 0) begin
+                    issued_packet = model_rs[i];
                     model_rs_delete(i);
-                    num_alu--;
+
+                    if(num_alu_issued % 2 == 0) begin
+                        fu_issued_idx = msb(~fu_alu_busy);
+                    end else begin
+                        fu_issued_idx = lsb(~fu_alu_busy);
+                    end
+                    num_alu_ready--;
+                    num_alu_issued++;
                 end
             end
         end
@@ -167,7 +177,7 @@ module RS_tb();
     function void generate_alu_ops(int num);
         RS_PACKET inst;
         for(int i=0;i<num;i++) begin
-            inst.t  = '{reg_idx: 0, valid: 1};
+            inst.t  = '{reg_idx: i, valid: 1};
             inst.t1 = '{reg_idx: 0, valid: 1, ready: 1};
             inst.t2 = '{reg_idx: 0, valid: 1, ready: 1};
             inst.b_mask = '0;
@@ -181,7 +191,7 @@ module RS_tb();
 
     function void dispatch_no_br();
         int num_insts_avail, num_rs_avail;
-        num_rs_avail = DEPTH - model_rs_count();
+        num_rs_avail = model_rs_open_entries();
         num_insts_avail = decoded_inst_buffer.size();
 
         num_accept = N < num_insts_avail 
@@ -194,6 +204,65 @@ module RS_tb();
         end
     endfunction
 
+    function print_issue_signal();
+        $display("RS Issued Signal");
+        $display("\t#\t|\tvalid\t|   dest_idx    |\tt1\t|\tt2\t|    b_mask\t|    fu_type\t|");
+        for(int i=0;i<`NUM_FU_ALU;i++) begin
+            $display("\t%02d\t|\t%01d\t|\t%02d\t|\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu[i].valid, issued_alu[i].t.reg_idx, issued_alu[i].t1.reg_idx, issued_alu[i].t2.reg_idx, issued_alu[i].b_mask, issued_alu[i].fu_type);
+        end
+    endfunction
+
+    function void rs_print();
+        $write("Model RS Entries (%02d)", model_rs_open_entries());
+        `ifdef DEBUG
+            $write("\t\t\t\t\t\t\t\t\t\t\t\t\t  RS Entries (open_entries: %02d) (open_spots: %b) (other_sig: %b)", open_entries, debug_open_spots, debug_other_sig);
+        `endif
+        $write("\n");
+
+        $write("\t#\t|     valid\t|    dest_idx    |\tt1\t|\tt2\t|     b_mask\t|    fu_type\t|");
+        `ifdef DEBUG
+            $write("\t");
+            $write("\t#\t|     valid\t|    dest_idx    |\tt1\t|\tt2\t|     b_mask\t|    fu_type\t|\n");
+        `endif
+        $write("\n");
+
+        for(int i=0;i<DEPTH;i++) begin
+            //          idx       valid    dest    t1        t2     bmask      op
+            $write("\t%02d\t|\t%01d\t|\t%02d\t|\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, model_rs[i].valid, model_rs[i].t.reg_idx, model_rs[i].t1.reg_idx, model_rs[i].t2.reg_idx, model_rs[i].b_mask, model_rs[i].fu_type);
+            $write("\t");
+            $write("\t%02d\t|\t%01d\t|\t%02d\t|\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, debug_entries[i].valid, debug_entries[i].t.reg_idx, debug_entries[i].t1.reg_idx, debug_entries[i].t2.reg_idx, debug_entries[i].b_mask, debug_entries[i].fu_type);
+            $write("\n");
+        end
+
+        `ifdef DEBUG
+            $display("Dispatching Entries Bus");
+            for(int i=0;i<N;i++) begin
+                $write("[%b] [(%b) (%02d)]", debug_dis_entries_bus[i], rs_in[i].valid, rs_in[i].t.reg_idx);
+                if(rs_in[i].valid && debug_dis_entries_bus[i]) begin
+                    $write(" truthy!");
+                end
+                $write("\n");
+            end
+            $display();
+        `endif
+    endfunction
+
+    function msb(int value);
+        for(int i=$bits(value)-1;i>=0;i--) begin
+            if(value[i]) begin
+                return i;
+            end
+        end
+    endfunction
+
+    function lsb(int value);
+        for(int i=0;i<$bits(value);i++) begin
+            if(value[i]) begin
+                return i;
+            end
+        end
+    endfunction
+
     // Monitoring Statements
     int cycle_number = 0;
     always @(posedge clock) begin
@@ -201,7 +270,9 @@ module RS_tb();
         $display("@@@ Cycle Number: %0d @@@", cycle_number);
         $display("   Time: %0t", $time);
         $display("   Reset: %0d\n", reset);
-        model_rs_print();
+        rs_print();
+
+        // print_issue_signal();
         cycle_number++;
     end
 
