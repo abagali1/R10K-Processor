@@ -211,6 +211,7 @@ module stage_id (
     assign id_packet.dest_reg_idx = (has_dest_reg) ? if_id_reg.inst.r.rd : `ZERO_REG;
 
     // Instantiate the register file
+    // TODO This should be in issue
     regfile regfile_0 (
         .clock  (clock),
         .read_idx_1 (if_id_reg.inst.r.rs1),
