@@ -44,7 +44,7 @@ module map_table_tb();
     MAP_TABLE_PACKET    [DEPTH:0]           out_mt; // output map table for architectural mt
 
     MAP_TABLE_PACKET [DEPTH:0] mt_model;
-    PHYS_REG_IDX free_list_model [$:(DEPTH)];
+    PHYS_REG_IDX free_list_model [$:(DEPTH*2)];
     TEST_INST inst_buf [$:((DEPTH)*2)];
     TEST_READY ready_buf [$:((DEPTH)*2)];
 
@@ -79,10 +79,6 @@ module map_table_tb();
         #(`CLOCK_PERIOD/2.0);
         clock = ~clock;
     end
-
-    // TEST 5 Variables
-    TEST_INST inst1, inst2;
-    PHYS_REG_IDX fl1, fl2;
 
     initial begin
         $display("\nStart Testbench");
@@ -151,60 +147,26 @@ module map_table_tb();
             clear_inputs();
             set_ready(N);
         end
+        @(negedge clock);
+        clear_inputs();
 
         $display("PASSED TEST 4");
 
-        if (N > 1) begin
-            // ------------------------------ Test 5 ------------------------------ //
-            
-            $display("\nTest 5: Read/Write Dependent Instructions");
-            generate_dependent_insts(2); // both insts are r1 = r1 + r1
-
-            r1_p_reg_model = '0;
-            r2_p_reg_model = '0;
-            t_old_data_model = '0;
-
-            inst1 = inst_buf[0];
-            inst2 = inst_buf[1];
-            fl1 = free_list_model[0];
-            fl2 = free_list_model[1];
-
-            r1_p_reg_model[0] = mt_model[inst1.r1];
-            r2_p_reg_model[0] = mt_model[inst1.r2];
-            t_old_data_model[0] = mt_model[inst1.dr];
-
-            r1_p_reg_model[1] = fl1;
-            r2_p_reg_model[1] = fl1;
-            t_old_data_model[1] = fl1;
-
-            set_insts(2);
-            @(negedge clock);
-            clear_inputs();
-
-            if (t_old_data_model !== t_old_data) begin
-                $error("@@@ FAILED @@@");
-                $error("Test Error: Model t_old_data mismatch, expected:");
-                for (int i = 0; i < N; i++) begin
-                    $display("   [%0d] but got [%0d]", t_old_data_model[i], t_old_data[i]);
-                end
-                $finish;
-            end
-            if (r1_p_reg_model !== r1_p_reg) begin
-                $error("@@@ FAILED @@@");
-                $error("Test Error: Model r1_p_reg mismatch, expected [%0d] but got [%0d]", r1_p_reg_model, r1_p_reg);
-                $finish;
-            end
-            if (r2_p_reg_model !== r2_p_reg) begin
-                $error("@@@ FAILED @@@");
-                $error("Test Error: Model r2_p_reg mismatch, expected [%0d] but got [%0d]", r2_p_reg_model, r2_p_reg);
-                $finish;
-            end
-
-            $display("PASSED TEST 5");
-        end
+        // ------------------------------ Test 5 ------------------------------ //
         
+        $display("\nTest 5: Read/Write Dependent Instructions");
+        generate_dependent_insts(N); // all insts are r1 = r1 + r1
 
+        set_insts(N);
+        @(negedge clock);
+        clear_inputs();
 
+        set_ready(N);
+        @(negedge clock);
+        clear_inputs();
+
+        $display("PASSED TEST 5");
+        
 
         $display("@@@ PASSED ALL TESTS @@@");
         $finish;
@@ -215,8 +177,16 @@ module map_table_tb();
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
         if (reset === 0) begin
+            check_output();
             check_mt();
             add_to_fl();
+        end
+    end
+
+    always @(negedge clock) begin
+        #(`CLOCK_PERIOD * 0.2);
+        if (reset === 0) begin
+            set_dependent_outputs();
         end
     end
 
@@ -279,15 +249,15 @@ module map_table_tb();
         //$display("INST SIZE: %0d", num);
         for (int i = 0; i < num; i++) begin
             inst = inst_buf.pop_front();
-            free_reg[i] = free_list_model[0];
-            ready_buf.push_back('{arch_idx: inst.dr, phys_idx: free_list_model[0]});
+            free_reg[i] = free_list_model[i];
+            ready_buf.push_back('{arch_idx: inst.dr, phys_idx: free_list_model[i]});
 
             r1_idx[i] = inst.r1;
             r2_idx[i] = inst.r2;
             dest_reg_idx[i] = inst.dr;
             incoming_valid[i] = 1;
 
-            mt_model[inst.dr] = '{free_list_model.pop_front(), 0, 1};
+            mt_model[inst.dr] = '{free_list_model[i], 0, 1};
         end
     endfunction
 
@@ -334,6 +304,45 @@ module map_table_tb();
                 free_list_model.push_back(i);
             end
             i++;
+        end
+    endfunction
+    
+    function void set_dependent_outputs();
+        r1_p_reg_model = '0;
+        r2_p_reg_model = '0;
+        t_old_data_model = '0;
+
+        for (int i = 0; i < N; i++) begin
+            if (incoming_valid[i]) begin
+                r1_p_reg_model[i] = mt_model[r1_idx[i]];
+                r2_p_reg_model[i] = mt_model[r2_idx[i]];
+                t_old_data_model[i] = mt_model[dest_reg_idx[i]].reg_idx;
+
+                mt_model[dest_reg_idx[i]].reg_idx = free_list_model.pop_front();
+                mt_model[dest_reg_idx[i]].ready = 0;
+                mt_model[dest_reg_idx[i]].valid = 1;
+            end
+        end
+    endfunction
+
+    function void check_output();
+        if (t_old_data_model !== t_old_data) begin
+            $error("@@@ FAILED @@@");
+            $error("Test Error: Model t_old_data mismatch, expected:");
+            for (int i = 0; i < N; i++) begin
+                $display("  i=[%0d] reg=[%0d] but got reg=[%0d]", i, t_old_data_model[i], t_old_data[i]);
+            end
+            $finish;
+        end
+        if (r1_p_reg_model !== r1_p_reg) begin
+            $error("@@@ FAILED @@@");
+            $error("Test Error: Model r1_p_reg mismatch, expected [%0d] but got [%0d]", r1_p_reg_model, r1_p_reg);
+            $finish;
+        end
+        if (r2_p_reg_model !== r2_p_reg) begin
+            $error("@@@ FAILED @@@");
+            $error("Test Error: Model r2_p_reg mismatch, expected [%0d] but got [%0d]", r2_p_reg_model, r2_p_reg);
+            $finish;
         end
     endfunction
 
