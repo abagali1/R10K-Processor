@@ -12,14 +12,17 @@
 // P4 TODO: update this with the new parameters from sys_defs
 // namely: PHYS_REG_SZ_P6 or PHYS_REG_SZ_R10K
 
-module regfile (
+module regfile #(
+    parameter DEPTH = `PHYS_REG_SIZE_R10K,
+    parameter N = `N
+)(
     input         clock, // system clock
     // note: no system reset, register values must be written before they can be read
-    input REG_IDX read_idx_1, read_idx_2, write_idx,
-    input         write_en,
-    input DATA    write_data,
+    input [N-1:0] REG_IDX read_idx_1, read_idx_2, write_idx,
+    input                 write_en,
+    input [N-1:0] DATA    write_data,
 
-    output DATA   read_out_1, read_out_2
+    output [N-1:0] DATA   read_out_1, read_out_2
 );
 
     // Intermediate data before accounting for register 0
@@ -33,8 +36,8 @@ module regfile (
     // easier and avoid having to subtract 1 from all addresses
     memDP #(
         .WIDTH     ($bits(DATA)), // 32-bit registers
-        .DEPTH     (32),
-        .READ_PORTS(2), // 2 read ports
+        .DEPTH     (DEPTH),
+        .READ_PORTS(N), // 2 read ports
         .BYPASS_EN (1)) // Allow internal forwarding
     regfile_mem (
         .clock(clock),
