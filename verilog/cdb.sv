@@ -21,14 +21,20 @@ module CDB #(
     parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE + `NUM_FU_BR
 )
 (
+    input logic                      clock,
+    input logic                      reset,
+
     input logic         [NUM_FU-1:0] fu_done,
     input FU_PACKET     [NUM_FU-1:0] wr_data,
 
     output CDB_PACKET   [N-1:0]      entries,
-    output logic        [NUM_FU-1:0] stall_sig         
+    output logic        [NUM_FU-1:0] stall_sig   
 
+    `ifdef DEBUG
+    ,   output logic [NUM_FU-1:0] debug_cdb_gnt,
+        output logic [N-1:0][NUM_FU-1:0] debug_cdb_gnt_bus
+    `endif   
 );
-    localparam FU_PACKET_WIDTH = $bits(wr_data[0]);
 
     logic [NUM_FU-1:0] cdb_gnt;
     logic [N-1:0][NUM_FU-1:0] cdb_gnt_bus;
@@ -39,13 +45,13 @@ module CDB #(
         .WIDTH(NUM_FU),
         .REQS(N)) 
     cdb_arb (
-        .req(fu_done),
+        .req(fu_done), // why is fu_done? is this not how many request signals we allow?
         .gnt(cdb_gnt),
         .gnt_bus(cdb_gnt_bus),
         .empty()
     );
 
-    wor FU_PACKET [N-1:0] selected_packets;
+    wor FU_PACKET [N-1:0] selected_packets; // need a little more explanation on this
 
     generate
         genvar i, j;
@@ -63,6 +69,11 @@ module CDB #(
             entries[i].reg_val = selected_packets[i].reg_val;
             entries[i].valid = (selected_packets[i]) ? 1 : 0;
         end
+
+         `ifdef DEBUG
+            debug_cdb_gnt = cdb_gnt;
+            debug_cdb_gnt_bus = cdb_gnt_bus;
+        `endif
     end
 
 endmodule
