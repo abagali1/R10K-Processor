@@ -456,6 +456,12 @@ typedef struct packed {
     logic    valid;
 } RS_PACKET;
 
+typedef struct packed {
+    DATA rs1_value; // reg A value
+    DATA rs2_value; // reg B value
+    RS_PACKET rs_packet;
+} ISSUE_PACKET;
+
 /**
  * EX_MEM Packet:
  * Data exchanged from the EX to the MEM stage
@@ -519,6 +525,27 @@ typedef struct packed {
     PHYS_REG_IDX    t_old; // look up t_old in arch map table to get arch reg and update to t on retire
     logic           complete;
     logic           valid;
+<<<<<<< HEAD
 } ROB_PACKET;
+=======
+} ROB_ENTRY_PACKET;
+
+typedef struct packed {
+    PHYS_REG_IDX reg_idx;
+    logic valid;
+} FREE_LIST_PACKET;
+
+typedef struct packed {
+    ISSUE_PACKET    is_pack;
+    DATA            alu_resut;
+} FU_PACKET;
+
+typedef struct packed {
+    PHYS_REG_IDX reg_idx;
+    logic ready;
+    logic valid;
+} MAP_TABLE_PACKET;
+
+>>>>>>> 8cb8de5 (implements alu fu)
 
 `endif // __SYS_DEFS_SVH__
