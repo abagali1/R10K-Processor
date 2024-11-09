@@ -500,6 +500,12 @@ typedef struct packed {
     logic    valid;
 } RS_PACKET;
 
+typedef struct packed {
+    DATA rs1_value; // reg A value
+    DATA rs2_value; // reg B value
+    RS_PACKET rs_packet;
+} ISSUE_PACKET;
+
 /**
  * EX_MEM Packet:
  * Data exchanged from the EX to the MEM stage
