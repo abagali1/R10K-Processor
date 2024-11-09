@@ -12,7 +12,7 @@
 
 module cdb_tb ();
 
-    parameter N = 2;
+    parameter N = 4;
     parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE + `NUM_FU_BR;
 
     logic                       clock;
@@ -70,6 +70,8 @@ module cdb_tb ();
         print_all();
         model_entries[0].reg_val = 0;
         model_entries[1].reg_val = 0;
+        model_entries[2].reg_val = 0;
+        model_entries[3].reg_val = 0;
 
         // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Broadcast One FU Value\n");
@@ -102,15 +104,19 @@ module cdb_tb ();
         update_FU_done(5, 1);
         update_FU_done(11, 1);
         update_FU_done(2, 1);
-        update_FU_done(9, 1);
+        update_FU_done(9, 1); // this one shouldn't get picked when N = 4
+        update_FU_done(10, 1);
         model_entries[0].reg_val = wr_data[11].reg_val;
         model_entries[1].reg_val = wr_data[2].reg_val;
+        model_entries[2].reg_val = wr_data[10].reg_val;
+        model_entries[3].reg_val = wr_data[5].reg_val;
         @(negedge clock);
 
         update_FU_done(5, 0);
         update_FU_done(11, 0);
         update_FU_done(2, 0);
         update_FU_done(9, 0);
+        update_FU_done(10, 0);
 
         $display("PASSED TEST 3 \n");
 
