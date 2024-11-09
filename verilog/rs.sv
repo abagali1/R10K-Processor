@@ -36,7 +36,10 @@ module RS #(
     output logic                    [$clog2(DEPTH+1)-1:0]          open_entries
 
     `ifdef DEBUG
-    ,   output RS_PACKET [DEPTH-1:0] debug_entries
+    ,   output RS_PACKET [DEPTH-1:0] debug_entries,
+        output logic     [DEPTH-1:0] debug_open_spots,
+        output logic     [DEPTH-1:0] debug_other_sig,
+        output logic     [N-1:0][DEPTH-1:0] debug_dis_entries_bus
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -71,6 +74,9 @@ module RS #(
 
     `ifdef DEBUG
         assign debug_entries = entries;
+        assign debug_open_spots = open_spots;
+        assign debug_other_sig  = other_sig;
+        assign debug_dis_entries_bus = dis_entries_bus;
     `endif
 
     rs_psel #(
