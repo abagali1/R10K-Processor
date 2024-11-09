@@ -48,14 +48,14 @@ module free_list #(
         next_tail = (tail + wr_num) % DEPTH;
 
         for (int i = 0; i < N; i++) begin
-            if (i < rd_num) begin
-                rd_reg[i] = next_entries[(next_head + i) % DEPTH];
+            if (i < wr_num) begin
+                next_entries[(tail +  i) % DEPTH] = wr_reg[i];
             end
         end
 
         for (int i = 0; i < N; i++) begin
-            if (i < wr_num) begin
-                next_entries[(tail +  i) % DEPTH] = wr_reg[i];
+            if (i < rd_num) begin
+                rd_reg[i] = next_entries[(next_head + i) % DEPTH];
             end
         end
         
