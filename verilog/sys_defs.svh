@@ -455,5 +455,4 @@ typedef struct packed {
     logic           valid;
 } ROB_ENTRY_PACKET;
 
-
 `endif // __SYS_DEFS_SVH__
