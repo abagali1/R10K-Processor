@@ -1,64 +1,77 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
 
-// ALU: computes the result of FUNC applied with operands A and B
-// This module is purely combinational
 module alu (
     input               clock, 
     input               reset,
-    input DATA          opa,
-    input DATA          opb,
-    input RS_PACKET     rs_in,
-    input logic         stall_unit,
+    input ISSUE_PACKET  is_pack,
+    input logic         stall,
     input logic         rd_in,
 
-    output FU_PACKET    fu_out,
-    output logic        data_ready,
-    output logic        unit_stalled
+    output FU_PACKET    fu_pack;
 );
-    FU_PACKET out_packet, next_out_packet;
+    DATA result, opa, opb;
+    FU_PACKET out, next_out;
 
+    assign fu_pack = out;
+
+    // ALU opA mux
     always_comb begin
-        if (~stall_unit) begin
-            // forward rs packet info
-            next_out_packet.inst = rs_in.inst;
-            next_out_packet.NPC = rs_in.NPC;
-            next_out_packet.rd_mem = rs_in.rd_mem;
-            next_out_packet.wr_mem = rs_in.wr_mem;
-            next_out_packet.dest_reg_idx = rs_in.dest_reg_idx;
-            next_out_packet.halt = rs_in.halt;
-            next_out_packet.illegal = rs_in.illegal;
-            next_out_packet.csr_op = rs_in.csr_op;
-            next_out_packet.valid = rs_in.valid;
-            case (rs_in.alu_func)
-                ALU_ADD:  next_out_packet.result = opa + opb;
-                ALU_SUB:  next_out_packet.result = opa - opb;
-                ALU_AND:  next_out_packet.result = opa & opb;
-                ALU_SLT:  next_out_packet.result = signed'(opa) < signed'(opb);
-                ALU_SLTU: next_out_packet.result = opa < opb;
-                ALU_OR:   next_out_packet.result = opa | opb;
-                ALU_XOR:  next_out_packet.result = opa ^ opb;
-                ALU_SRL:  next_out_packet.result = opa >> opb[4:0];
-                ALU_SLL:  next_out_packet.result = opa << opb[4:0];
-                ALU_SRA:  next_out_packet.result = signed'(opa) >>> opb[4:0]; // arithmetic from logical shift
-                // here to prevent latches:
-                default:  next_out_packet.result = 32'hfacebeec;
-            endcase
+        case (is_pack.rs_packet.opa_select)
+            OPA_IS_RS1:  opa = is_pack.rs1_value;
+            OPA_IS_NPC:  opa = is_pack.rs_packet.NPC;
+            OPA_IS_PC:   opa = is_pack.rs_packet.PC;
+            OPA_IS_ZERO: opa = 0;
+            default:     opa = 32'hdeadface; // dead face
+        endcase
+    end
+
+    // ALU opB mux
+    always_comb begin
+        case (is_pack.rs_packet.opb_select)
+            OPB_IS_RS2:   opb = is_pack.rs2_value;
+            OPB_IS_I_IMM: opb = `RV32_signext_Iimm(is_pack.rs_packet.inst);
+            OPB_IS_S_IMM: opb = `RV32_signext_Simm(is_pack.rs_packet.inst);
+            OPB_IS_B_IMM: opb = `RV32_signext_Bimm(is_pack.rs_packet.inst);
+            OPB_IS_U_IMM: opb = `RV32_signext_Uimm(is_pack.rs_packet.inst);
+            OPB_IS_J_IMM: opb = `RV32_signext_Jimm(is_pack.rs_packet.inst);
+            default:      opb = 32'hfacefeed; // face feed
+        endcase
+    end
+
+    // ALU Compute Result
+    always_comb begin
+        case (is_pack.rs_packet.alu_func)
+            ALU_ADD:  result = opa + opb;
+            ALU_SUB:  result = opa - opb;
+            ALU_AND:  result = opa & opb;
+            ALU_SLT:  result = signed'(opa) < signed'(opb);
+            ALU_SLTU: result = opa < opb;
+            ALU_OR:   result = opa | opb;
+            ALU_XOR:  result = opa ^ opb;
+            ALU_SRL:  result = opa >> opb[4:0];
+            ALU_SLL:  result = opa << opb[4:0];
+            ALU_SRA:  result = signed'(opa) >>> opb[4:0]; // arithmetic from logical shift
+            // here to prevent latches:
+            default:  result = 32'hfacebeec;
+        endcase
+    end
+
+    // Set Next Out
+    always_comb begin
+        if (stall) begin
+            next_out = out;
+        end else begin
+            next_out = '{alu_result: result, is_pack: is_pack};
         end
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            out_packet <= '0;
-        end else if (stall_unit) begin
-            out_packet <= out_packet;
+            out <= '0;
         end else begin
-            out_packet <= next_out_packet;
+            out <= next_out;
         end
     end
-
-    assign fu_out = out_packet;
-    assign unit_stalled = stall_unit;
-    assign data_ready = stall_unit | rd_in;
 
 endmodule // alu
