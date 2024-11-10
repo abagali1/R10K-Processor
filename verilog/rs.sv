@@ -33,7 +33,7 @@ module RS #(
     output RS_PACKET                [`NUM_FU_STORE-1:0]            issued_store,
     output RS_PACKET                [`NUM_FU_BR-1:0]               issued_br,
 
-    output logic                    [$clog2(DEPTH+1)-1:0]          open_entries
+    output logic                    [$clog2(N+1)-1:0]          open_entries
 
     `ifdef DEBUG
     ,   output RS_PACKET [DEPTH-1:0] debug_entries,
@@ -70,7 +70,7 @@ module RS #(
     logic [$clog2(`NUM_FU_STORE+1)-1:0] num_store_issued;
     logic [$clog2(`NUM_FU_BR+1)-1:0] num_br_issued;
 
-    assign open_entries = DEPTH - num_entries;
+    assign open_entries = (DEPTH - num_entries > N) ? N : DEPTH - num_entries;
 
     `ifdef DEBUG
         assign debug_entries = entries;
@@ -181,7 +181,12 @@ module RS #(
     always_comb begin
         next_entries = entries;
         next_num_entries = num_entries;
-        //next_open_spots = open_spots | all_issued_insts;
+        
+        issued_alu = 0;
+        issued_mult = 0;
+        issued_ld = 0;
+        issued_store = 0;
+        issued_br = 0;
 
         other_sig = open_spots | all_issued_insts;
 
