@@ -6,7 +6,7 @@ module conditional_branch (
     input               clock, 
     input               reset,
     input ISSUE_PACKET  is_pack,
-    input logic         stall,
+    input logic         stall, // I don't think we should ever stall this
     input logic         rd_in,
 
     output FU_PACKET    fu_pack;
