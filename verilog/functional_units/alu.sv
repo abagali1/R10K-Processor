@@ -62,7 +62,7 @@ module alu (
         if (stall) begin
             next_out = out;
         end else begin
-            next_out = '{alu_result: result, is_pack: is_pack};
+            next_out = '{alu_result: result, is_pack: is_pack, take_conditional: 0};
         end
     end
 
@@ -74,4 +74,4 @@ module alu (
         end
     end
 
-endmodule // alu
+endmodule
