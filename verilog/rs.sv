@@ -45,7 +45,7 @@ module RS #(
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     logic [DEPTH-1:0] open_spots, next_open_spots, other_sig;
-    wor [DEPTH-1:0] all_issued_insts; // also keeps track of position of instructions being issued w.r.t RS entries
+    logic [DEPTH-1:0] all_issued_insts; // also keeps track of position of instructions being issued w.r.t RS entries
 
     RS_PACKET [DEPTH-1:0] entries, next_entries;
     logic [LOG_DEPTH:0] num_entries, next_num_entries;
@@ -55,6 +55,9 @@ module RS #(
 
     // Issuing psel wires
     logic [DEPTH-1:0] alu_req, mult_req, ld_req, store_req, br_req;
+
+    // which instructions are being issued per FU type
+    logic [`DEPTH-1:0] alu_insts, mult_insts, ld_insts, store_insts, br_insts;
 
     // Which specific FUs are being issued to
     logic [`NUM_FU_ALU-1:0] alu_issued;
@@ -88,7 +91,7 @@ module RS #(
         .fu_req(~fu_alu_busy),
         .num_issued(num_alu_issued),
         .fu_issued_insts(alu_issued),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(alu_insts)
     );
 
     rs_psel #(
@@ -100,7 +103,7 @@ module RS #(
         .fu_req(~fu_mult_busy),
         .num_issued(num_mult_issued),
         .fu_issued_insts(mult_issued),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(mult_insts)
     );
 
     rs_psel #(
@@ -112,7 +115,7 @@ module RS #(
         .fu_req(~fu_ld_busy),
         .num_issued(num_ld_issued),
         .fu_issued_insts(ld_issued),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(ld_insts)
     );
 
     rs_psel #(
@@ -124,7 +127,7 @@ module RS #(
         .fu_req(~fu_store_busy),
         .num_issued(num_store_issued),
         .fu_issued_insts(store_issued),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(store_insts)
     );
 
     rs_psel #(
@@ -136,7 +139,7 @@ module RS #(
         .fu_req(~fu_br_busy),
         .num_issued(num_br_issued),
         .fu_issued_insts(br_issued),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(br_insts)
     );
 
     psel_gen #(
@@ -148,6 +151,14 @@ module RS #(
         .gnt_bus(dis_entries_bus),
         .empty()
     );
+
+    assign issued_alu = entries & alu_insts;
+    assign issued_mult = entries & mult_insts;
+    assign issued_ld = entries & ld_insts;
+    assign issued_store = entires & store_insts;
+    assign issued_br = entries & br_insts;
+
+    assign all_issued_insts = alu_insts | mult_insts | ld_insts | store_insts | br_insts;
 
     // Logic for assigning req to issuing psels
     always_comb begin
