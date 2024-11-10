@@ -349,12 +349,43 @@ typedef struct packed {
     ADDR  PC;
     ADDR  NPC; // PC + 4
     logic valid;
-} IF_ID_PACKET;
+} INST_PACKET;
 
 /**
  * ID_EX Packet:
  * Data exchanged from the ID to the EX stage
  */
+typedef struct packed {
+    INST inst;
+    ADDR PC;
+    ADDR NPC; // PC + 4
+
+    ALU_OPA_SELECT opa_select; // ALU opa mux select (ALU_OPA_xxx *)
+    ALU_OPB_SELECT opb_select; // ALU opb mux select (ALU_OPB_xxx *)
+
+    REG_IDX  dest_reg_idx;  // destination (writeback) register index
+    ALU_FUNC alu_func;      // ALU function select (ALU_xxx *)
+    logic    mult;          // Is inst a multiply instruction?
+    logic    rd_mem;        // Does inst read memory?
+    logic    wr_mem;        // Does inst write memory?
+    logic    cond_branch;   // Is inst a conditional branch?
+    logic    uncond_branch; // Is inst an unconditional branch?
+    logic    halt;          // Is this a halt?
+    logic    illegal;       // Is this instruction illegal?
+    logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
+
+    // /* P4 ADDED STUFF */
+    // FREE_LIST_PACKET t;
+    // MAP_TABLE_PACKET t1;
+    // MAP_TABLE_PACKET t2;
+    // BR_MASK b_mask;
+    // FU_TYPE fu_type;
+    // logic pred_taken;
+    // /* END */
+
+    logic    valid;
+} DECODED_PACKET;
+
 typedef struct packed {
     INST inst;
     ADDR PC;

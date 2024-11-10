@@ -18,7 +18,7 @@ module ROB #(
     input logic                     br_en,                        
 
     output ROB_ENTRY_PACKET         [N-1:0] retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
-    output logic                    [$clog2(DEPTH+1)-1:0] open_entries, // number of open entires AFTER retirement
+    output logic                    [$clog2(N+1)-1:0] open_entries, // number of open entires AFTER retirement
     output logic                    [$clog2(N+1)-1:0] num_retired,
     output logic                    [$clog2(DEPTH)-1:0] out_tail
 
@@ -43,7 +43,7 @@ module ROB #(
     // with head and tail on posedge
     // keeping the original version alongside simplified comb logic
     // assign num_entries = (tail >= head) ? (tail - head) : (DEPTH - head + tail);
-    assign open_entries = DEPTH - num_entries + num_retired;
+    assign open_entries = (DEPTH - num_entries + num_retired > N) ? N : DEPTH - num_entries + num_retired;
     // DONE
     // output (up to N) completed entries
     always_comb begin
