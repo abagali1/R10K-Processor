@@ -523,7 +523,8 @@ typedef struct packed {
 
 typedef struct packed {
     ISSUE_PACKET    is_pack;
-    DATA            alu_resut;
+    DATA            alu_result;
+    logic           take_conditional;
 } FU_PACKET;
 
 typedef struct packed {
