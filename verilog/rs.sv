@@ -11,10 +11,10 @@ module RS #(
     input                                                                               reset,
 
     input DECODED_PACKET            [N-1:0]                                             rs_in,
-    input FREE_LIST_PACKET          [N-1:0]                                             t;
-    input MAP_TABLE_PACKET          [N-1:0]                                             t1;
-    input MAP_TABLE_PACKET          [N-1:0]                                             t2;
-    input BR_MASK                   [N-1:0]                                             b_mask; 
+    input FREE_LIST_PACKET          [N-1:0]                                             t_in,
+    input MAP_TABLE_PACKET          [N-1:0]                                             t1_in,
+    input MAP_TABLE_PACKET          [N-1:0]                                             t2_in,
+    input BR_MASK                   [N-1:0]                                             b_mask_in,
 
     input CDB_PACKET                [N-1:0]                                             cdb_in,
 
@@ -216,20 +216,20 @@ module RS #(
         store_req = 0;
         br_req = 0;
         for (int i = 0; i < DEPTH; i++) begin
-            if (entries[i].valid & entries[i].t1.ready & entries[i].t2.ready) begin
-                if (entries[i].fu_type == ALU_INST) begin
+            if (entries[i].decoded_vals.valid & entries[i].t1.ready & entries[i].t2.ready) begin
+                if (entries[i].decoded_vals.fu_type == ALU_INST) begin
                     alu_req[i] = 1;
                 end 
-                if (entries[i].fu_type == MULT_INST) begin
+                if (entries[i].decoded_vals.fu_type == MULT_INST) begin
                     mult_req[i] = 1;
                 end 
-                if (entries[i].fu_type == LD_INST) begin
+                if (entries[i].decoded_vals.fu_type == LD_INST) begin
                     ld_req[i] = 1;
                 end 
-                if (entries[i].fu_type == STORE_INST) begin
+                if (entries[i].decoded_vals.fu_type == STORE_INST) begin
                     store_req[i] = 1;
                 end  
-                if (entries[i].fu_type == BR_INST) begin
+                if (entries[i].decoded_vals.fu_type == BR_INST) begin
                     br_req[i] = 1;
                 end
             end
@@ -246,7 +246,7 @@ module RS #(
         for (int i = 0; i < N; i++) begin
             if (cdb_in[i].valid) begin
                 for (int j = 0; j < DEPTH; j++) begin
-                    if (entries[j].valid) begin
+                    if (entries[j].decoded_vals.valid) begin
                         if (entries[j].t1.reg_idx == cdb_in[i].reg_idx) begin
                             next_entries[j].t1.ready = 1;
                         end
@@ -284,11 +284,11 @@ module RS #(
             if (rs_in[i].valid && dis_entries_bus[i]) begin
                 for (int j = 0; j < DEPTH; j++) begin
                     if (dis_entries_bus[i][j]) begin
-                        next_entries[j].decoded_vals = rs_in[i].decoded_vals;
-                        next_entries[j].t1 = t1[i]; 
-                        next_entries[j].t2 = t2[i];
-                        next_entries[j].t = t[i];
-                        next_entries[j].b_mask = b_mask[i];
+                        next_entries[j].decoded_vals = rs_in[i];
+                        next_entries[j].t = t_in[i];
+                        next_entries[j].t1 = t1_in[i]; 
+                        next_entries[j].t2 = t2_in[i];
+                        next_entries[j].b_mask = b_mask_in[i];
 
                         next_open_spots[j] = 0;
                     end
