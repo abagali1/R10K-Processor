@@ -10,14 +10,14 @@ module RS #(
     input                                                                              clock,
     input                                                                              reset,
 
-    input DECODED_PACKET            [N-1:0]                         rs_in,
-    input FREE_LIST_PACKET          [N-1:0]                         t;
-    input MAP_TABLE_PACKET          [N-1:0]                         t1;
-    input MAP_TABLE_PACKET          [N-1:0]                         t2;
-    input BR_MASK                   [N-1:0]                         b_mask; 
-    input logic                     [N-1:0]                         pred_taken;
+    input DECODED_PACKET            [N-1:0]                                            rs_in,
+    input FREE_LIST_PACKET          [N-1:0]                                            t;
+    input MAP_TABLE_PACKET          [N-1:0]                                            t1;
+    input MAP_TABLE_PACKET          [N-1:0]                                            t2;
+    input BR_MASK                   [N-1:0]                                            b_mask; 
+    input logic                     [N-1:0]                                            pred_taken;
 
-    input CDB_PACKET                [N-1:0]                         cdb_in,
+    input CDB_PACKET                [N-1:0]                                            cdb_in,
 
     // ebr logic
     input BR_MASK                                                                       br_id,
