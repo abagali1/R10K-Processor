@@ -230,17 +230,23 @@ module RS_tb();
     endfunction
 
     function void model_rs_update();
-        int fu_alu_ready, num_alu_ready, num_alu_issued, fu_issued_idx;
         RS_PACKET issued_packet;
+        int fu_issued_idx;
+
+        int fu_alu_ready, num_alu_ready, num_alu_issued;
+        int fu_mult_ready, num_mult_ready, num_mult_issued;
 
         num_alu_issued = 0;
-        issued_alu_buffer = '{`NUM_FU_ALU{0}};
         fu_alu_ready = ~fu_alu_busy;
         num_alu_ready = `NUM_FU_ALU - $countones(fu_alu_busy);
+        issued_alu_buffer = '{`NUM_FU_ALU{0}};
 
+        num_mult_issued = 0;
+        fu_mult_ready = ~fu_mult_busy;
+        num_mult_ready = `NUM_FU_MULT - $countones(fu_mult_busy);
+        issued_mult_buffer = '{`NUM_FU_MULT{0}};
 
         $display("num_alu %d %d %b", num_alu_ready, $countones(fu_alu_busy), fu_alu_busy);
-
         while(num_alu_ready > 0) begin
             issued_packet = model_rs_pop(num_alu_issued % 2, ALU_INST);
 
@@ -255,6 +261,23 @@ module RS_tb();
 
             num_alu_ready--;
             num_alu_issued++;
+        end
+
+        $display("num_mult %d %d %b", num_mult_ready, $countones(fu_mult_busy), fu_mult_busy);
+        while(num_mult_ready > 0) begin
+            issued_packet = model_rs_pop(num_mult_issued % 2, MULT_INST);
+
+            if(!issued_packet.decoded_vals.valid) begin
+                break;
+            end
+
+            fu_issued_idx = num_mult_issued % 2 ? lsb(fu_mult_ready, `NUM_FU_MULT) : msb(fu_mult_ready, `NUM_FU_MULT);
+
+            fu_mult_ready[fu_issued_idx] = 0;
+            issued_mult_buffer[fu_issued_idx] = issued_packet;
+
+            num_mult_ready--;
+            num_mult_issued++;
         end
     endfunction
 
@@ -298,7 +321,7 @@ module RS_tb();
         end
     endfunction
 
-    function print_issue_fu(int num_fu, FU_TYPE fu_type);
+    function print_fu_issued(int num_fu, FU_TYPE fu_type);
         $write("\nModel RS Issued Signal [%01d]", fu_type);
         $write("\t\t\t\t\t\t\t\t\t\t\t\t");
         $write("RS Issued Signal [%01d]\n", fu_type);
@@ -309,15 +332,27 @@ module RS_tb();
 
 
         for(int i=num_fu-1;i>=0;i--) begin
-            $write("\t%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu_buffer[i].decoded_vals.valid, issued_alu_buffer[i].t.reg_idx, issued_alu_buffer[i].t1.reg_idx, issued_alu_buffer[i].t2.reg_idx, issued_alu_buffer[i].b_mask, issued_alu_buffer[i].decoded_vals.fu_type);
-            $write("\t\t");
-            $write("\t%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu[i].decoded_vals.valid, issued_alu[i].t.reg_idx, issued_alu[i].t1.reg_idx, issued_alu[i].t2.reg_idx, issued_alu[i].b_mask, issued_alu[i].decoded_vals.fu_type);
-            $write("\n");
+            case(fu_type)
+                ALU_INST: begin
+                    $write("\t%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu_buffer[i].decoded_vals.valid, issued_alu_buffer[i].t.reg_idx, issued_alu_buffer[i].t1.reg_idx, issued_alu_buffer[i].t2.reg_idx, issued_alu_buffer[i].b_mask, issued_alu_buffer[i].decoded_vals.fu_type);
+                    $write("\t\t");
+                    $write("\t%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu[i].decoded_vals.valid, issued_alu[i].t.reg_idx, issued_alu[i].t1.reg_idx, issued_alu[i].t2.reg_idx, issued_alu[i].b_mask, issued_alu[i].decoded_vals.fu_type);
+                    $write("\n");
+                end
+                MULT_INST: begin
+                    $write("\t%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_mult_buffer[i].decoded_vals.valid, issued_mult_buffer[i].t.reg_idx, issued_mult_buffer[i].t1.reg_idx, issued_mult_buffer[i].t2.reg_idx, issued_mult_buffer[i].b_mask, issued_mult_buffer[i].decoded_vals.fu_type);
+                    $write("\t\t");
+                    $write("\t%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_mult[i].decoded_vals.valid, issued_mult[i].t.reg_idx, issued_mult[i].t1.reg_idx, issued_mult[i].t2.reg_idx, issued_mult[i].b_mask, issued_mult[i].decoded_vals.fu_type);
+                    $write("\n");
+                end
+            endcase
+
         end
     endfunction
 
     function print_issue_signal();
-        print_issue_fu(`NUM_FU_ALU, ALU_INST);
+        print_fu_issued(`NUM_FU_ALU, ALU_INST);
+        print_fu_issued(`NUM_FU_MULT, MULT_INST);
 
         `ifdef DEBUG
             $write("\n");
