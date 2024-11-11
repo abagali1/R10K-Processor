@@ -1,3 +1,4 @@
+
 /////////////////////////////////////////////////////////////////////////
 //                                                                     //
 //   Modulename :  sys_defs.svh                                        //
@@ -35,14 +36,15 @@
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 
 // worry about these later
-`define BRANCH_PRED_SZ xx
+`define BRANCH_PRED_SZ 4
 `define LSQ_SZ xx
 
 // functional units (you should decide if you want more or fewer types of FUs)
-`define NUM_FU_ALU xx
-`define NUM_FU_MULT xx
-`define NUM_FU_LOAD xx
-`define NUM_FU_STORE xx
+`define NUM_FU_ALU 4
+`define NUM_FU_MULT 4
+`define NUM_FU_LD 2
+`define NUM_FU_STORE 2
+`define NUM_FU_BR 1
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
@@ -292,6 +294,46 @@ typedef enum logic [2:0] {
 // ---- Datapath Packets ---- //
 ////////////////////////////////
 
+/* P4 ADDED */
+
+typedef enum logic [2:0] {
+    ALU_INST,
+    MULT_INST,
+    LD_INST,
+    STORE_INST,
+    BR_INST
+} FU_TYPE;
+
+typedef enum logic [1:0] {
+    NOTHING,
+    CLEAR,
+    SQUASH
+} BR_TASK;
+
+typedef struct packed {
+    PHYS_REG_IDX reg_idx;
+    logic valid;
+    logic ready;
+} MAP_TABLE_PACKET;
+
+typedef struct packed {
+    PHYS_REG_IDX reg_idx;
+    logic valid;
+} FREE_LIST_PACKET;
+
+typedef struct packed {
+    PHYS_REG_IDX reg_idx;
+    DATA reg_val;
+    logic valid;
+} CDB_PACKET;
+
+typedef struct packed {
+    logic [`BRANCH_PRED_SZ-1:0] b_mask;
+} BR_MASK;
+
+
+/* END */
+
 /**
  * Packets are used to move many variables between modules with
  * just one datatype, but can be cumbersome in some circumstances.
@@ -308,19 +350,23 @@ typedef struct packed {
     ADDR  PC;
     ADDR  NPC; // PC + 4
     logic valid;
-} IF_ID_PACKET;
+    logic pred_taken;
+} INST_PACKET;
 
 /**
  * ID_EX Packet:
  * Data exchanged from the ID to the EX stage
  */
+
 typedef struct packed {
+    logic valid;
     INST inst;
     ADDR PC;
     ADDR NPC; // PC + 4
 
-    DATA rs1_value; // reg A value
-    DATA rs2_value; // reg B value
+    FU_TYPE fu_type;
+    REG_IDX reg1;
+    REG_IDX reg2;
 
     ALU_OPA_SELECT opa_select; // ALU opa mux select (ALU_OPA_xxx *)
     ALU_OPB_SELECT opb_select; // ALU opb mux select (ALU_OPB_xxx *)
@@ -335,49 +381,21 @@ typedef struct packed {
     logic    halt;          // Is this a halt?
     logic    illegal;       // Is this instruction illegal?
     logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
-
-    logic    valid;
-} ID_EX_PACKET;
-
-/**
- * ID_EX Packet:
- * Data exchanged from the ID to the EX stage
- */
-typedef struct packed {
-    INST inst;
-    ADDR PC;
-    ADDR NPC; // PC + 4
-
-    ALU_OPA_SELECT opa_select; // ALU opa mux select (ALU_OPA_xxx *)
-    ALU_OPB_SELECT opb_select; // ALU opb mux select (ALU_OPB_xxx *)
-
-    REG_IDX  dest_reg_idx;  // destination (writeback) register index
-    ALU_FUNC alu_func;      // ALU function select (ALU_xxx *)
-    logic    mult;          // Is inst a multiply instruction?
-    logic    rd_mem;        // Does inst read memory?
-    logic    wr_mem;        // Does inst write memory?
-    logic    cond_branch;   // Is inst a conditional branch?
-    logic    uncond_branch; // Is inst an unconditional branch?
-    logic    halt;          // Is this a halt?
-    logic    illegal;       // Is this instruction illegal?
-    logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
+    logic    pred_taken;
 
     /* P4 ADDED STUFF */
     FREE_LIST_PACKET t;
     MAP_TABLE_PACKET t1;
     MAP_TABLE_PACKET t2;
     BR_MASK b_mask;
-    FU_TYPE fu_type;
-    logic pred_taken;
     /* END */
-
-    logic    valid;
 } RS_PACKET;
 
 typedef struct packed {
+    RS_PACKET rs_packet;
+
     DATA rs1_value; // reg A value
     DATA rs2_value; // reg B value
-    RS_PACKET rs_packet;
 } ISSUE_PACKET;
 
 /**
@@ -436,29 +454,19 @@ typedef struct packed {
 } COMMIT_PACKET;
 
 typedef struct packed {
-    logic     [6:0] op_code;
-    logic     [4:0] t;
-    logic     [4:0] t_old; // look up t_old in arch map table to get arch reg and update to t on retire
+    ADDR            PC;
+    REG_IDX         dest_reg_idx;
+    logic           halt;
+    PHYS_REG_IDX    t;
+    PHYS_REG_IDX    t_old; // look up t_old in arch map table to get arch reg and update to t on retire
     logic           complete;
     logic           valid;
-} ROB_ENTRY_PACKET;
-
-typedef struct packed {
-    PHYS_REG_IDX reg_idx;
-    logic valid;
-} FREE_LIST_PACKET;
+} ROB_PACKET;
 
 typedef struct packed {
     ISSUE_PACKET    is_pack;
     DATA            alu_result;
     logic           take_conditional;
 } FU_PACKET;
-
-typedef struct packed {
-    PHYS_REG_IDX reg_idx;
-    logic ready;
-    logic valid;
-} MAP_TABLE_PACKET;
-
 
 `endif // __SYS_DEFS_SVH__
