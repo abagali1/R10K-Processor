@@ -15,8 +15,8 @@ module rs_psel #(
     `endif
 );
 
-    logic [NUM_FU-1:0]             fu_gnt;
     logic [NUM_FU-1:0][DEPTH-1:0]  inst_gnt_bus; // one-hot
+    logic [NUM_FU-1:0]             fu_gnt;
     logic [NUM_FU-1:0][NUM_FU-1:0] fu_gnt_bus;
 
     psel_gen #(
@@ -24,7 +24,7 @@ module rs_psel #(
         .REQS(NUM_FU))
     inst_psel (
         .req(inst_req),
-        .gnt(all_issued_insts),
+        .gnt(),
         .gnt_bus(inst_gnt_bus),
         .empty()
     );
@@ -45,9 +45,14 @@ module rs_psel #(
     `endif
 
     always_comb begin
+        all_issued_insts = '0;
+        fu_issued_insts = '0;
         for(int i=0;i<NUM_FU;i++) begin
             for(int j=0;j<NUM_FU;j++) begin
-                fu_issued_insts[j] = fu_gnt_bus[i][j] ? inst_gnt_bus[i] : '0;
+                fu_issued_insts[j] |= fu_gnt_bus[i][j] ? inst_gnt_bus[i] : 0;
+            end
+            if(fu_gnt_bus[i] && inst_gnt_bus[i]) begin
+                all_issued_insts |= inst_gnt_bus[i];
             end
         end
     end
