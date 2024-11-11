@@ -33,13 +33,15 @@ module RS #(
     output RS_PACKET                [`NUM_FU_STORE-1:0]            issued_store,
     output RS_PACKET                [`NUM_FU_BR-1:0]               issued_br,
 
-    output logic                    [$clog2(N+1)-1:0]          open_entries
+    output logic                    [$clog2(N+1)-1:0]              open_entries
 
     `ifdef DEBUG
-    ,   output RS_PACKET [DEPTH-1:0] debug_entries,
-        output logic     [DEPTH-1:0] debug_open_spots,
-        output logic     [DEPTH-1:0] debug_other_sig,
-        output logic     [N-1:0][DEPTH-1:0] debug_dis_entries_bus
+    ,   output RS_PACKET [DEPTH-1:0]                               debug_entries,
+        output logic     [DEPTH-1:0]                               debug_open_spots,
+        output logic     [DEPTH-1:0]                               debug_other_sig,
+        output logic     [N-1:0][DEPTH-1:0]                        debug_dis_entries_bus,
+        output logic     [$clog2(DEPTH+1)-1:0]                     debug_open_entries,
+        output logic     [DEPTH-1:0]                               debug_all_issued_insts
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -57,7 +59,7 @@ module RS #(
     logic [DEPTH-1:0] alu_req, mult_req, ld_req, store_req, br_req;
 
     // which instructions are being issued per FU type
-    logic [`DEPTH-1:0] alu_insts, mult_insts, ld_insts, store_insts, br_insts;
+    logic [DEPTH-1:0] alu_insts, mult_insts, ld_insts, store_insts, br_insts;
 
     // Which specific FUs are being issued to
     logic [`NUM_FU_ALU-1:0] alu_issued;
@@ -80,6 +82,8 @@ module RS #(
         assign debug_open_spots = open_spots;
         assign debug_other_sig  = other_sig;
         assign debug_dis_entries_bus = dis_entries_bus;
+        assign debug_open_entries = DEPTH - num_entries;
+        assign debug_all_issued_insts = all_issued_insts;
     `endif
 
     rs_psel #(
@@ -155,7 +159,7 @@ module RS #(
     assign issued_alu = entries & alu_insts;
     assign issued_mult = entries & mult_insts;
     assign issued_ld = entries & ld_insts;
-    assign issued_store = entires & store_insts;
+    assign issued_store = entries & store_insts;
     assign issued_br = entries & br_insts;
 
     assign all_issued_insts = alu_insts | mult_insts | ld_insts | store_insts | br_insts;
@@ -192,13 +196,6 @@ module RS #(
     always_comb begin
         next_entries = entries;
         next_num_entries = num_entries;
-        
-        issued_alu = 0;
-        issued_mult = 0;
-        issued_ld = 0;
-        issued_store = 0;
-        issued_br = 0;
-
         other_sig = open_spots | all_issued_insts;
 
         // Marks entry tags as ready (parallelized)
