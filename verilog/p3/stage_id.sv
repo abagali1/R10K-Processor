@@ -17,6 +17,7 @@ module decoder
 (
     input INST_PACKET inst,
 
+    output FU_TYPE         fu_type;
     output ALU_OPA_SELECT  opa_select,
     output ALU_OPB_SELECT  opb_select,
     output logic           has_dest, // if there is a destination register
@@ -43,6 +44,7 @@ module decoder
         uncond_branch = `FALSE;
         halt          = `FALSE;
         illegal       = `FALSE;
+        fu_type       = ALU_INST;
 
         if (inst.valid) begin
             casez (insts.inst)
@@ -61,23 +63,27 @@ module decoder
                     opa_select    = OPA_IS_PC;
                     opb_select    = OPB_IS_J_IMM;
                     uncond_branch = `TRUE;
+                    fu_type       = BR_INST;
                 end
                 `RV32_JALR: begin
                     has_dest      = `TRUE;
                     opa_select    = OPA_IS_RS1;
                     opb_select    = OPB_IS_I_IMM;
                     uncond_branch = `TRUE;
+                    fu_type       = BR_INST;
                 end
                 `RV32_BEQ, `RV32_BNE, `RV32_BLT, `RV32_BGE,
                 `RV32_BLTU, `RV32_BGEU: begin
                     opa_select  = OPA_IS_PC;
                     opb_select  = OPB_IS_B_IMM;
                     cond_branch = `TRUE;
+                    fu_type     = BR_INST;
                     // stage_ex uses inst.b.funct3 as the branch function
                 end
                 `RV32_MUL, `RV32_MULH, `RV32_MULHSU, `RV32_MULHU: begin
                     has_dest   = `TRUE;
                     mult       = `TRUE;
+                    fu_type    = MULT_INST;
                     // stage_ex uses inst.r.funct3 as the mult function
                 end
                 `RV32_LB, `RV32_LH, `RV32_LW,
@@ -85,11 +91,13 @@ module decoder
                     has_dest   = `TRUE;
                     opb_select = OPB_IS_I_IMM;
                     rd_mem     = `TRUE;
+                    fu_type    = LD_INST;
                     // stage_ex uses inst.r.funct3 as the load size and signedness
                 end
                 `RV32_SB, `RV32_SH, `RV32_SW: begin
                     opb_select = OPB_IS_S_IMM;
                     wr_mem     = `TRUE;
+                    fu_type    = STORE_INST;
                     // stage_ex uses inst.r.funct3 as the store size
                 end
                 `RV32_ADDI: begin
@@ -195,9 +203,9 @@ endmodule // decoder
 module decode #(
     parameter N = `N;
 )(
-    input                       clock,           // system clock
-    input                       reset,           // system reset
-    input INST_PACKET   [N-1:0] insts,
+    input                         clock,           // system clock
+    input                         reset,           // system reset
+    input  INST_PACKET    [N-1:0] insts,
 
     output DECODED_PACKET [N-1:0] id_packet
 );
@@ -206,6 +214,8 @@ module decode #(
     assign id_packet.PC   = insts.PC;
     assign id_packet.NPC  = insts.NPC;
     assign id_packet.valid = insts.valid;
+    assign id_packet.reg1 = insts.inst.r.rs1;
+    assign id_packet.reg2 = insts.inst.r.rs2;
 
     logic [N-1:0] has_dest_reg;
     assign id_packet.dest_reg_idx = (has_dest_reg) ? insts.inst.r.rd : `ZERO_REG;
@@ -219,6 +229,7 @@ module decode #(
                 .valid (insts[i].valid),
 
                 // Outputs
+                .fu_type       (id_packet[i].fu_type),
                 .opa_select    (id_packet[i].opa_select),
                 .opb_select    (id_packet[i].opb_select),
                 .alu_func      (id_packet[i].alu_func),

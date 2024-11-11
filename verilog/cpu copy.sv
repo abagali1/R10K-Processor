@@ -27,6 +27,7 @@ module cpu (
 
     // Note: these are assigned at the very bottom of the module
     output COMMIT_PACKET [`N-1:0] committed_insts,
+    output ADDR                   PC,
 
     // Debug outputs: these signals are solely used for debugging in testbenches
     // Do not change for project 3

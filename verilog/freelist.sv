@@ -6,13 +6,13 @@ module free_list #(
     parameter N = `N
 )
 (
-    input                                        clock,
-    input                                        reset,
-    input                   [$clog2(N+1)-1:0]    rd_num,  // number of regs to take off of the free list
-    input                   [$clog2(N+1)-1:0]    wr_num,  // number of regs to add back to the free list
-    input FREE_LIST_PACKET  [N-1:0]              wr_reg,  // reg idxs to add to free list
-    input logic                                  br_en,  // enable signal for EBR
-    input logic   [$clog2(DEPTH+1)-1:0]          head_ptr_in,  // free list copy for EBR
+    input                                               clock,
+    input                                               reset,
+    input                   [$clog2(N+1)-1:0]           rd_num,  // number of regs to take off of the free list
+    input                   [$clog2(N+1)-1:0]           wr_num,  // number of regs to add back to the free list
+    input FREE_LIST_PACKET  [N-1:0]                     wr_reg,  // reg idxs to add to free list
+    input logic                                         br_en,  // enable signal for EBR
+    input logic             [$clog2(DEPTH+1)-1:0]       head_ptr_in,  // free list copy for EBR
 
     // save head pointer and tail pointer, instead of free list copy
 
