@@ -9,22 +9,26 @@ module ROB #(
     parameter N = `N
 )
 (
-    input                           clock, 
-    input                           reset,
-    input ROB_ENTRY_PACKET          [N-1:0] wr_data, 
-    input PHYS_REG_IDX              [N-1:0] complete_t, // comes from the FU
-    input                           [$clog2(N+1)-1:0] num_accept, // input signal from min block, dependent on open_entries 
-    input logic                     [$clog2(DEPTH)-1:0] br_tail,
-    input logic                     br_en,                        
+    input                                           clock, 
+    input                                           reset,
 
-    output ROB_ENTRY_PACKET         [N-1:0] retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
-    output logic                    [$clog2(DEPTH+1)-1:0] open_entries, // number of open entires AFTER retirement
-    output logic                    [$clog2(N+1)-1:0] num_retired,
-    output logic                    [$clog2(DEPTH)-1:0] out_tail
+    input DECODED_PACKET          [N-1:0]           wr_data,
+    input PHYS_REG_IDX            [N-1:0]           t,
+    input PHYS_REG_IDX            [N-1:0]           t_old,
+
+    input PHYS_REG_IDX        [N-1:0]               complete_t, // comes from the FU
+    input                     [$clog2(N+1)-1:0]     num_accept, // input signal from min block, dependent on open_entries 
+    input logic               [$clog2(DEPTH)-1:0]   br_tail,
+    input logic                                     br_en,                        
+
+    output ROB_PACKET         [N-1:0]               retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
+    output logic              [$clog2(N+1)-1:0]     open_entries, // number of open entires AFTER retirement
+    output logic              [$clog2(N+1)-1:0]     num_retired,
+    output logic              [$clog2(DEPTH)-1:0]   out_tail
 
 
     `ifdef DEBUG
-    ,   output ROB_ENTRY_PACKET [DEPTH-1:0] debug_entries,
+    ,   output ROB_PACKET [DEPTH-1:0] debug_entries,
         output logic [$clog2(DEPTH)-1:0] debug_head,
         output logic [$clog2(DEPTH)-1:0] debug_tail
     `endif
@@ -37,13 +41,13 @@ module ROB #(
     logic [LOG_DEPTH-1:0] tail, next_tail;
     logic [LOG_DEPTH:0] num_entries, next_num_entries;
 
-    ROB_ENTRY_PACKET [DEPTH-1:0] entries, next_entries;
+    ROB_PACKET [DEPTH-1:0] entries, next_entries;
 
     // use head and tail because this updates between clock cycles, so will update to correct value
     // with head and tail on posedge
     // keeping the original version alongside simplified comb logic
     // assign num_entries = (tail >= head) ? (tail - head) : (DEPTH - head + tail);
-    assign open_entries = DEPTH - num_entries + num_retired;
+    assign open_entries = (DEPTH - num_entries + num_retired > N) ? N : DEPTH - num_entries + num_retired;
     // DONE
     // output (up to N) completed entries
     always_comb begin
@@ -73,7 +77,13 @@ module ROB #(
 
         for(int j=0;j < N; ++j) begin
             if(j < num_accept) begin
-                next_entries[(tail+j) % DEPTH] = wr_data[j];
+                next_entries[(tail+j) % DEPTH].PC = wr_data[j].PC;
+                next_entries[(tail+j) % DEPTH].dest_reg_idx = wr_data[j].dest_reg_idx;
+                next_entries[(tail+j) % DEPTH].halt = wr_data[j].halt;
+                next_entries[(tail+j) % DEPTH].valid = wr_data[j].valid;
+                next_entries[(tail+j) % DEPTH].complete = 0;
+                next_entries[(tail+j) % DEPTH].t = t[j];
+                next_entries[(tail+j) % DEPTH].t_old = t_old[j];
             end
 
             for(int k=0; k < DEPTH; ++k) begin

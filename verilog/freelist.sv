@@ -6,19 +6,19 @@ module free_list #(
     parameter N = `N
 )
 (
-    input                                        clock,
-    input                                        reset,
-    input                   [$clog2(N+1)-1:0]    rd_num,  // number of regs to take off of the free list
-    input                   [$clog2(N+1)-1:0]    wr_num,  // number of regs to add back to the free list
-    input FREE_LIST_PACKET  [N-1:0]              wr_reg,  // reg idxs to add to free list
-    input logic                                  br_en,  // enable signal for EBR
-    input logic   [$clog2(DEPTH+1)-1:0]          head_ptr_in,  // free list copy for EBR
+    input                                               clock,
+    input                                               reset,
+    input                   [$clog2(N+1)-1:0]           rd_num,  // number of regs to take off of the free list
+    input                   [$clog2(N+1)-1:0]           wr_num,  // number of regs to add back to the free list
+    input FREE_LIST_PACKET  [N-1:0]                     wr_reg,  // reg idxs to add to free list
+    input logic                                         br_en,  // enable signal for EBR
+    input logic             [$clog2(DEPTH+1)-1:0]       head_ptr_in,  // free list copy for EBR
 
     // save head pointer and tail pointer, instead of free list copy
 
     output FREE_LIST_PACKET [N-1:0]             rd_reg,   // displayed available reg idxs, these are always output, and only updated based on rd_num
     output FREE_LIST_PACKET [DEPTH-1:0]         out_fl,   // free list to output
-    output logic            [$clog2(DEPTH+1)-1:0] num_avail, // broadcasting number of regs available
+    // output logic            [$clog2(N+1)-1:0] num_avail, // broadcasting number of regs available (not needed)
     output logic            [$clog2(DEPTH+1)-1:0] head_ptr
 
     `ifdef DEBUG
@@ -36,7 +36,7 @@ module free_list #(
 
     FREE_LIST_PACKET [DEPTH-1:0] entries, next_entries;
  
-    assign num_avail = num_entries + wr_num; // only dependent on what is being written in, not what is being read out
+    // assign num_avail = (num_entries + wr_num > N) ? N : num_entries + wr_num; // only dependent on what is being written in, not what is being read out
 
     always_comb begin
         rd_reg = '0;
