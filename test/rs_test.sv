@@ -51,6 +51,10 @@ module RS_tb();
         logic     [N-1:0][DEPTH-1:0]                                 debug_dis_entries_bus;
         logic     [$clog2(DEPTH+1)-1:0]                              debug_open_entries;
         logic     [DEPTH-1:0]                                        debug_all_issued_insts;
+        logic     [`NUM_FU_ALU-1:0][DEPTH-1:0]                       debug_alu_issued_bus;
+        logic     [DEPTH-1:0]                                        debug_alu_req;
+        logic     [`NUM_FU_ALU-1:0][`NUM_FU_ALU-1:0]                 debug_alu_fu_gnt_bus;
+        logic     [`NUM_FU_ALU-1:0][DEPTH-1:0]                       debug_alu_inst_gnt_bus;
     `endif
 
     RS_PACKET model_rs[$:(DEPTH)] = '{DEPTH{0}};
@@ -238,7 +242,8 @@ module RS_tb();
 
     function print_issue_signal();
         $write("Model RS Issued Signal");
-        $write("\t\t\t\t\t\t\t\t\t\t\t\t\t RS Issued Signal\n");
+        $write("\t\t\t\t\t\t\t\t\t\t\t\t\t ");
+        $write("RS Issued Signal\n");
         $write("\t#\t|\tvalid\t|   dest_idx    |\tt1\t|\tt2\t|    b_mask\t|    fu_type\t|");
         $write("\t");
         $write("\t#\t|\tvalid\t|   dest_idx    |\tt1\t|\tt2\t|    b_mask\t|    fu_type\t|\n");
@@ -250,6 +255,13 @@ module RS_tb();
             $write("\t%02d\t|\t%01d\t|\t%02d\t|\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu[i].valid, issued_alu[i].t.reg_idx, issued_alu[i].t1.reg_idx, issued_alu[i].t2.reg_idx, issued_alu[i].b_mask, issued_alu[i].fu_type);
             $write("\n");
         end
+
+        `ifdef DEBUG
+            $write("ALU Issued Bus [%b]\n", debug_alu_req);
+            for(int i=0;i<`NUM_FU_ALU;i++) begin
+                $display("%02d %b %b %b", i, debug_alu_issued_bus[i], debug_alu_fu_gnt_bus[i], debug_alu_inst_gnt_bus[i]);
+            end
+        `endif
     endfunction
 
     function void rs_print();
