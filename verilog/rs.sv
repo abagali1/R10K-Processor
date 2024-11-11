@@ -51,7 +51,7 @@ module RS #(
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     logic [DEPTH-1:0] open_spots, next_open_spots, other_sig;
-    wor [DEPTH-1:0] all_issued_insts; // also keeps track of position of instructions being issued w.r.t RS entries
+    wor [DEPTH-1:0] all_issued_insts = 0; // also keeps track of position of instructions being issued w.r.t RS entries
 
     RS_PACKET [DEPTH-1:0] entries, next_entries;
     logic [LOG_DEPTH:0] num_entries, next_num_entries;
@@ -155,9 +155,39 @@ module RS #(
     );
 
     always_comb begin
+        issued_alu = 0;
+        issued_mult = 0;
+        issued_ld = 0;
+        issued_store = 0;
+        issued_br = 0;
+
         for(int i=0;i<`NUM_FU_ALU;i++) begin
             for(int j=0;j<DEPTH;j++) begin
-                issued_alu[i] = alu_issued_bus[i][j] ? entries[j] : 0;
+                issued_alu[i] |= alu_issued_bus[i][j] ? entries[j] : 0;
+            end
+        end
+
+        for(int i=0;i<`NUM_FU_MULT;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                issued_mult[i] |= mult_issued_bus[i][j] ? entries[j] : 0;
+            end
+        end
+
+        for(int i=0;i<`NUM_FU_LD;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                issued_ld[i] |= ld_issued_bus[i][j] ? entries[j] : 0;
+            end
+        end
+
+        for(int i=0;i<`NUM_FU_STORE;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                issued_store[i] |= store_issued_bus[i][j] ? entries[j] : 0;
+            end
+        end
+
+        for(int i=0;i<`NUM_FU_BR;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                issued_br[i] |= br_issued_bus[i][j] ? entries[j] : 0;
             end
         end
     end
