@@ -8,7 +8,8 @@ module alu (
     input logic         stall,
     input logic         rd_in,
 
-    output FU_PACKET    fu_pack;
+    output FU_PACKET    fu_pack,
+    output              data_ready
 );
     DATA result, opa, opb;
     FU_PACKET out, next_out;
@@ -61,8 +62,10 @@ module alu (
     always_comb begin
         if (stall) begin
             next_out = out;
+            data_ready = '0;
         end else begin
             next_out = '{alu_result: result, is_pack: is_pack, take_conditional: 0};
+            data_ready = rd_in;
         end
     end
 
