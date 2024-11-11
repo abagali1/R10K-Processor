@@ -206,7 +206,11 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
+<<<<<<< HEAD
 MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch
+=======
+MODULES = cpu mult rob rs freelist map_table alu
+>>>>>>> ea17949 (mult updates)
 
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
