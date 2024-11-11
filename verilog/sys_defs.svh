@@ -349,6 +349,7 @@ typedef struct packed {
     ADDR  PC;
     ADDR  NPC; // PC + 4
     logic valid;
+    logic pred_taken;
 } INST_PACKET;
 
 /**
@@ -378,6 +379,7 @@ typedef struct packed {
     logic    halt;          // Is this a halt?
     logic    illegal;       // Is this instruction illegal?
     logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
+    logic    pred_taken;
 } DECODED_PACKET;
 
 typedef struct packed {
@@ -388,7 +390,6 @@ typedef struct packed {
     MAP_TABLE_PACKET t1;
     MAP_TABLE_PACKET t2;
     BR_MASK b_mask;
-    logic pred_taken;
     /* END */
 } RS_PACKET;
 
