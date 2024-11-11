@@ -10,8 +10,14 @@ module RS #(
     input                                                                              clock,
     input                                                                              reset,
 
-    input RS_PACKET                 [N-1:0]                                            rs_in,
-    input CDB_PACKET                [N-1:0]                                            cdb_in,
+    input DECODED_PACKET            [N-1:0]                         rs_in,
+    input FREE_LIST_PACKET          [N-1:0]                         t;
+    input MAP_TABLE_PACKET          [N-1:0]                         t1;
+    input MAP_TABLE_PACKET          [N-1:0]                         t2;
+    input BR_MASK                   [N-1:0]                         b_mask; 
+    input logic                     [N-1:0]                         pred_taken;
+
+    input CDB_PACKET                [N-1:0]                         cdb_in,
 
     // ebr logic
     input BR_MASK                                                                       br_id,
@@ -279,7 +285,13 @@ module RS #(
             if (rs_in[i].valid && dis_entries_bus[i]) begin
                 for (int j = 0; j < DEPTH; j++) begin
                     if (dis_entries_bus[i][j]) begin
-                        next_entries[j] = rs_in[i];
+                        next_entries[j].decoded_vals = rs_in[i].decoded_vals;
+                        next_entries[j].t1 = t1[i]; 
+                        next_entries[j].t2 = t2[i];
+                        next_entries[j].t = t[i];
+                        next_entries[j].b_mask = b_mask[i];
+                        next_entries[j].pred_taken = pred_taken[i];
+
                         next_open_spots[j] = 0;
                     end
                 end

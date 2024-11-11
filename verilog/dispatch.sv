@@ -9,7 +9,7 @@ module dispatch #(
     input logic                                  bs_full,
 
     output                  [$clog2(N+1)-1:0]    num_dispatch,
-    output INST_PACKET      [N-1:0]              out_insts,
+    output DECODED_PACKET   [N-1:0]              out_insts
 
 );
 
