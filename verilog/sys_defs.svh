@@ -428,7 +428,9 @@ typedef struct packed {
  * ID_EX Packet:
  * Data exchanged from the ID to the EX stage
  */
+
 typedef struct packed {
+    logic valid;
     INST inst;
     ADDR PC;
     ADDR NPC; // PC + 4
@@ -493,17 +495,14 @@ typedef struct packed {
     MAP_TABLE_PACKET t1;
     MAP_TABLE_PACKET t2;
     BR_MASK b_mask;
-    FU_TYPE fu_type;
-    logic pred_taken;
     /* END */
-
-    logic    valid;
 } RS_PACKET;
 
 typedef struct packed {
+    RS_PACKET rs_packet;
+
     DATA rs1_value; // reg A value
     DATA rs2_value; // reg B value
-    RS_PACKET rs_packet;
 } ISSUE_PACKET;
 
 /**
