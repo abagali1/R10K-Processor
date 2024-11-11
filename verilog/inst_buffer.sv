@@ -1,7 +1,8 @@
 module inst_buffer #(
-    parameter DEPTH,
-    parameter N = `N,
-)(
+    parameter DEPTH = 8,
+    parameter N = `N
+)
+(
     input                                       clock,
     input                                       reset,
 
@@ -11,6 +12,12 @@ module inst_buffer #(
     
     output INST_PACKET  [N-1:0]                 dispatched_insts,
     output              [$clog2(DEPTH+1)-1:0]   open_entries
+
+    `ifdef DEBUG
+    ,    INST_PACKET [DEPTH-1:0]     debug_entries,
+        logic            [$clog2(DEPTH)-1:0] debug_head,
+        logic            [$clog2(DEPTH)-1:0] debug_tail
+    `endif
 
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
