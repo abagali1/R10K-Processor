@@ -12,7 +12,7 @@
 
 module br_stack_tb();
 
-    parameter DEPTH = `ROB_SZ;
+    parameter DEPTH = `BRANCH_PRED_SZ;
     parameter N = 2;
     localparam LOG_DEPTH = $clog2(DEPTH);
 
@@ -31,11 +31,18 @@ module br_stack_tb();
     CHECKPOINT                                                  cp_out;
     logic                                                       full;
 
+    `ifdef DEBUG
+        CHECKPOINT [DEPTH-1:0] debug_entries;
+        CHECKPOINT [DEPTH-1:0] debug_free_entries;
+        logic [DEPTH-1:0] debug_stack_gnt;
+    `endif
 
-    // CHECKPOINT [DEPTH-1] branch_stack_model;
-
+    CHECKPOINT [DEPTH-1:0] model_entries;
+    ADDR test_in_PC;
+    MAP_TABLE_PACKET [2:0] test_in_mt;  
+    logic [2:0] test_in_fl_head;
+    logic [2:0] test_in_rob_tail;
    
-
     BR_STACK #(
         .DEPTH(DEPTH),
         .N(N)
@@ -66,17 +73,35 @@ module br_stack_tb();
 
         clock = 0;
         reset = 1;
-        // initialize inputs to 0/null/default/nothing
 
         @(negedge clock);
         @(negedge clock);
         reset = 0;
         
-
         // ------------------------------ Test 1 ------------------------------ //
-        $display("Running Test 1");
+        $display("\nTest 1: Test Checkpoint Coming In\n");
+        // send in checkpoint and check all the outputs are correct
+        
+        clear_inputs();
+        @(negedge clock);  
+
+        test_in_PC = 3;
+        test_in_mt[0] = {13, 1, 1};
+        test_in_mt[1] = {14, 1, 1}; 
+        test_in_mt[2] = {15, 1, 1};   
+        test_in_fl_head = 2;
+        test_in_rob_tail = 2;
+
+        add_checkpoint(test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail); 
+        model_entries[3] = {1, 1000, 1000, test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail};
+        @(negedge clock);  
+        valid_assign = 0;
+
+        // ------------------------------ Test 2 ------------------------------ //
+        $display("\nTest 2: Squash Branch, Check Dependent Checkpoints\n");
+        
         // if you squash the first branch that came in, 
-        // it should get rid of all the checkpoints
+        // it should get rid of all the dependent checkpoints
 
         // add in 2 checkpoints (two branches?)
         // squash the first branch
@@ -86,80 +111,166 @@ module br_stack_tb();
         // probably will need to add in debug signals to view all the checkpoints at any given time
         // also maybe output a signal from the psel about which checkpoint idx to check in test bench
 
-
-
-
-
-        // ------------------------------ Test 2 ------------------------------ //
-        $display("Running Test 2");
+        // ------------------------------ Test 3 ------------------------------ //
+         $display("\nTest 3: Clear Checkpoint, Check Bits in other Checkpoints\n");
+        
         // if you clear one of the checkpoints, it should get rid of the 
         // corresponding bits in all of the masks of the other checkpoints
 
         // add in 3 checkpoints with different branch_ids but one is  
         // clear the second one
 
-
-
-
-
-        
-        // ------------------------------ Test 3 ------------------------------ //
-        $display("Running Test 3");
+        // ------------------------------ Test 4 ------------------------------ //
+        $display("\nTest 4: CDB Outputs Register\n");
         // when cdb outputs a register that's updated, recover maptable in 
         // checkpoint should also update
 
-
-
-        // ------------------------------ Test 4 ------------------------------ //
-        $display("Running Test 4");
+        // ------------------------------ Test 5 ------------------------------ //
+         $display("\nTest 5: Squash and Take in New Checkpoint\n");
         // squash and try to take in a new checkpoint
 
-
-        
-        // ------------------------------ Test 4 ------------------------------ //
-        $display("Running Test 5");
+        // ------------------------------ Test 6 ------------------------------ //
+         $display("\nTest 6: Clear Checkpoint, Add in a New One\n");
         // when you clear a checkpoint and add in a new one,
         //  want to make sure the bit mask is correct
 
-
         $finish;
-
     end
 
     int cycle_number = 0;
     // Correctness Verification
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
-        // print_model();
-        // print_free_list();
-        // $display("rd_num: %d\n", rd_num);
+        print_entries();
+        //print_model_entries();
+        print_stack_gnt();
         // check_entries();
         $display("@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
         cycle_number++;
     end
-endmodule
 
+// updating
 
 function void clear_inputs();
-    valid_assign = '0  
-    in_PC = '0
-    in_mt = '0  
-    in_rob_tail = '0
-    cdb_in = '0
-    br_task = '0
-    rem_b_id = '0
-
+    valid_assign = '0; 
+    in_PC = '0;
+    in_mt = '0;  
+    in_rob_tail = '0;
+    cdb_in = '0;
+    br_task = '0;
+    rem_b_id = '0;
 endfunction
 
-function 
-
-function void add_checkpoint(CHECKPOINT data);
-        
-
-
+function void add_checkpoint(ADDR test_in_PC, MAP_TABLE_PACKET [2:0] test_in_mt, logic [2:0] test_in_fl_head, logic [2:0] test_in_rob_tail);
+    //stack_gnt = data.b_id;
+    in_PC = test_in_PC;
+    in_mt = test_in_mt;
+    in_fl_head = test_in_fl_head;
+    in_rob_tail = test_in_rob_tail;
+    valid_assign = 1;
+endfunction
+    
+function void set_task(BR_TASK tasky);
+    br_task = tasky;
 endfunction
 
+// checking
 
+function void check_free_entries(logic free);
+    if (debug_free_entries != free) begin
+        $error("@@@ FAILED @@@");
+        $error("Check free entry error: expected %0d, but got %0d", free, debug_free_entries);
+        $finish;
+    end
+endfunction
+
+function void check_entries();
+    for (int i = 0; i < DEPTH; i++) begin
+        if (model_entries[i].b_id != debug_entries[i].b_id) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].b_id, debug_entries[i].b_id);
+            $finish;
+        end
+        if (model_entries[i].b_mask != debug_entries[i].b_mask) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].b_mask, debug_entries[i].b_mask);
+            $finish;
+        end
+        if (model_entries[i].rec_PC != debug_entries[i].rec_PC) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].rec_PC, debug_entries[i].rec_PC);
+            $finish;
+        end
+        if (model_entries[i].fl_head != debug_entries[i].fl_head) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].fl_head, debug_entries[i].fl_head);
+            $finish;
+        end
+        if (model_entries[i].rob_tail != debug_entries[i].rob_tail) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].rob_tail, debug_entries[i].rob_tail);
+            $finish;
+        end
+    end
+endfunction
+
+// printing
+
+function void print_entries();
+    $display("\nEntries\n");
+    for (int i = 0; i < DEPTH; i++) begin
+        $display("index: %0d", i);
+        $display("b_id: %0d", debug_entries[i].b_id);
+        $display("b_mask: %0d", debug_entries[i].b_mask);
+        $display("rec_PC: %0d", debug_entries[i].rec_PC);
+        // $display("map table: %0d\n", entries[i].b_id);
+        $display("fl_head: %0d", debug_entries[i].fl_head);
+        $display("rob_tail: %0d", debug_entries[i].rob_tail);
+        $display("\n");
+    end
+endfunction
+
+function void print_model_entries();
+    $display("\nModel Entries\n");
+    for (int i = 0; i < DEPTH; i++) begin
+        $display("index: %0d", i);
+        $display("b_id: %0d", model_entries[i].b_id);
+        $display("b_mask: %0d", model_entries[i].b_mask);
+        $display("rec_PC: %0d", model_entries[i].rec_PC);
+        // $display("map table: %0d\n", entries[i].b_id);
+        $display("fl_head: %0d", model_entries[i].fl_head);
+        $display("rob_tail: %0d", model_entries[i].rob_tail);
+        $display("\n");
+    end
+endfunction
+
+function void print_free_entries();
+    $display("\nFree Entries: %0d", debug_free_entries);
+endfunction
+
+function void print_br_task();
+    $display("\nBR Task: %0d", br_task);
+endfunction
+
+// can use to print out cp_out
+function void print_checkpoint(CHECKPOINT data);
+    $display("b_id: %0d\n", data.b_id);
+    $display("b_mask: %0d\n", data.b_mask);
+    $display("rec_PC: %0d\n", data.rec_PC);
+    // $display("map table: %0d\n", data.b_id);
+    $display("fl_head: %0d\n", data.fl_head);
+    $display("rob_tail: %0d\n", data.rob_tail);
+    $display("\n");
+endfunction
+
+function void print_stack_gnt();
+    $display("\nStack Grant\n");
+    for (int i = 0; i < DEPTH; i++) begin
+        $display("%0d ", debug_stack_gnt[i]);
+    end
+endfunction
+
+endmodule
 
 
 // if you squash the first branch that came in, it should get rid of all the checkpoints

@@ -17,18 +17,23 @@ module BR_STACK #(
     input CDB_PACKET                [N-1:0]                             cdb_in,
     
     input BR_TASK                                                       br_task, // not defined here. in main sysdefs
-    input logic                     [DEPTH-1:0]               rem_b_id, // b_id to remove
+    input logic                     [DEPTH-1:0]                         rem_b_id, // b_id to remove
     
     
     output CHECKPOINT                                                   cp_out,
     output logic                                                        full
+
+    `ifdef DEBUG
+    ,   CHECKPOINT [DEPTH-1:0] debug_entries,
+        logic [DEPTH-1:0] debug_free_entries,
+        logic [DEPTH-1:0] debug_stack_gnt
+    `endif
+
 );
 
     CHECKPOINT [DEPTH-1:0] entries;
     CHECKPOINT [DEPTH-1:0] next_entries;
 
-
-    // why is this DEPTH and not log(DEPTH) - free entries is a number?
     logic [DEPTH-1:0] free_entries; // bit map of whether an entry is free (1 if free)
     logic [DEPTH-1:0] next_free_entries;
     
@@ -48,8 +53,20 @@ module BR_STACK #(
     assign full = free_entries == 0;
 
     always_comb begin
+        $display("stack grant");
+        for (int i = 0; i < DEPTH; i++) begin
+            $display("%0d ", stack_gnt[i]);
+        end
+        $display("\n");
+
         next_entries = entries;
         next_free_entries = free_entries;
+
+        `ifdef DEBUG
+            debug_entries = entries;
+            debug_free_entries = free_entries;
+            debug_stack_gnt = stack_gnt;
+        `endif
 
         // ok something to consider, the outputted checkpoint may not be fully updated by the 
         // ready bits in the current cycle's cdb.
@@ -78,6 +95,10 @@ module BR_STACK #(
                 end
             end
         end
+
+        $display("valid assign");
+        $display(valid_assign);
+        $display("\n");
 
         // Set checkpoint
         if (valid_assign) begin
