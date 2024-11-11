@@ -1,3 +1,4 @@
+
 /////////////////////////////////////////////////////////////////////////
 //                                                                     //
 //   Modulename :  sys_defs.svh                                        //
@@ -356,6 +357,7 @@ typedef struct packed {
  * ID_EX Packet:
  * Data exchanged from the ID to the EX stage
  */
+
 typedef struct packed {
     logic valid;
     INST inst;
@@ -365,6 +367,7 @@ typedef struct packed {
     FU_TYPE fu_type;
     REG_IDX reg1;
     REG_IDX reg2;
+<<<<<<< HEAD
 
     ALU_OPA_SELECT opa_select; // ALU opa mux select (ALU_OPA_xxx *)
     ALU_OPB_SELECT opb_select; // ALU opb mux select (ALU_OPB_xxx *)
@@ -415,6 +418,8 @@ typedef struct packed {
     INST inst;
     ADDR PC;
     ADDR NPC; // PC + 4
+=======
+>>>>>>> ea17949 (mult updates)
 
     ALU_OPA_SELECT opa_select; // ALU opa mux select (ALU_OPA_xxx *)
     ALU_OPB_SELECT opb_select; // ALU opb mux select (ALU_OPB_xxx *)
@@ -429,23 +434,21 @@ typedef struct packed {
     logic    halt;          // Is this a halt?
     logic    illegal;       // Is this instruction illegal?
     logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
+    logic    pred_taken;
 
     /* P4 ADDED STUFF */
     FREE_LIST_PACKET t;
     MAP_TABLE_PACKET t1;
     MAP_TABLE_PACKET t2;
     BR_MASK b_mask;
-    FU_TYPE fu_type;
-    logic pred_taken;
     /* END */
-
-    logic    valid;
 } RS_PACKET;
 
 typedef struct packed {
+    RS_PACKET rs_packet;
+
     DATA rs1_value; // reg A value
     DATA rs2_value; // reg B value
-    RS_PACKET rs_packet;
 } ISSUE_PACKET;
 
 /**
@@ -512,6 +515,7 @@ typedef struct packed {
     logic           complete;
     logic           valid;
 <<<<<<< HEAD
+<<<<<<< HEAD
 } ROB_PACKET;
 =======
 } ROB_ENTRY_PACKET;
@@ -520,6 +524,9 @@ typedef struct packed {
     PHYS_REG_IDX reg_idx;
     logic valid;
 } FREE_LIST_PACKET;
+=======
+} ROB_PACKET;
+>>>>>>> ea17949 (mult updates)
 
 typedef struct packed {
     ISSUE_PACKET    is_pack;
@@ -527,6 +534,7 @@ typedef struct packed {
     logic           take_conditional;
 } FU_PACKET;
 
+<<<<<<< HEAD
 typedef struct packed {
     PHYS_REG_IDX reg_idx;
     logic ready;
@@ -535,4 +543,6 @@ typedef struct packed {
 
 >>>>>>> 8cb8de5 (implements alu fu)
 
+=======
+>>>>>>> ea17949 (mult updates)
 `endif // __SYS_DEFS_SVH__
