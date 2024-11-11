@@ -134,7 +134,6 @@ module testbench;
         clock = ~clock;
     end
 
-
     initial begin
         $display("\n---- Starting CPU Testbench ----\n");
 
@@ -168,7 +167,6 @@ module testbench;
         $display("  %16t : Loading Unified Memory", $realtime);
         // load the compiled program's hex data into the memory module
         $readmemh(program_memory_file, memory.unified_memory);
-
         @(posedge clock);
         @(posedge clock);
         #1; // This reset is at an odd time to avoid the pos & neg clock edges
@@ -213,6 +211,11 @@ module testbench;
             //           {31'b0,committed_insts[0].valid});
             // print_membus({30'b0,proc2mem_command}, proc2mem_addr[31:0],
             //              proc2mem_data[63:32], proc2mem_data[31:0]);
+
+            for (int i = 0; i < N; i += 4) begin 
+                insts[i].inst = memory.unified_memory[PC[15:3]].word_level[PC_reg[2]]; 
+                insts[i].valid = 1;
+            end
 
             print_custom_data();
 
