@@ -56,10 +56,16 @@ module RS_tb();
     logic                       [N-1:0][DEPTH-1:0]                                   debug_dis_entries_bus;
     logic                       [$clog2(DEPTH+1)-1:0]                                debug_open_entries;
     logic                       [DEPTH-1:0]                                          debug_all_issued_insts;
+
     logic                       [`NUM_FU_ALU-1:0][DEPTH-1:0]                         debug_alu_issued_bus;
     logic                       [DEPTH-1:0]                                          debug_alu_req;
     logic                       [`NUM_FU_ALU-1:0][`NUM_FU_ALU-1:0]                   debug_alu_fu_gnt_bus;
     logic                       [`NUM_FU_ALU-1:0][DEPTH-1:0]                         debug_alu_inst_gnt_bus;
+
+    logic                       [`NUM_FU_MULT-1:0][DEPTH-1:0]                        debug_mult_issued_bus;
+    logic                       [DEPTH-1:0]                                          debug_mult_req;
+    logic                       [`NUM_FU_MULT-1:0][`NUM_FU_MULT-1:0]                 debug_mult_fu_gnt_bus;
+    logic                       [`NUM_FU_MULT-1:0][DEPTH-1:0]                        debug_mult_inst_gnt_bus;
 `endif
 
     RS_PACKET model_rs[$:(DEPTH)] = '{DEPTH{0}};
@@ -292,27 +298,38 @@ module RS_tb();
         end
     endfunction
 
-    function print_issue_signal();
-        $write("Model RS Issued Signal");
-        $write("\t\t\t\t\t\t\t\t\t\t\t\t\t");
-        $write("RS Issued Signal\n");
-        $write("\t#\t| valid |dest_idx|\tt1\t|\tt2\t|  b_mask   |fu_type|");
-        $write("\t\t");
-        $write("\t#\t| valid |dest_idx|\tt1\t|\tt2\t|  b_mask   |fu_type|");
+    function print_issue_fu(int num_fu, FU_TYPE fu_type);
+        $write("\nModel RS Issued Signal [%01d]", fu_type);
+        $write("\t\t\t\t\t\t\t\t\t\t\t\t");
+        $write("RS Issued Signal [%01d]\n", fu_type);
+        $write("#\t| valid |dest_idx|\tt1\t|\tt2\t|  b_mask   |fu_type|");
+        $write("\t\t\t\t");
+        $write("#\t| valid |dest_idx|\tt1\t|\tt2\t|  b_mask   |fu_type|");
         $write("\n");
 
 
-        for(int i=`NUM_FU_ALU-1;i>=0;i--) begin
+        for(int i=num_fu-1;i>=0;i--) begin
             $write("\t%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu_buffer[i].decoded_vals.valid, issued_alu_buffer[i].t.reg_idx, issued_alu_buffer[i].t1.reg_idx, issued_alu_buffer[i].t2.reg_idx, issued_alu_buffer[i].b_mask, issued_alu_buffer[i].decoded_vals.fu_type);
             $write("\t\t");
             $write("\t%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu[i].decoded_vals.valid, issued_alu[i].t.reg_idx, issued_alu[i].t1.reg_idx, issued_alu[i].t2.reg_idx, issued_alu[i].b_mask, issued_alu[i].decoded_vals.fu_type);
             $write("\n");
         end
+    endfunction
+
+    function print_issue_signal();
+        print_issue_fu(`NUM_FU_ALU, ALU_INST);
 
         `ifdef DEBUG
-            $write("ALU Issued Bus [%b]\n", debug_alu_req);
+            $write("\n");
+            $write("ALU Issued Bus [%b]", debug_alu_req);
+            $write("\t\t");
+            $write("MULT Issued Bus [%b]", debug_mult_req);
+            $write("\n");
             for(int i=`NUM_FU_ALU-1;i>=0;i--) begin
-                $display("%02d %b %b %b", i, debug_alu_issued_bus[i], debug_alu_fu_gnt_bus[i], debug_alu_inst_gnt_bus[i]);
+                $write("%02d %b %b %b", i, debug_alu_issued_bus[i], debug_alu_fu_gnt_bus[i], debug_alu_inst_gnt_bus[i]);
+                $write("\t\t");
+                $write("%02d %b %b %b", i, debug_mult_issued_bus[i], debug_mult_fu_gnt_bus[i], debug_mult_inst_gnt_bus[i]);
+                $write("\n");
             end
         `endif
     endfunction

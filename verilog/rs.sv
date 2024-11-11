@@ -47,10 +47,16 @@ module RS #(
         output logic                [N-1:0][DEPTH-1:0]                                  debug_dis_entries_bus,
         output logic                [$clog2(DEPTH+1)-1:0]                               debug_open_entries,
         output logic                [DEPTH-1:0]                                         debug_all_issued_insts,
+
         output logic                [`NUM_FU_ALU-1:0][DEPTH-1:0]                        debug_alu_issued_bus,
         output logic                [DEPTH-1:0]                                         debug_alu_req,
         output logic                [`NUM_FU_ALU-1:0][`NUM_FU_ALU-1:0]                  debug_alu_fu_gnt_bus,
-        output logic                [`NUM_FU_ALU-1:0][DEPTH-1:0]                        debug_alu_inst_gnt_bus
+        output logic                [`NUM_FU_ALU-1:0][DEPTH-1:0]                        debug_alu_inst_gnt_bus,
+
+        output logic                [`NUM_FU_MULT-1:0][DEPTH-1:0]                       debug_mult_issued_bus,
+        output logic                [DEPTH-1:0]                                         debug_mult_req,
+        output logic                [`NUM_FU_MULT-1:0][`NUM_FU_MULT-1:0]                debug_mult_fu_gnt_bus,
+        output logic                [`NUM_FU_MULT-1:0][DEPTH-1:0]                       debug_mult_inst_gnt_bus
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -90,8 +96,12 @@ module RS #(
         assign debug_dis_entries_bus = dis_entries_bus;
         assign debug_open_entries = DEPTH - num_entries;
         assign debug_all_issued_insts = all_issued_insts;
+
         assign debug_alu_issued_bus = alu_issued_bus;
         assign debug_alu_req = alu_req;
+
+        assign debug_mult_issued_bus = mult_issued_bus;
+        assign debug_mult_req = mult_req;
     `endif
 
     rs_psel #(
@@ -121,6 +131,11 @@ module RS #(
         .num_issued(num_mult_issued),
         .fu_issued_insts(mult_issued_bus),
         .all_issued_insts(all_issued_insts)
+
+        `ifdef DEBUG
+        ,   .debug_fu_gnt_bus(debug_mult_fu_gnt_bus),
+            .debug_inst_gnt_bus(debug_mult_inst_gnt_bus)
+        `endif
     );
 
     rs_psel #(
