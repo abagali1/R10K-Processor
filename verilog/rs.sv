@@ -7,17 +7,16 @@ module RS #(
     parameter N = `N
 )
 (
-    input                                                                              clock,
-    input                                                                              reset,
+    input                                                                               clock,
+    input                                                                               reset,
 
-    input DECODED_PACKET            [N-1:0]                                            rs_in,
-    input FREE_LIST_PACKET          [N-1:0]                                            t;
-    input MAP_TABLE_PACKET          [N-1:0]                                            t1;
-    input MAP_TABLE_PACKET          [N-1:0]                                            t2;
-    input BR_MASK                   [N-1:0]                                            b_mask; 
-    input logic                     [N-1:0]                                            pred_taken;
+    input DECODED_PACKET            [N-1:0]                                             rs_in,
+    input FREE_LIST_PACKET          [N-1:0]                                             t;
+    input MAP_TABLE_PACKET          [N-1:0]                                             t1;
+    input MAP_TABLE_PACKET          [N-1:0]                                             t2;
+    input BR_MASK                   [N-1:0]                                             b_mask; 
 
-    input CDB_PACKET                [N-1:0]                                            cdb_in,
+    input CDB_PACKET                [N-1:0]                                             cdb_in,
 
     // ebr logic
     input BR_MASK                                                                       br_id,
@@ -290,7 +289,6 @@ module RS #(
                         next_entries[j].t2 = t2[i];
                         next_entries[j].t = t[i];
                         next_entries[j].b_mask = b_mask[i];
-                        next_entries[j].pred_taken = pred_taken[i];
 
                         next_open_spots[j] = 0;
                     end
