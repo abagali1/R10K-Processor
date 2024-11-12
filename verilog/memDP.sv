@@ -10,6 +10,7 @@ module memDP
   #(parameter WIDTH      = 32,
     parameter DEPTH      = 32,
     parameter READ_PORTS = 1,
+    parameter WRITE_PORTS = 1,
     parameter BYPASS_EN  = 0   // 0: Read data will update at positive edge
                                // 1: Read data will update combinationally if
                                //    write to same address
@@ -17,22 +18,22 @@ module memDP
    (// ------------------------------------------------------------ //
     //                      Clock and Reset                         //
     // ------------------------------------------------------------ //
-    input                                            clock,
-    input                                            reset,
+    input                                              clock,
+    input                                              reset,
 
     // ------------------------------------------------------------ //
     //                      Read interface                          //
     // ------------------------------------------------------------ //
-    input         [READ_PORTS-1:0]                    re,     // Read enable
-    input         [READ_PORTS-1:0][$clog2(DEPTH)-1:0] raddr,  // Read address
-    output logic  [READ_PORTS-1:0][WIDTH        -1:0] rdata,  // Read data
+    input         [READ_PORTS-1:0]                     re,     // Read enable
+    input         [READ_PORTS-1:0][$clog2(DEPTH)-1:0]  raddr,  // Read address
+    output logic  [READ_PORTS-1:0][WIDTH        -1:0]  rdata,  // Read data
 
     // ------------------------------------------------------------ //
     //                      Write interface                         //
     // ------------------------------------------------------------ //
-    input         [READ_PORTS-1:0]                    we,     // Write enable
-    input         [READ_PORTS-1:0][$clog2(DEPTH)-1:0] waddr,  // Write address
-    input         [READ_PORTS-1:0][WIDTH        -1:0] wdata   // Write data
+    input         [WRITE_PORTS-1:0]                    we,     // Write enable
+    input         [WRITE_PORTS-1:0][$clog2(DEPTH)-1:0] waddr,  // Write address
+    input         [WRITE_PORTS-1:0][WIDTH        -1:0] wdata   // Write data
    );
 
 logic [DEPTH-1:0][WIDTH-1:0]  memData;
@@ -77,7 +78,7 @@ always_ff @(posedge clock) begin
     if (reset) begin
         memData <= '0;
     end else begin
-        for (int j = 0; j < READ_PORTS; j++) begin
+        for (int j = 0; j < WRITE_PORTS; j++) begin
             if (we[j]) begin
                 memData[waddr[j]] <= wdata[j];
                 break;
