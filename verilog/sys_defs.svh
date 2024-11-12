@@ -405,7 +405,7 @@ typedef struct packed {
 
     DATA alu_result;
     logic take_conditional;
-} FU_PACKET;o
+} FU_PACKET;
 
 /**
  * EX_MEM Packet:
