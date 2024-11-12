@@ -56,7 +56,12 @@ module RS #(
         output logic                [`NUM_FU_MULT-1:0][DEPTH-1:0]                       debug_mult_issued_bus,
         output logic                [DEPTH-1:0]                                         debug_mult_req,
         output logic                [`NUM_FU_MULT-1:0][`NUM_FU_MULT-1:0]                debug_mult_fu_gnt_bus,
-        output logic                [`NUM_FU_MULT-1:0][DEPTH-1:0]                       debug_mult_inst_gnt_bus
+        output logic                [`NUM_FU_MULT-1:0][DEPTH-1:0]                       debug_mult_inst_gnt_bus,
+
+        output logic                [`NUM_FU_BR-1:0][DEPTH-1:0]                         debug_br_issued_bus,
+        output logic                [DEPTH-1:0]                                         debug_br_req,
+        output logic                [`NUM_FU_BR-1:0][`NUM_FU_BR-1:0]                    debug_br_fu_gnt_bus,
+        output logic                [`NUM_FU_BR-1:0][DEPTH-1:0]                         debug_br_inst_gnt_bus
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -102,6 +107,9 @@ module RS #(
 
         assign debug_mult_issued_bus = mult_issued_bus;
         assign debug_mult_req = mult_req;
+
+        assign debug_br_issued_bus = br_issued_bus;
+        assign debug_br_req = br_req;
     `endif
 
     rs_psel #(
@@ -172,6 +180,11 @@ module RS #(
         .num_issued(num_br_issued),
         .fu_issued_insts(br_issued_bus),
         .all_issued_insts(all_issued_insts)
+
+        `ifdef DEBUG
+        ,   .debug_fu_gnt_bus(debug_br_fu_gnt_bus),
+            .debug_inst_gnt_bus(debug_br_inst_gnt_bus)
+        `endif
     );
 
     always_comb begin
@@ -325,16 +338,14 @@ module RS #(
         end
     end
 
-    `ifdef DEBUG_MT
+    `ifdef DEBUG_RS
         always @(posedge clock) begin
             $display("============== RESERVATION STATION ==============\n");
             $display("  Entries:");
-            $display("  -------------------------------------");
-            $display("  |  i | type |  t | t1 | t2 | valid  |");
-            $display("  -------------------------------------");
+            $display("-------------------------------------");
+            $display("i | type |  t | t1 | t2 | valid  |");
             for (int i = 0; i < DEPTH; i++) begin
-                $display("  | %2d |  %2d  | %2d | %2d | %2d |    %0d   |", i, entries[i].decoded_vals.fu_type, entries[i].t, entries[i].t1, entries[i].t2, entries[i].decoded_vals.valid);
-                $display("  -------------------------------------");
+                $display("%02d |  %02d  | %02d | %02d | %02d |    %01d   |", i, entries[i].decoded_vals.fu_type, entries[i].t, entries[i].t1, entries[i].t2, entries[i].decoded_vals.valid);
             end
             $display("");
         end
