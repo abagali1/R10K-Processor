@@ -18,17 +18,14 @@ module dispatch_tb();
 
     logic                                  clock;
     logic                                  reset;
-
-    INST_PACKET [N-1:0]                   insts;
+    INST_PACKET              [N-1:0]       insts;
     logic                                  bs_full;
+    logic                    [LOG_N-1:0]   rob_open;
+    logic                    [LOG_N-1:0]   rs_open;
 
-    logic [LOG_N-1:0]                     rob_open;
-    logic [LOG_N-1:0]                     rs_open;
+    logic                    [LOG_N-1:0]   num_dispatch;
+    DECODED_PACKET           [N-1:0]       out_insts;
 
-    logic [LOG_N-1:0]                     num_dispatch;
-    DECODED_PACKET [N-1:0]                out_insts;
-
-    // Initialize instances of the modules and signals
     dispatch #(
         .N(N)
     ) dut (
@@ -43,7 +40,6 @@ module dispatch_tb();
         .out_insts(out_insts)
     );
 
-    // Clock generation
     always begin
         #(`CLOCK_PERIOD/2.0);
         clock = ~clock;
@@ -55,6 +51,22 @@ module dispatch_tb();
         clock = 0;
         reset = 1;
 
+        $finish;
     end
+
+    int cycle_number = 0;
+    always @(posedge clock) begin     
+        #(`CLOCK_PERIOD * 0.2);
+        $display("@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
+        cycle_number++;
+    end
+
+    // functions
+
+    // print
+
+    // function void print_out_insts() begin
+    //     $display(
+    // end
 
 endmodule
