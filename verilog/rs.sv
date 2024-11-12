@@ -324,4 +324,19 @@ module RS #(
             open_spots <= next_open_spots;
         end
     end
+
+    `ifdef DEBUG_MT
+        always @(posedge clock) begin
+            $display("============== RESERVATION STATION ==============\n");
+            $display("  Entries:");
+            $display("  -------------------------------------");
+            $display("  |  i | type |  t | t1 | t2 | valid  |");
+            $display("  -------------------------------------");
+            for (int i = 0; i < DEPTH; i++) begin
+                $display("  | %2d |  %2d  | %2d | %2d | %2d |    %0d   |", i, entries[i].decoded_vals.fu_type, entries[i].t, entries[i].t1, entries[i].t2, entries[i].decoded_vals.valid);
+                $display("  -------------------------------------");
+            end
+            $display("");
+        end
+    `endif
 endmodule
