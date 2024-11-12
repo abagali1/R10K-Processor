@@ -45,6 +45,9 @@ module testbench;
     logic [31:0] clock_count; // also used for terminating infinite loops
     logic [31:0] instr_count;
 
+    INST_PACKET   [7:0] in_insts;
+    logic [2:0] num_input;
+
     MEM_COMMAND proc2mem_command;
     ADDR        proc2mem_addr;
     MEM_BLOCK   proc2mem_data;
@@ -53,7 +56,11 @@ module testbench;
     MEM_TAG     mem2proc_data_tag;
     MEM_SIZE    proc2mem_size;
 
+    logic         [2:0] ib_open;
+    ADDR                 PC;
+
     COMMIT_PACKET [`N-1:0] committed_insts;
+
     EXCEPTION_CODE error_status = NO_ERROR;
 
     ADDR  if_NPC_dbg;
@@ -82,6 +89,9 @@ module testbench;
         .mem2proc_data            (mem2proc_data),
         .mem2proc_data_tag        (mem2proc_data_tag),
 
+        .in_insts(in_insts),
+        .num_input(num_input),
+
         // Outputs
         .proc2mem_command (proc2mem_command),
         .proc2mem_addr    (proc2mem_addr),
@@ -91,6 +101,9 @@ module testbench;
 `endif
 
         .committed_insts (committed_insts),
+    
+        .ib_open(ib_opn),
+        .PC(PC),
 
         .if_NPC_dbg       (if_NPC_dbg),
         .if_inst_dbg      (if_inst_dbg),
@@ -212,9 +225,19 @@ module testbench;
             // print_membus({30'b0,proc2mem_command}, proc2mem_addr[31:0],
             //              proc2mem_data[63:32], proc2mem_data[31:0]);
 
-            for (int i = 0; i < N; i += 4) begin 
-                insts[i].inst = memory.unified_memory[PC[15:3]].word_level[PC_reg[2]]; 
-                insts[i].valid = 1;
+            num_accept = 0;
+
+            for (ADDR i = PC; i < PC + 4 * ib_open; i += 4) begin 
+                in_insts[i].inst = memory.unified_memory[i[15:3]].word_level[i[2]]; 
+                if (in_insts[i]) begin
+                    in_insts[i].valid = 1;
+                    in_insts[i].PC = i;
+                    in_insts[i].NPC = i + 4;
+                    in_insts[i].pred_taken = 0;
+                    num_accept++;
+                end else begin
+                    in_insts[i].valid = 0;
+                end
             end
 
             print_custom_data();
