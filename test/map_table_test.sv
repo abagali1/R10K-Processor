@@ -257,7 +257,7 @@ module map_table_tb();
             dest_reg_idx[i] = inst.dr;
             incoming_valid[i] = 1;
 
-            mt_model[inst.dr] = '{free_list_model[i], 0, 1};
+            mt_model[inst.dr] = '{reg_idx: free_list_model[i], valid: 1, ready: 0};
         end
     endfunction
 
@@ -336,7 +336,10 @@ module map_table_tb();
         end
         if (r1_p_reg_model !== r1_p_reg) begin
             $error("@@@ FAILED @@@");
-            $error("Test Error: Model r1_p_reg mismatch, expected [%0d] but got [%0d]", r1_p_reg_model, r1_p_reg);
+            $error("Test Error: Model r1_p_reg mismatch");
+            for (int i = 0; i < N; i++) begin
+                $display("  i=[%0d] Expected reg=[%0d], v=[%0d], r=[%0d] but got reg=[%0d], v=[%0d], r=[%0d]", i, r1_p_reg_model[i].reg_idx, r1_p_reg_model[i].valid, r1_p_reg_model[i].ready, r1_p_reg[i].reg_idx, r1_p_reg[i].valid, r1_p_reg[i].ready);
+            end
             $finish;
         end
         if (r2_p_reg_model !== r2_p_reg) begin
@@ -367,6 +370,7 @@ module map_table_tb();
     endfunction
 
     // Monitoring Statements
+    
     int cycle_number = 0;
     always @(posedge clock) begin
         $display("------------------------------------------------------------");

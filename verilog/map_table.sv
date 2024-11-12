@@ -74,4 +74,12 @@ module map_table #(
         end
     end
 
+    `ifdef DEBUG_MT
+        always @(posedge clock) begin
+            $display("=================== MAP TABLE ===================");
+            $display("");
+
+        end
+    `endif
+
 endmodule

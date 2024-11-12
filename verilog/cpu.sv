@@ -378,4 +378,15 @@ module cpu (
     // Output the committed instruction to the testbench for counting
     assign committed_insts[0] = wb_packet;
 
+    // DEBUG OUTPUTS
+    `ifdef DEBUG
+        int cycle = 0;
+        always @(posedge clock) begin
+            $display("====================== CPU ======================");
+            $display("@@@ Cycle %0d @@@", cycle);
+            $display("Time: %0t", $time);
+            cycle++;
+        end
+    `endif
+
 endmodule // pipeline
