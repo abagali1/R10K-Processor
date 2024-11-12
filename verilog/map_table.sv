@@ -64,10 +64,10 @@ module map_table #(
 
     always @(posedge clock) begin
         if (reset) begin
-        for (int i = 1; i <= DEPTH; i++) begin
+            for (int i = 1; i <= DEPTH; i++) begin
                 entries[i].reg_idx <= i;
                 entries[i].valid <= 1;
-                entries[i].ready <= 1;
+                entries[i].ready <= 1;  
             end
         end else begin
             entries <= next_entries;
