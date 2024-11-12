@@ -17,12 +17,12 @@ module cpu (
     input reset, // System reset
     
     input INST_PACKET [7:0] in_insts,
-    input logic [2:0] num_input,
+    input logic [3:0] num_input,
 
     // Note: these are assigned at the very bottom of the module
     output COMMIT_PACKET [`N-1:0] committed_insts,
 
-    output logic         [2:0] ib_open,
+    output logic         [3:0] ib_open,
     output ADDR                PC
 );
 
