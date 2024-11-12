@@ -1,4 +1,3 @@
-
 /////////////////////////////////////////////////////////////////////////
 //                                                                     //
 //   Modulename :  sys_defs.svh                                        //
@@ -371,7 +370,6 @@ typedef struct packed {
  * ID_EX Packet:
  * Data exchanged from the ID to the EX stage
  */
-
 typedef struct packed {
     logic valid;
     INST inst;
