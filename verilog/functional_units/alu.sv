@@ -18,7 +18,7 @@ module alu (
 
     // ALU opA mux
     always_comb begin
-        case (is_pack.rs_packet.opa_select)
+        case (is_pack.decoded_vals.decoded_vals.opa_select)
             OPA_IS_RS1:  opa = is_pack.rs1_value;
             OPA_IS_NPC:  opa = is_pack.rs_packet.NPC;
             OPA_IS_PC:   opa = is_pack.rs_packet.PC;
@@ -29,7 +29,7 @@ module alu (
 
     // ALU opB mux
     always_comb begin
-        case (is_pack.rs_packet.opb_select)
+        case (is_pack.decoded_vals.decoded_vals.opb_select)
             OPB_IS_RS2:   opb = is_pack.rs2_value;
             OPB_IS_I_IMM: opb = `RV32_signext_Iimm(is_pack.rs_packet.inst);
             OPB_IS_S_IMM: opb = `RV32_signext_Simm(is_pack.rs_packet.inst);
@@ -42,7 +42,7 @@ module alu (
 
     // ALU Compute Result
     always_comb begin
-        case (is_pack.rs_packet.alu_func)
+        case (is_pack.decoded_vals.decoded_vals.alu_func)
             ALU_ADD:  result = opa + opb;
             ALU_SUB:  result = opa - opb;
             ALU_AND:  result = opa & opb;
@@ -62,18 +62,18 @@ module alu (
     always_comb begin
         if (stall) begin
             next_out = out;
-            data_ready = '0;
         end else begin
-            next_out = '{alu_result: result, is_pack: is_pack, take_conditional: 0};
-            data_ready = rd_in;
+            next_out = '{alu_result: result, decoded_vals: is_pack.decoded_vals, take_conditional: 0};
         end
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin
             out <= '0;
+            data_ready <= '0;
         end else begin
             out <= next_out;
+            data_ready <= rd_in;
         end
     end
 
