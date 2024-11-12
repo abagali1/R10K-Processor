@@ -8,7 +8,7 @@ module dispatch #(
     input INST_PACKET       [N-1:0]              insts,
     input logic                                  bs_full,
 
-    output                  [$clog2(N+1)-1:0]    num_dispatch,
+    output logic            [$clog2(N+1)-1:0]    num_dispatch,
     output DECODED_PACKET   [N-1:0]              out_insts
 
 );

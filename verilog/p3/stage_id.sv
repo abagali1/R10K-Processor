@@ -219,6 +219,7 @@ module decode #(
 
     logic [N-1:0] has_dest_reg;
     assign id_packet.dest_reg_idx = (has_dest_reg) ? insts.inst.r.rd : `ZERO_REG;
+    assign id_packet.pred_taken = insts.pred_taken;
 
     // Instantiate the instruction decoder
     generate

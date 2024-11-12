@@ -72,7 +72,7 @@ module ROB #(
         end
 
         // These statements are dependent on updated num_accept
-        next_tail = (br_en) ? br_tail : (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
+        next_tail = (br_en) ? (br_tail + 1) % DEPTH : (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
         next_num_entries += num_accept;
 
         for(int j=0;j < N; ++j) begin
