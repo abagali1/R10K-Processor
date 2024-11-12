@@ -9,7 +9,7 @@
 module memDP
   #(parameter WIDTH      = 32,
     parameter DEPTH      = 32,
-    parameter PORTS      = 1,
+    parameter READ_PORTS = 1,
     parameter BYPASS_EN  = 0   // 0: Read data will update at positive edge
                                // 1: Read data will update combinationally if
                                //    write to same address
@@ -23,40 +23,39 @@ module memDP
     // ------------------------------------------------------------ //
     //                      Read interface                          //
     // ------------------------------------------------------------ //
-    input        [PORTS-1:0]                        re,     // Read enable
-    input        [PORTS-1:0][$clog2(DEPTH)-1:0]     raddr,  // Read address
-    output logic [PORTS-1:0][WIDTH        -1:0]     rdata,  // Read data
+    input        [READ_PORTS-1:0]                    re,     // Read enable
+    input        [READ_PORTS-1:0][$clog2(DEPTH)-1:0] raddr,  // Read address
+    output logic [READ_PORTS-1:0][WIDTH        -1:0] rdata,  // Read data
 
     // ------------------------------------------------------------ //
     //                      Write interface                         //
     // ------------------------------------------------------------ //
-    input        [PORTS-1:0]                        we,     // Write enable
-    input        [PORTS-1:0][$clog2(DEPTH)-1:0]     waddr,  // Write address
-    input        [PORTS-1:0][WIDTH        -1:0]     wdata,  // Write data
+    input                                            we,     // Write enable
+    input                       [$clog2(DEPTH)-1:0]  waddr,  // Write address
+    input                       [WIDTH        -1:0]  wdata   // Write data
    );
 
 logic [DEPTH-1:0][WIDTH-1:0]  memData;
-genvar i, j;
+genvar i;
 
 ///////////////////////////////////////////////////////////////////
 ////////////////////////// Read Logic /////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
 generate
-    for (i = 0; i < PORTS; i++) begin
+    for (i = 0; i < READ_PORTS; i++) begin
         always_comb begin
             if (BYPASS_EN != 0) begin : bypass_path
                 if (re[i]) begin
-                    rdata[i] = memData[raddr[i]];
-                    for (j = 0; j < PORTS; j++) begin
-                        if (we[j] && (raddr[i] == waddr[j]))
-                            rdata[i] = wdata[j];
-                    end     
+                    if (we && (raddr[i] == waddr))
+                        rdata[i] = wdata;
+                    else
+                        rdata[i] = memData[raddr[i]];
                 end else begin
                     rdata[i] = '0;
                 end
             end else begin : non_bypass_path
-                rdata[i] = re[i] ? memData[raddr[i]] : '0;
+                rdata[i] = re[i] ? memData[raddr] : '0;
             end
         end
     end
@@ -70,11 +69,7 @@ always_ff @(posedge clock) begin
     if (reset) begin
         memData        <= '0;
     end else if (we) begin
-        for (j = 0; j < PORTS; j++) begin
-            if (we[j]) begin
-                memData[waddr[j]] <= wdata[j];
-            end
-        end
+        memData[waddr] <= wdata;
     end
 end
 
@@ -92,15 +87,20 @@ end
     end
 
     // ---------- Verify Write Interface ---------- 
+    clocking cb_read @(posedge clock);
+        property waddr_valid;
+            we |-> waddr < DEPTH;
+        endproperty
+    endclocking
+
+    validWaddr:    assert property(cb_read.waddr_valid);
+    
+    // ---------- Verify Read Interface ---------- 
     generate
-        for (i = 0; i < PORTS; i++) begin
-            clocking cb_port @(posedge clock);
+        for (i = 0; i < READ_PORTS; i++) begin
+            clocking cb_write @(posedge clock);
                 property raddr_valid;
                     re[i] |-> raddr[i] < DEPTH;
-                endproperty
-
-                property waddr_valid;
-                    we[i] |-> waddr[i] < DEPTH;
                 endproperty
 
                 property read_valid_data;
@@ -108,9 +108,8 @@ end
                 endproperty
             endclocking
 
-            validRaddr:    assert property(cb_port.raddr_valid);
-            validWaddr:    assert property(cb_port.waddr_valid);
-            validRdData:   assert property(cb_port.read_valid_data);
+            validRaddr:    assert property(cb_write.raddr_valid);
+            validRdData:   assert property(cb_write.read_valid_data);
         end
     endgenerate
 `endif
