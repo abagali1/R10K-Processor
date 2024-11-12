@@ -27,7 +27,7 @@ module freelist_tb();
 
     FREE_LIST_PACKET        [N-1:0]                 rd_reg;   // displayed available reg idxs, these are always output, and only updated based on rd_num
     FREE_LIST_PACKET        [DEPTH-1:0]             out_fl;   // free list to output
-    logic                   [$clog2(DEPTH+1)-1:0]   num_avail; // broadcasting number of regs available
+    //logic                   [$clog2(DEPTH+1)-1:0]   num_avail; // broadcasting number of regs available
     logic                   [$clog2(DEPTH+1)-1:0]   head_ptr;
 
     `ifdef DEBUG
@@ -60,7 +60,7 @@ module freelist_tb();
 
         .rd_reg(rd_reg),   
         .out_fl(out_fl),   
-        .num_avail(num_avail),
+        //.num_avail(num_avail),
         .head_ptr(head_ptr)
 
         `ifdef DEBUG
