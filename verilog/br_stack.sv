@@ -8,7 +8,7 @@ module BR_STACK #(
     input                                                               clock,
     input                                                               reset,
 
-    input                                                               valid_assign,
+    input DECODED_PACKET                                                dis_inst, // first dispatched instruction
     input ADDR                                                          in_PC,
     input MAP_TABLE_PACKET          [`ARCH_REG_SZ-1:0]                  in_mt,
     input logic                     [$clog2(`ROB_SZ+1)-1:0]             in_fl_head,
@@ -19,7 +19,7 @@ module BR_STACK #(
     input BR_TASK                                                       br_task, // not defined here. in main sysdefs
     input logic                     [DEPTH-1:0]                         rem_b_id, // b_id to remove
     
-    
+    output logic                    [DEPTH-1:0]                         assigned_b_id, // b_id given to a dispatched branch instruction
     output CHECKPOINT                                                   cp_out,
     output logic                                                        full
 
@@ -101,7 +101,7 @@ module BR_STACK #(
         $display("\n");
 
         // Set checkpoint
-        if (valid_assign) begin
+        if (dis_inst.valid && (dis_inst.uncond_branch || dis_inst.cond_branch)) begin // check me on this
             for (int k = 0; k < DEPTH; k++) begin
                 if (stack_gnt[k]) begin
                     next_entries[k].valid = 1;
@@ -118,6 +118,7 @@ module BR_STACK #(
                     next_free_entries[k] = 0;
                 end 
             end
+            assigned_b_id = stack_gnt;
         end
 
         // Set ready bit for everything in the map table
