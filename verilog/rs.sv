@@ -291,10 +291,6 @@ module RS #(
             end
         end
 
-        // sets all issued entries to be empty
-        for(int i=0;i<DEPTH;i++) begin
-            next_entries[i] = other_sig[i] ? 0 : next_entries[i];
-        end
         next_open_spots = other_sig; 
         // Reads in new entries (parallelized)
         for (int i = 0; i < N; ++i) begin
