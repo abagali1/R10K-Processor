@@ -63,64 +63,9 @@ module testbench;
 
     EXCEPTION_CODE error_status = NO_ERROR;
 
-    ADDR  if_NPC_dbg;
-    DATA  if_inst_dbg;
-    logic if_valid_dbg;
-    ADDR  if_id_NPC_dbg;
-    DATA  if_id_inst_dbg;
-    logic if_id_valid_dbg;
-    ADDR  id_ex_NPC_dbg;
-    DATA  id_ex_inst_dbg;
-    logic id_ex_valid_dbg;
-    ADDR  ex_mem_NPC_dbg;
-    DATA  ex_mem_inst_dbg;
-    logic ex_mem_valid_dbg;
-    ADDR  mem_wb_NPC_dbg;
-    DATA  mem_wb_inst_dbg;
-    logic mem_wb_valid_dbg;
-
 
     // Instantiate the Pipeline
-    cpu verisimpleV (
-        // Inputs
-        .clock (clock),
-        .reset (reset),
-        .mem2proc_transaction_tag (mem2proc_transaction_tag),
-        .mem2proc_data            (mem2proc_data),
-        .mem2proc_data_tag        (mem2proc_data_tag),
-
-        .in_insts(in_insts),
-        .num_input(num_input),
-
-        // Outputs
-        .proc2mem_command (proc2mem_command),
-        .proc2mem_addr    (proc2mem_addr),
-        .proc2mem_data    (proc2mem_data),
-`ifndef CACHE_MODE
-        .proc2mem_size    (proc2mem_size),
-`endif
-
-        .committed_insts (committed_insts),
-    
-        .ib_open(ib_opn),
-        .PC(PC),
-
-        .if_NPC_dbg       (if_NPC_dbg),
-        .if_inst_dbg      (if_inst_dbg),
-        .if_valid_dbg     (if_valid_dbg),
-        .if_id_NPC_dbg    (if_id_NPC_dbg),
-        .if_id_inst_dbg   (if_id_inst_dbg),
-        .if_id_valid_dbg  (if_id_valid_dbg),
-        .id_ex_NPC_dbg    (id_ex_NPC_dbg),
-        .id_ex_inst_dbg   (id_ex_inst_dbg),
-        .id_ex_valid_dbg  (id_ex_valid_dbg),
-        .ex_mem_NPC_dbg   (ex_mem_NPC_dbg),
-        .ex_mem_inst_dbg  (ex_mem_inst_dbg),
-        .ex_mem_valid_dbg (ex_mem_valid_dbg),
-        .mem_wb_NPC_dbg   (mem_wb_NPC_dbg),
-        .mem_wb_inst_dbg  (mem_wb_inst_dbg),
-        .mem_wb_valid_dbg (mem_wb_valid_dbg)
-    );
+    cpu verisimpleV (.*);
 
 
     // Instantiate the Data Memory
@@ -198,7 +143,7 @@ module testbench;
         $display("  %16t : Running Processor", $realtime);
     end
 
-
+    ADDR current;
     always @(negedge clock) begin
         if (reset) begin
             // Count the number of cycles and number of instructions committed
@@ -206,7 +151,6 @@ module testbench;
             instr_count = 0;
         end else begin
             #2; // wait a short time to avoid a clock edge
-
             clock_count = clock_count + 1;
 
             if (clock_count % 10000 == 0) begin
@@ -225,16 +169,17 @@ module testbench;
             // print_membus({30'b0,proc2mem_command}, proc2mem_addr[31:0],
             //              proc2mem_data[63:32], proc2mem_data[31:0]);
 
-            num_accept = 0;
-
-            for (ADDR i = PC; i < PC + 4 * ib_open; i += 4) begin 
-                in_insts[i].inst = memory.unified_memory[i[15:3]].word_level[i[2]]; 
-                if (in_insts[i]) begin
+            num_input = 0;
+            for (int i = 0; i < ib_open; i++) begin
+                current = PC + i * 4;
+                in_insts[i].inst = memory.unified_memory[current[31:3]].word_level[current[2]];
+                
+                if (in_insts[i].inst) begin
                     in_insts[i].valid = 1;
                     in_insts[i].PC = i;
                     in_insts[i].NPC = i + 4;
                     in_insts[i].pred_taken = 0;
-                    num_accept++;
+                    num_input++;
                 end else begin
                     in_insts[i].valid = 0;
                 end

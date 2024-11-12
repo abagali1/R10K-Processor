@@ -251,11 +251,6 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/regfile.sv \
               verilog/icache.sv \
               verilog/memDP.sv \
-			  verilog/p3/stage_if.sv \
-			  verilog/p3/stage_id.sv \
-			  verilog/p3/stage_ex.sv \
-			  verilog/p3/stage_mem.sv \
-			  verilog/p3/stage_wb.sv \
 			  verilog/mult.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)

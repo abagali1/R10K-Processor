@@ -13,16 +13,16 @@
 // namely: PHYS_REG_SZ_P6 or PHYS_REG_SZ_R10K
 
 module regfile #(
-    parameter DEPTH = `PHYS_REG_SIZE_R10K,
+    parameter DEPTH = `PHYS_REG_SZ_R10K,
     parameter N = `N
 )(
     input         clock, // system clock
     // note: no system reset, register values must be written before they can be read
-    input [N-1:0] REG_IDX read_idx_1, read_idx_2, write_idx,
+    input  REG_IDX [N-1:0] read_idx_1, read_idx_2, write_idx,
     input                 write_en,
-    input [N-1:0] DATA    write_data,
+    input  DATA  [N-1:0]   write_data,
 
-    output [N-1:0] DATA   read_out_1, read_out_2
+    output  DATA  [N-1:0]  read_out_1, read_out_2
 );
 
     // Intermediate data before accounting for register 0

@@ -94,7 +94,7 @@ module cpu (
             proc2mem_size    = Dmem_size;   // size is never DOUBLE in project 3
             proc2mem_addr    = Dmem_addr;
         end else begin                      // read an INSTRUCTION from memory
-            proc2mem_command = Imem_command;
+            proc2mem_command = MEM_LOAD;
             proc2mem_addr    = Imem_addr;
             proc2mem_size    = DOUBLE;      // instructions load a full memory line (64 bits)
         end

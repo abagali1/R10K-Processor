@@ -32,26 +32,7 @@ module cpu (
     output COMMIT_PACKET [`N-1:0] committed_insts,
 
     output logic         [2:0] ib_open,
-    output ADDR                                PC,
-
-    // Debug outputs: these signals are solely used for debugging in testbenches
-    // Do not change for project 3
-    // You should definitely change these for project 4
-    output ADDR  if_NPC_dbg,
-    output DATA  if_inst_dbg,
-    output logic if_valid_dbg,
-    output ADDR  if_id_NPC_dbg,
-    output DATA  if_id_inst_dbg,
-    output logic if_id_valid_dbg,
-    output ADDR  id_ex_NPC_dbg,
-    output DATA  id_ex_inst_dbg,
-    output logic id_ex_valid_dbg,
-    output ADDR  ex_mem_NPC_dbg,
-    output DATA  ex_mem_inst_dbg,
-    output logic ex_mem_valid_dbg,
-    output ADDR  mem_wb_NPC_dbg,
-    output DATA  mem_wb_inst_dbg,
-    output logic mem_wb_valid_dbg
+    output ADDR                PC
 );
 
     //////////////////////////////////////////////////
@@ -60,27 +41,8 @@ module cpu (
     //                                              //
     //////////////////////////////////////////////////
 
-    // Pipeline register enables
-    logic if_id_enable, id_ex_enable, ex_mem_enable, mem_wb_enable;
-
-    // From IF stage to memory
-    MEM_COMMAND Imem_command; // Command sent to memory
-
-    // Outputs from IF-Stage and IF/ID Pipeline Register
-    ADDR Imem_addr;
-    IF_ID_PACKET if_packet, if_id_reg;
-
-    // Outputs from ID stage and ID/EX Pipeline Register
-    ID_EX_PACKET id_packet, id_ex_reg;
-
-    // Outputs from EX-Stage and EX/MEM Pipeline Register
-    EX_MEM_PACKET ex_packet, ex_mem_reg;
-
-    // Outputs from MEM-Stage and MEM/WB Pipeline Register
-    MEM_WB_PACKET mem_packet, mem_wb_reg;
-
     // Outputs from MEM-Stage to memory
-    ADDR        Dmem_addr;
+    ADDR        Dmem_addr, Imem_addr;
     MEM_BLOCK   Dmem_store_data;
     MEM_COMMAND Dmem_command;
     MEM_SIZE    Dmem_size;
@@ -113,7 +75,7 @@ module cpu (
             proc2mem_size    = Dmem_size;
             proc2mem_addr    = Dmem_addr;
         end else begin                      // read an INSTRUCTION from memory
-            proc2mem_command = Imem_command;
+            proc2mem_command = MEM_LOAD;
             proc2mem_addr    = Imem_addr;
             proc2mem_size    = DOUBLE;      // instructions load a full memory line (64 bits)
         end
@@ -130,21 +92,23 @@ module cpu (
 
     // fake fetch
 
-    ADDR PC;
-    logic [2:0] ib_open;
+    ADDR NPC;
+
+    assign PC = NPC;
 
     assign ib_open = 8;
 
     always @(posedge clock) begin
         if (reset) begin
-            PC <= 0;
+            NPC <= 0;
         end else begin
-            PC <= PC + num_input * 4;
+            NPC <= PC + num_input * 4;
         end
     end
+
     always_comb begin
         for (int i = 0; i < 8; i++) begin
-            $display("index: %0d, inst: %0d, pc: %0d", i, in_insts[i].inst, in_insts[i].pc);
+            $display("index: %0d, inst: %0d, pc: %0d", i, in_insts[i].inst, in_insts[i].PC);
         end
     end
 
