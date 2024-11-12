@@ -37,37 +37,35 @@ module memDP
    );
 
 logic [DEPTH-1:0][WIDTH-1:0]  memData;
-genvar i;
+logic found_bypass;
 
 ///////////////////////////////////////////////////////////////////
 ////////////////////////// Read Logic /////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-generate
-    for (i = 0; i < READ_PORTS; i++) begin
-        always_comb begin
-            if (BYPASS_EN != 0) begin : bypass_path
-                if (re[i]) begin
-                    logic found_bypass = 0;
-                    for (int j = WRITE_PORTS-1; j >= 0; j--) begin
-                        if (we[j] && (raddr[i] == waddr[j])) begin
-                            rdata[i] = wdata[j];
-                            found_bypass = 1;
-                            break;
-                        end
+always_comb begin
+    for (int i = 0; i < READ_PORTS; i++) begin
+        if (BYPASS_EN != 0) begin : bypass_path
+            if (re[i]) begin
+                found_bypass = 0;
+                for (int j = 0; j < WRITE_PORTS; j++) begin
+                    if (we[j] && (raddr[i] == waddr[j])) begin
+                        rdata[i] = wdata[j];
+                        found_bypass = 1;
+                        break;
                     end
-                    if (!found_bypass) begin
-                        rdata[i] = memData[raddr[i]];
-                    end
-                end else begin
-                    rdata[i] = '0;
                 end
-            end else begin : non_bypass_path
-                rdata[i] = re[i] ? memData[raddr[i]] : '0;
+                if (!found_bypass) begin
+                    rdata[i] = memData[raddr[i]];
+                end
+            end else begin
+                rdata[i] = '0;
             end
+        end else begin : non_bypass_path
+            rdata[i] = re[i] ? memData[raddr[i]] : '0;
         end
     end
-endgenerate
+end
 
  
 ///////////////////////////////////////////////////////////////////
