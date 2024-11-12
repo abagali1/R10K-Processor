@@ -15,18 +15,9 @@
 module cpu (
     input clock, // System clock
     input reset, // System reset
-
-    input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
-    input MEM_BLOCK mem2proc_data,            // Data coming back from memory
-    input MEM_TAG   mem2proc_data_tag,        // Tag for which transaction data is for
     
     input INST_PACKET [7:0] in_insts,
     input logic [2:0] num_input,
-
-    output MEM_COMMAND proc2mem_command, // Command sent to memory
-    output ADDR        proc2mem_addr,    // Address sent to memory
-    output MEM_BLOCK   proc2mem_data,    // Data sent to memory
-    output MEM_SIZE    proc2mem_size,    // Data size sent to memory
 
     // Note: these are assigned at the very bottom of the module
     output COMMIT_PACKET [`N-1:0] committed_insts,
@@ -34,53 +25,6 @@ module cpu (
     output logic         [2:0] ib_open,
     output ADDR                PC
 );
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //                Pipeline Wires                //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    // Outputs from MEM-Stage to memory
-    ADDR        Dmem_addr, Imem_addr;
-    MEM_BLOCK   Dmem_store_data;
-    MEM_COMMAND Dmem_command;
-    MEM_SIZE    Dmem_size;
-
-    // Outputs from WB-Stage (These loop back to the register file in ID)
-    COMMIT_PACKET wb_packet;
-
-    // Logic for stalling memory stage
-    logic       load_stall;
-    logic       new_load;
-    logic       mem_tag_match;
-    logic       rd_mem_q;       // previous load
-    MEM_TAG     outstanding_mem_tag;    // tag load is waiting in
-    MEM_COMMAND Dmem_command_filtered;  // removes redundant loads
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //                Memory Outputs                //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    // these signals go to and from the processor and memory
-    // we give precedence to the mem stage over instruction fetch
-    // note that there is no latency in project 3
-    // but there will be a 100ns latency in project 4
-
-    always_comb begin
-        if (Dmem_command != MEM_NONE) begin  // read or write DATA from memory
-            proc2mem_command = Dmem_command_filtered;
-            proc2mem_size    = Dmem_size;
-            proc2mem_addr    = Dmem_addr;
-        end else begin                      // read an INSTRUCTION from memory
-            proc2mem_command = MEM_LOAD;
-            proc2mem_addr    = Imem_addr;
-            proc2mem_size    = DOUBLE;      // instructions load a full memory line (64 bits)
-        end
-        proc2mem_data = Dmem_store_data;
-    end
 
     //////////////////////////////////////////////////
     //                                              //
@@ -103,12 +47,6 @@ module cpu (
             NPC <= 0;
         end else begin
             NPC <= PC + num_input * 4;
-        end
-    end
-
-    always_comb begin
-        for (int i = 0; i < 8; i++) begin
-            $display("index: %0d, inst: %0d, pc: %0d", i, in_insts[i].inst, in_insts[i].PC);
         end
     end
 
@@ -168,8 +106,8 @@ module cpu (
     // )
 
     // RS rs (
-    //     .reset(reset),
     //     .clock(clock),
+    //     .reset(reset),
 
     //     .rs_in(dis_insts),
     //     .t_in(fl_reg),
@@ -286,7 +224,7 @@ module cpu (
     //////////////////////////////////////////////////
 
     // Output the committed instruction to the testbench for counting
-    assign committed_insts[0] = wb_packet;
+    // assign committed_insts[0] = wb_packet;
 
     // DEBUG OUTPUTS
     `ifdef DEBUG
