@@ -368,6 +368,9 @@ typedef struct packed {
     REG_IDX reg1;
     REG_IDX reg2;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ea1794949a2a8e2b0582cd927e7c49240d1674e8
 
     ALU_OPA_SELECT opa_select; // ALU opa mux select (ALU_OPA_xxx *)
     ALU_OPB_SELECT opb_select; // ALU opb mux select (ALU_OPB_xxx *)
@@ -383,6 +386,7 @@ typedef struct packed {
     logic    illegal;       // Is this instruction illegal?
     logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
     logic    pred_taken;
+<<<<<<< HEAD
 } DECODED_PACKET;
 
 typedef struct packed {
@@ -436,6 +440,9 @@ typedef struct packed {
     logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
     logic    pred_taken;
 
+=======
+
+>>>>>>> ea1794949a2a8e2b0582cd927e7c49240d1674e8
     /* P4 ADDED STUFF */
     FREE_LIST_PACKET t;
     MAP_TABLE_PACKET t1;
@@ -516,6 +523,7 @@ typedef struct packed {
     logic           valid;
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 } ROB_PACKET;
 =======
 } ROB_ENTRY_PACKET;
@@ -529,10 +537,16 @@ typedef struct packed {
 >>>>>>> ea17949 (mult updates)
 
 typedef struct packed {
+=======
+} ROB_PACKET;
+
+typedef struct packed {
+>>>>>>> ea1794949a2a8e2b0582cd927e7c49240d1674e8
     ISSUE_PACKET    is_pack;
     DATA            alu_result;
     logic           take_conditional;
 } FU_PACKET;
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 typedef struct packed {
@@ -542,6 +556,8 @@ typedef struct packed {
 } MAP_TABLE_PACKET;
 
 >>>>>>> 8cb8de5 (implements alu fu)
+=======
+>>>>>>> ea1794949a2a8e2b0582cd927e7c49240d1674e8
 
 =======
 >>>>>>> ea17949 (mult updates)
