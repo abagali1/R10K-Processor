@@ -9,9 +9,6 @@
 
 `include "sys_defs.svh"
 
-// P4 TODO: update this with the new parameters from sys_defs
-// namely: PHYS_REG_SZ_P6 or PHYS_REG_SZ_R10K
-
 module regfile #(
     parameter DEPTH = `PHYS_REG_SZ_R10K,
     parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_STORE + `NUM_FU_LD + `NUM_FU_BR
