@@ -54,31 +54,34 @@ module alu_tb();
         reset = 1;
         rd_in = 0;
         stall = 0;
-        rs_pack = '{
-            inst: 0,
-            PC: 0,
-            NPC: 1,
+        disp_pack = '{
+            inst: '0,
+            PC: '0,
+            NPC: '1,
             opa_select: OPA_IS_RS1,
             opb_select: OPB_IS_RS2,
-            dest_reg_idx: 0,
+            dest_reg_idx: '0,
             alu_func: ALU_ADD,
-            mult: 0,
-            rd_mem: 0,
-            wr_mem: 0,
-            cond_branch: 0,
-            uncond_branch: 0,
-            halt: 0,
-            illegal: 0,
-            csr_op: 0,
-            t: '{reg_idx: 32, valid: 1},
-            t1: '{reg_idx: 32, ready: 0, valid: 1},
-            t2: '{reg_idx: 32, ready: 0, valid: 1},
-            b_mask: '{},
-            fu_type: '{},
-            pred_taken: 0,
-            valid: 1
+            mult: '0,
+            rd_mem: '0,
+            wr_mem: '0,
+            cond_branch: '0,
+            uncond_branch: '0,
+            halt: '0,
+            illegal: '0,
+            csr_op: '0,
+            fu_type: '0,
+            pred_taken: '0,
+            valid: '1
         };
-        is_pack.rs_packet = rs_pack;
+        rs_pack = '{
+            decoded_vals: disp_pack,
+            t: '{reg_idx: 1, valid: 1},
+            t1: '{reg_idx: 2, ready: 0, valid: 1},
+            t2: '{reg_idx: 2, ready: 0, valid: 1},
+            b_mask: '0
+        }
+        is_pack.decoded_vals = rs_pack;
 
         @(negedge clock);
         @(negedge clock);
