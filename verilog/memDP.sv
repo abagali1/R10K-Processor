@@ -23,16 +23,16 @@ module memDP
     // ------------------------------------------------------------ //
     //                      Read interface                          //
     // ------------------------------------------------------------ //
-    input        [READ_PORTS-1:0]                    re,     // Read enable
-    input        [READ_PORTS-1:0][$clog2(DEPTH)-1:0] raddr,  // Read address
-    output logic [READ_PORTS-1:0][WIDTH        -1:0] rdata,  // Read data
+    input         [READ_PORTS-1:0]                    re,     // Read enable
+    input         [READ_PORTS-1:0][$clog2(DEPTH)-1:0] raddr,  // Read address
+    output logic  [READ_PORTS-1:0][WIDTH        -1:0] rdata,  // Read data
 
     // ------------------------------------------------------------ //
     //                      Write interface                         //
     // ------------------------------------------------------------ //
-    input                                            we,     // Write enable
-    input                       [$clog2(DEPTH)-1:0]  waddr,  // Write address
-    input                       [WIDTH        -1:0]  wdata   // Write data
+    input         [READ_PORTS-1:0]                    we,     // Write enable
+    input         [READ_PORTS-1:0][$clog2(DEPTH)-1:0] waddr,  // Write address
+    input         [READ_PORTS-1:0][WIDTH        -1:0] wdata   // Write data
    );
 
 logic [DEPTH-1:0][WIDTH-1:0]  memData;
@@ -47,19 +47,27 @@ generate
         always_comb begin
             if (BYPASS_EN != 0) begin : bypass_path
                 if (re[i]) begin
-                    if (we && (raddr[i] == waddr))
-                        rdata[i] = wdata;
-                    else
+                    logic found_bypass = 0;
+                    for (int j = WRITE_PORTS-1; j >= 0; j--) begin
+                        if (we[j] && (raddr[i] == waddr[j])) begin
+                            rdata[i] = wdata[j];
+                            found_bypass = 1;
+                            break;
+                        end
+                    end
+                    if (!found_bypass) begin
                         rdata[i] = memData[raddr[i]];
+                    end
                 end else begin
                     rdata[i] = '0;
                 end
             end else begin : non_bypass_path
-                rdata[i] = re[i] ? memData[raddr] : '0;
+                rdata[i] = re[i] ? memData[raddr[i]] : '0;
             end
         end
     end
 endgenerate
+
  
 ///////////////////////////////////////////////////////////////////
 ////////////////////////// Write Logic ////////////////////////////
@@ -67,9 +75,14 @@ endgenerate
 
 always_ff @(posedge clock) begin
     if (reset) begin
-        memData        <= '0;
-    end else if (we) begin
-        memData[waddr] <= wdata;
+        memData <= '0;
+    end else begin
+        for (int j = 0; j < READ_PORTS; j++) begin
+            if (we[j]) begin
+                memData[waddr[j]] <= wdata[j];
+                break;
+            end
+        end
     end
 end
 
