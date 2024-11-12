@@ -24,6 +24,7 @@
 `define DEBUG '1
 `define DEBUG_ROB '1
 `define DEBUG_MT '1
+`define DEBUG_FL '1
 
 // superscalar width
 `define N 1

@@ -85,4 +85,19 @@ module free_list #(
         end
     end
 
+    `ifdef DEBUG_FL
+        always @(posedge clock) begin
+            $display("=================== FREE LIST ===================\n");
+            $display("  Entries:");
+            $display("  ---------------------------");
+            $display("  |  i |  reg_idx |  valid  |");
+            $display("  ---------------------------");
+            for (int i = 0; i < DEPTH; i++) begin
+                $display("  | %2d |    %2d    |    %0d    |", i, entries[i].reg_idx, entries[i].valid);
+                $display("  ---------------------------");
+            end
+            $display("");
+        end
+    `endif
+
 endmodule
