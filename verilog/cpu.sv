@@ -19,6 +19,9 @@ module cpu (
     input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
     input MEM_BLOCK mem2proc_data,            // Data coming back from memory
     input MEM_TAG   mem2proc_data_tag,        // Tag for which transaction data is for
+    
+    input INST_PACKET [7:0] in_insts,
+    input logic [2:0] num_input,
 
     output MEM_COMMAND proc2mem_command, // Command sent to memory
     output ADDR        proc2mem_addr,    // Address sent to memory
@@ -27,6 +30,9 @@ module cpu (
 
     // Note: these are assigned at the very bottom of the module
     output COMMIT_PACKET [`N-1:0] committed_insts,
+
+    output logic         [2:0] ib_open,
+    output ADDR                                PC,
 
     // Debug outputs: these signals are solely used for debugging in testbenches
     // Do not change for project 3
@@ -116,258 +122,198 @@ module cpu (
 
     //////////////////////////////////////////////////
     //                                              //
-    //                  Valid Bit                   //
+    //               amrita trying                  //
     //                                              //
     //////////////////////////////////////////////////
 
-    // This state controls the stall signal that artificially forces IF
-    // to stall until the previous instruction has completed.
-    // For project 3, start by assigning if_valid to always be 1
+    // the start of amrita ducking around
 
-    logic if_valid, start_valid_on_reset, wb_valid;
+    // fake fetch
 
+    ADDR PC;
+    logic [2:0] ib_open;
 
-    always_ff @(posedge clock) begin
-        // Start valid on reset. Other stages (ID,EX,MEM,WB) start as invalid
-        // Using a separate always_ff is necessary since if_valid is combinational
-        // Assigning if_valid = reset doesn't work as you'd hope :/
-        start_valid_on_reset <= reset;
-    end
+    assign ib_open = 8;
 
-    // valid bit will cycle through the pipeline and come back from the wb stage
-    assign if_valid = start_valid_on_reset || wb_valid;
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //                  IF-Stage                    //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    stage_if stage_if_0 (
-        // Inputs
-        .clock (clock),
-        .reset (reset),
-        .if_valid      (if_valid),
-        .take_branch   (ex_mem_reg.take_branch),
-        .branch_target (ex_mem_reg.alu_result),
-        .Imem_data     (mem2proc_data),
-        
-        .Imem2proc_transaction_tag(mem2proc_transaction_tag),
-        .Imem2proc_data_tag       (mem2proc_data_tag),
-
-        // Outputs
-        .Imem_command  (Imem_command),
-        .if_packet     (if_packet),
-        .Imem_addr     (Imem_addr)
-    );
-
-    // debug outputs
-    assign if_NPC_dbg   = if_packet.NPC;
-    assign if_inst_dbg  = if_packet.inst;
-    assign if_valid_dbg = if_packet.valid;
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //            IF/ID Pipeline Register           //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    assign if_id_enable = !load_stall;
-
-    always_ff @(posedge clock) begin
+    always @(posedge clock) begin
         if (reset) begin
-            if_id_reg.inst  <= `NOP;
-            if_id_reg.valid <= `FALSE;
-            if_id_reg.NPC   <= 0;
-            if_id_reg.PC    <= 0;
-        end else if (if_id_enable) begin
-            if_id_reg <= if_packet;
-        end
-    end
-
-    // debug outputs
-    assign if_id_NPC_dbg   = if_id_reg.NPC;
-    assign if_id_inst_dbg  = if_id_reg.inst;
-    assign if_id_valid_dbg = if_id_reg.valid;
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //                  ID-Stage                    //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    stage_id stage_id_0 (
-        // Inputs
-        .clock (clock),
-        .reset (reset),
-        .if_id_reg       (if_id_reg),
-        .wb_regfile_en   (wb_packet.valid),
-        .wb_regfile_idx  (wb_packet.reg_idx),
-        .wb_regfile_data (wb_packet.data),
-
-        // Output
-        .id_packet (id_packet)
-    );
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //            ID/EX Pipeline Register           //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    assign id_ex_enable = !load_stall;
-
-    always_ff @(posedge clock) begin
-        if (reset) begin
-            id_ex_reg <= '{
-                `NOP, // we can't simply assign 0 because NOP is non-zero
-                32'b0, // PC
-                32'b0, // NPC
-                32'b0, // rs1 select
-                32'b0, // rs2 select
-                OPA_IS_RS1,
-                OPB_IS_RS2,
-                `ZERO_REG,
-                ALU_ADD,
-                1'b0, // mult
-                1'b0, // rd_mem
-                1'b0, // wr_mem
-                1'b0, // cond
-                1'b0, // uncond
-                1'b0, // halt
-                1'b0, // illegal
-                1'b0, // csr_op
-                1'b0  // valid
-            };
-        end else if (id_ex_enable) begin
-            id_ex_reg <= id_packet;
-        end
-    end
-
-    // debug outputs
-    assign id_ex_NPC_dbg   = id_ex_reg.NPC;
-    assign id_ex_inst_dbg  = id_ex_reg.inst;
-    assign id_ex_valid_dbg = id_ex_reg.valid;
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //                  EX-Stage                    //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    stage_ex stage_ex_0 (
-        // Input
-        .id_ex_reg (id_ex_reg),
-
-        // Output
-        .ex_packet (ex_packet)
-    );
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //           EX/MEM Pipeline Register           //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    assign ex_mem_enable = !load_stall;
-
-    always_ff @(posedge clock) begin
-        if (reset) begin
-            ex_mem_inst_dbg <= `NOP; // debug output
-            ex_mem_reg      <= 0;    // the defaults can all be zero!
-        end else if (ex_mem_enable) begin
-            ex_mem_inst_dbg <= id_ex_inst_dbg; // debug output, just forwarded from ID
-            ex_mem_reg      <= ex_packet;
-        end
-    end
-
-    // debug outputs
-    assign ex_mem_NPC_dbg   = ex_mem_reg.NPC;
-    assign ex_mem_valid_dbg = ex_mem_reg.valid;
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //                 MEM-Stage                    //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    // New address if:
-    // 1) Previous instruction wasn't a load
-    // 2) Load address changed
-    logic valid_load;
-    assign valid_load = ex_mem_reg.valid && ex_mem_reg.rd_mem; 
-    assign new_load = valid_load && !rd_mem_q;
-
-    assign mem_tag_match = outstanding_mem_tag == mem2proc_data_tag;
-    assign load_stall    = new_load || (valid_load && !mem_tag_match);
-
-    assign Dmem_command_filtered = new_load || ex_mem_reg.wr_mem ? Dmem_command : MEM_NONE;
-
-    always_ff @(posedge clock) begin
-        if (reset) begin
-            rd_mem_q            <= 1'b0;
-            outstanding_mem_tag <= '0;
+            PC <= 0;
         end else begin
-            rd_mem_q            <= valid_load;
-            outstanding_mem_tag <= new_load      ? mem2proc_transaction_tag : 
-                                   mem_tag_match ? '0 : outstanding_mem_tag;
+            PC <= PC + num_input * 4;
+        end
+    end
+    always_comb begin
+        for (int i = 0; i < 8; i++) begin
+            $display("index: %0d, inst: %0d, pc: %0d", i, in_insts[i].inst, in_insts[i].pc);
         end
     end
 
-    stage_mem stage_mem_0 (
-        // Inputs
-        .ex_mem_reg      (ex_mem_reg),
-        .Dmem_load_data  (mem2proc_data),
+    // // output of ib
+    // INST_PACKET [`N-1:0] ib_insts;
+    // logic [2:0] ib_open;
 
-        // Outputs
-        .mem_packet      (mem_packet),
-        .Dmem_command    (Dmem_command),
-        .Dmem_size       (Dmem_size),
-        .Dmem_addr       (Dmem_addr),
-        .Dmem_store_data (Dmem_store_data)
-    );
+    // // output of dispatch
+    // DECODED_PACKET [`N-1:0] dis_insts;
+    // logic [$clog2(`N+1)-1:0] num_dis;
 
-    //////////////////////////////////////////////////
-    //                                              //
-    //           MEM/WB Pipeline Register           //
-    //                                              //
-    //////////////////////////////////////////////////
+    // // output of RS
+    // logic [$clog2(`N+1)-1:0] rs_open;
 
-    assign mem_wb_enable = 1'b1; // always enabled
+    // // output of ROB
+    // logic [$clog2(`N+1)-1:0] rob_open, num_retired; 
+    // ROB_PACKET [`N-1:0] retiring_data; // rob entry packet, but want register vals to update architectural map table + free list
+    // logic [$clog2(`ARCH_REG_SZ)-1:0] rob_tail;
 
-    always_ff @(posedge clock) begin
-        if (reset || load_stall) begin
-            mem_wb_inst_dbg <= `NOP; // debug output
-            mem_wb_reg      <= 0;    // the defaults can all be zero!
-        end else if (mem_wb_enable) begin
-            mem_wb_inst_dbg <= ex_mem_inst_dbg; // debug output, just forwarded from EX
-            mem_wb_reg      <= mem_packet;
-        end
-    end
+    // // output of MT
+    // PHYS_REG_IDX             [`N-1:0]             t_old_data;
+    // MAP_TABLE_PACKET         [`N-1:0]             r1_p_reg;
+    // MAP_TABLE_PACKET         [`N-1:0]             r2_p_reg;
+    // MAP_TABLE_PACKET         [`ARCH_REG_SZ:0]     out_mt;
 
-    // debug outputs
-    assign mem_wb_NPC_dbg   = mem_wb_reg.NPC;
-    assign mem_wb_valid_dbg = mem_wb_reg.valid;
+    // // output of freelist
+    // FREE_LIST_PACKET [`N-1:0]                 fl_reg; // displayed available reg idxs, these are always output, and only updated based on rd_num
+    // logic            [$clog2(`ROB_SZ+1)-1:0]  fl_head_ptr;
 
-    //////////////////////////////////////////////////
-    //                                              //
-    //                  WB-Stage                    //
-    //                                              //
-    //////////////////////////////////////////////////
+    // // output of br stack
+    // CHECKPOINT  cp_out;
+    // logic       br_full;
 
-    stage_wb stage_wb_0 (
-        // Input
-        .mem_wb_reg (mem_wb_reg), // doesn't use all of these
 
-        // Output
-        .wb_packet (wb_packet)
-    );
+    // inst_buffer inst_buffer (
+    //     .clock(clock),
+    //     .reset(reset),
 
-    // This signal is solely used by if_valid for the initial stalling behavior
-    always_ff @(posedge clock) begin
-        if (reset) wb_valid <= 0;
-        else       wb_valid <= mem_wb_reg.valid;
-    end
+    //     .in_insts(in_insts),                 
+    //     .num_dispatch(num_dis),
+    //     .num_accept(),
+    
+    //     .dispatched_insts(ib_insts),
+    //     .open_entries(ib_open)
+    // )
+
+    // dispatch dispatch(
+    //     .clock(clock),
+    //     .reset(reset),
+    //     .rob_open(rob_open),
+    //     .rs_open(rs_open),
+    //     .insts(ib_insts),
+    //     .bs_full(br_full),
+
+    //     .num_dispatch(num_dis), 
+    //     .out_insts(dis_insts)
+    // )
+
+    // RS rs (
+    //     .reset(reset),
+    //     .clock(clock),
+
+    //     .rs_in(dis_insts),
+    //     .t_in(fl_reg),
+    //     .t1_in(r1_p_reg),
+    //     .t2_in(r2_p_reg),
+    //     .b_mask_in(),
+
+    //     .cdb_in(),
+
+    //     // ebr logic
+    //     .br_id(),
+    //     .br_task(),
+
+    //     // busy bits from FUs to mark when available to issue
+    //     .fu_alu_busy(),
+    //     .fu_mult_busy(),
+    //     .fu_ld_busy(),
+    //     .fu_store_busy(),
+    //     .fu_br_busy(), 
+
+    //     .num_accept(),
+
+    //     // output packets directly to FUs (they all are pipelined)
+    //     .issued_alu(), 
+    //     .issued_mult(),
+    //     .issued_ld(),
+    //     .issued_store(),
+    //     .issued_br(),
+
+    //     .open_entries(rs_open)
+    // )
+
+    // ROB rob (
+    //     .clock(clock), 
+    //     .reset(reset),
+
+    //     .wr_data(dis_insts),
+    //     .t(fl_reg.reg_idx),
+    //     .t_old(t_old),
+
+    //     .complete_t(), // comes from the CDB
+    //     .num_accept(num_dis), // input signal from min block, dependent on open_entries 
+    //     .br_tail(),
+    //     .br_en(),                        
+
+    //     .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
+    //     .open_entries(rob_open), // number of open entires AFTER retirement
+    //     .num_retired(num_retired),
+    //     .out_tail(rob_tail)
+    // )
+
+    // free_list free_list(
+    //     .clock(clock),
+    //     .reset(clock),
+
+    //     .rd_num(num_dis),  // number of regs to take off of the free list
+    //     .wr_num(num_retired),  // number of regs to add back to the free list
+    //     .wr_reg({retiring_data.t_old, retiring_data.valid}),  // reg idxs to add to free list
+    //     .br_en(),  // enable signal for EBR
+    //     .head_ptr_in(cp_out.fl_head),  // free list copy for EBR
+
+    //     .rd_reg(fl_reg),
+    //     .out_fl(),
+    //     .head_ptr(fl_head_ptr)
+    // )
+
+    // map_table map_table(
+    //     .clock(clock),
+    //     .reset(reset), 
+
+    //     .r1_idx(dis_insts.reg1),
+    //     .r2_idx(dis_insts.reg2),       
+    //     .dest_reg_idx(dis_insts.dest_reg_idx), // dest_regs that are getting mapped to a new phys_reg from free_list
+    //     .free_reg(fl_reg.reg_idx),  // comes from the free list
+    //     .incoming_valid(dis_insts.valid), // inputs to expect                       
+
+    //     .ready_reg_idx(), // readys from CDB - arch reg
+    //     .ready_phys_idx(), // corresponding phys reg
+    //     .ready_valid(), // one hot encoded inputs to expect
+
+    //     .in_mt_en(),
+    //     .in_mt(cp.rec_mt),
+
+    //     .t_old_data(t_old_data), //?
+    //     .r1_p_reg(r1_p_reg),
+    //     .r2_p_reg(r2_p_reg),
+    //     .out_mt(out_mt)
+    // )
+
+    // BR_STACK br_stack (
+    //     .clock(clock),
+    //     .reset(reset),
+
+    //     .valid_assign(),
+    //     .in_PC(),
+    //     .in_mt(out_mt),
+    //     .in_fl_head(fl_head_ptr),
+    //     .in_rob_tail(rob_tail),
+    
+    //     .cdb_in(),
+    
+    //     .br_task(), // not defined here. in main sysdefs
+    //     .rem_b_id(), // b_id to remove
+    
+    
+    //     .cp_out(cp_out),
+    //     .full(br_full)
+    // )
 
     //////////////////////////////////////////////////
     //                                              //
