@@ -46,9 +46,9 @@ module testbench;
     logic [31:0] instr_count;
 
     INST_PACKET   [7:0] in_insts;
-    logic [2:0] num_input;
+    logic [3:0] num_input;
 
-    logic         [2:0] ib_open;
+    logic         [3:0] ib_open;
     ADDR                 PC;
 
     COMMIT_PACKET [`N-1:0] committed_insts;
@@ -70,25 +70,6 @@ module testbench;
         .ib_open(ib_open),
         .PC(PC)
     );
-
-
-//     // Instantiate the Data Memory
-//     mem memory (
-//         // Inputs
-//         .clock            (clock),
-//         .proc2mem_command (proc2mem_command),
-//         .proc2mem_addr    (proc2mem_addr),
-//         .proc2mem_data    (proc2mem_data),
-// `ifndef CACHE_MODE
-//         .proc2mem_size    (proc2mem_size),
-// `endif
-
-//         // Outputs
-//         .mem2proc_transaction_tag (mem2proc_transaction_tag),
-//         .mem2proc_data            (mem2proc_data),
-//         .mem2proc_data_tag        (mem2proc_data_tag)
-//     );
-
 
     // Generate System Clock
     always begin
@@ -177,22 +158,29 @@ module testbench;
             num_input = 0;
             for (int i = 0; i < ib_open; i++) begin
                 current = PC + i * 4;
+
+                $display("hi prakash");
+
                 block = unified_memory[current[31:3]];
                 in_insts[i].inst = block.word_level[current[2]];
                 
                 if (in_insts[i].inst) begin
                     in_insts[i].valid = 1;
-                    in_insts[i].PC = i;
-                    in_insts[i].NPC = i + 4;
+                    in_insts[i].PC = current;
+                    in_insts[i].NPC = current + 4;
                     in_insts[i].pred_taken = 0;
                     num_input++;
                 end else begin
                     in_insts[i].valid = 0;
                 end
-            end
 
-            for (int j = 0; j < 8; j++) begin
-                $display("index: %0d, inst: %0d, pc: %0d", j, in_insts[j].inst, in_insts[j].PC);
+                $display("index: %0d, inst: %0d, pc: %0d", i, block.word_level[current[2]], current);
+
+                if (in_insts[i].inst == 32'h10500073) begin
+                    $display("halting...");
+                    error_status = NO_ERROR;
+                    #100 $finish;
+                end
             end
 
             //print_custom_data();
