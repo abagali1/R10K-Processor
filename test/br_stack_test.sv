@@ -6,7 +6,7 @@
 //                                                                     //
 //                                                                     //
 /////////////////////////////////////////////////////////////////////////
-
+// for noop shouldn't assign b_id should be 0s
 `include "sys_defs.svh"
 `include "ISA.svh"
 
@@ -18,7 +18,7 @@ module br_stack_tb();
 
     logic                                                       clock;
     logic                                                       reset;
-    logic                                                       valid_assign; 
+    DECODED_PACKET                                              dis_inst; 
     ADDR                                                        in_PC;
     MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                  in_mt;
     logic                   [$clog2(`ROB_SZ+1)-1:0]             in_fl_head;
@@ -28,6 +28,7 @@ module br_stack_tb();
     BR_TASK                                                     br_task;
     logic                   [DEPTH-1:0]                         rem_b_id;
 
+    logic                   [DEPTH-1:0]                         assigned_b_id;
     CHECKPOINT                                                  cp_out;
     logic                                                       full;
 
@@ -42,6 +43,7 @@ module br_stack_tb();
     MAP_TABLE_PACKET [2:0] test_in_mt;  
     logic [2:0] test_in_fl_head;
     logic [2:0] test_in_rob_tail;
+    DECODED_PACKET dis_inst_temp;
    
     BR_STACK #(
         .DEPTH(DEPTH),
@@ -50,7 +52,7 @@ module br_stack_tb();
     dut (
         .clock(clock),
         .reset(reset),
-        .valid_assign(valid_assign),  
+        .dis_inst(dis_inst),  
         .in_PC(in_PC),  
         .in_mt(in_mt),  
         .in_rob_tail(in_rob_tail),  
@@ -58,6 +60,7 @@ module br_stack_tb();
         .br_task(br_task),   
         .rem_b_id(rem_b_id),   
         
+        .assigned_b_id(assigned_b_id),
         .cp_out(cp_out),
         .full(full)
 
@@ -77,6 +80,8 @@ module br_stack_tb();
         @(negedge clock);
         @(negedge clock);
         reset = 0;
+
+        dis_inst_temp = '0;
         
         // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Test Checkpoint Coming In\n");
@@ -85,17 +90,21 @@ module br_stack_tb();
         clear_inputs();
         @(negedge clock);  
 
-        test_in_PC = 3;
+        test_in_PC = 0;
+
         test_in_mt[0] = {13, 1, 1};
         test_in_mt[1] = {14, 1, 1}; 
         test_in_mt[2] = {15, 1, 1};   
+
         test_in_fl_head = 2;
         test_in_rob_tail = 2;
 
-        add_checkpoint(test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail); 
-        model_entries[3] = {1, 1000, 1000, test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail};
+        dis_inst_temp.uncond_branch = 1;
+        dis_inst_temp.valid = 1;
+
+        add_checkpoint(test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail, dis_inst_temp); 
+        
         @(negedge clock);  
-        valid_assign = 0;
 
         // ------------------------------ Test 2 ------------------------------ //
         $display("\nTest 2: Squash Branch, Check Dependent Checkpoints\n");
@@ -152,7 +161,6 @@ module br_stack_tb();
 // updating
 
 function void clear_inputs();
-    valid_assign = '0; 
     in_PC = '0;
     in_mt = '0;  
     in_rob_tail = '0;
@@ -161,13 +169,13 @@ function void clear_inputs();
     rem_b_id = '0;
 endfunction
 
-function void add_checkpoint(ADDR test_in_PC, MAP_TABLE_PACKET [2:0] test_in_mt, logic [2:0] test_in_fl_head, logic [2:0] test_in_rob_tail);
+function void add_checkpoint(ADDR test_in_PC, MAP_TABLE_PACKET [2:0] test_in_mt, logic [2:0] test_in_fl_head, logic [2:0] test_in_rob_tail, DECODED_PACKET dis_inst_temp);
     //stack_gnt = data.b_id;
     in_PC = test_in_PC;
     in_mt = test_in_mt;
     in_fl_head = test_in_fl_head;
     in_rob_tail = test_in_rob_tail;
-    valid_assign = 1;
+    dis_inst = dis_inst_temp;
 endfunction
     
 function void set_task(BR_TASK tasky);
@@ -219,28 +227,14 @@ endfunction
 function void print_entries();
     $display("\nEntries\n");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("index: %0d", i);
-        $display("b_id: %0d", debug_entries[i].b_id);
-        $display("b_mask: %0d", debug_entries[i].b_mask);
-        $display("rec_PC: %0d", debug_entries[i].rec_PC);
-        // $display("map table: %0d\n", entries[i].b_id);
-        $display("fl_head: %0d", debug_entries[i].fl_head);
-        $display("rob_tail: %0d", debug_entries[i].rob_tail);
-        $display("\n");
+        $display("index: %0d, b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d\n", i, debug_entries[i].b_id, debug_entries[i].b_mask, debug_entries[i].rec_PC, debug_entries[i].fl_head, debug_entries[i].rob_tail);
     end
 endfunction
 
 function void print_model_entries();
     $display("\nModel Entries\n");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("index: %0d", i);
-        $display("b_id: %0d", model_entries[i].b_id);
-        $display("b_mask: %0d", model_entries[i].b_mask);
-        $display("rec_PC: %0d", model_entries[i].rec_PC);
-        // $display("map table: %0d\n", entries[i].b_id);
-        $display("fl_head: %0d", model_entries[i].fl_head);
-        $display("rob_tail: %0d", model_entries[i].rob_tail);
-        $display("\n");
+        $display("index: %0d, b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d", i, model_entries[i].b_id, model_entries[i].b_mask, model_entries[i].rec_PC, model_entries[i].fl_head, model_entries[i].rob_tail);
     end
 endfunction
 
@@ -254,17 +248,12 @@ endfunction
 
 // can use to print out cp_out
 function void print_checkpoint(CHECKPOINT data);
-    $display("b_id: %0d\n", data.b_id);
-    $display("b_mask: %0d\n", data.b_mask);
-    $display("rec_PC: %0d\n", data.rec_PC);
-    // $display("map table: %0d\n", data.b_id);
-    $display("fl_head: %0d\n", data.fl_head);
-    $display("rob_tail: %0d\n", data.rob_tail);
-    $display("\n");
+    $display("\nCheckpoints\n");
+    $display("b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d\n", data.b_id, data.b_mask, data.rec_PC, data.fl_head, data.rob_tail);
 endfunction
 
 function void print_stack_gnt();
-    $display("\nStack Grant\n");
+    $display("\nStack Grant");
     for (int i = 0; i < DEPTH; i++) begin
         $display("%0d ", debug_stack_gnt[i]);
     end

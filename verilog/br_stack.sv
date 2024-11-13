@@ -53,11 +53,11 @@ module BR_STACK #(
     assign full = free_entries == 0;
 
     always_comb begin
-        $display("stack grant");
-        for (int i = 0; i < DEPTH; i++) begin
-            $display("%0d ", stack_gnt[i]);
-        end
-        $display("\n");
+        // $display("stack grant");
+        // for (int i = 0; i < DEPTH; i++) begin
+        //     $display("%0d ", stack_gnt[i]);
+        // end
+        // $display("\n");
 
         next_entries = entries;
         next_free_entries = free_entries;
@@ -96,11 +96,8 @@ module BR_STACK #(
             end
         end
 
-        $display("valid assign");
-        $display(valid_assign);
-        $display("\n");
-
         // Set checkpoint
+        assigned_b_id = '0;
         if (dis_inst.valid && (dis_inst.uncond_branch || dis_inst.cond_branch)) begin // check me on this
             for (int k = 0; k < DEPTH; k++) begin
                 if (stack_gnt[k]) begin
