@@ -22,6 +22,7 @@
 
 
 `define DEBUG '1
+`define DEBUG_MULT '1
 
 // superscalar width
 `define N 1
