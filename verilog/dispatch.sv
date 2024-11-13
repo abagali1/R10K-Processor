@@ -62,7 +62,7 @@ module dispatch #(
     
     always_comb begin
         num_dispatch = 0;
-        
+        out_insts = '0;
         for (int i = 0; i < N; i++) begin
             if (decoded_insts[i].valid && i < limit) begin
                 if ((decoded_insts[i].uncond_branch || decoded_insts[i].cond_branch)) begin
