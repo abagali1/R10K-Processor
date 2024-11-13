@@ -13,7 +13,7 @@
 module cdb_tb ();
 
     parameter N = 4;
-    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE + `NUM_FU_BR;
+    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE;
 
     logic                       clock;
     logic                       reset;

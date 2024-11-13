@@ -46,7 +46,7 @@ module testbench;
     logic [31:0] instr_count;
 
     INST_PACKET   [7:0] in_insts;
-    logic [3:0] num_input;
+    logic         [3:0] num_input;
 
     logic         [3:0] ib_open;
     ADDR                 PC;
@@ -159,8 +159,6 @@ module testbench;
             for (int i = 0; i < ib_open; i++) begin
                 current = PC + i * 4;
 
-                $display("hi prakash");
-
                 block = unified_memory[current[31:3]];
                 in_insts[i].inst = block.word_level[current[2]];
                 
@@ -174,12 +172,12 @@ module testbench;
                     in_insts[i].valid = 0;
                 end
 
-                $display("index: %0d, inst: %0d, pc: %0d", i, block.word_level[current[2]], current);
+                $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
 
                 if (in_insts[i].inst == 32'h10500073) begin
                     $display("halting...");
                     error_status = NO_ERROR;
-                    #100 $finish;
+                    #200 $finish;
                 end
             end
 

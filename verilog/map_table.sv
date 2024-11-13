@@ -83,7 +83,7 @@ module map_table #(
             $display("  ---------------------------------------------");
             for (int i = 1; i <= DEPTH; i++) begin
                 $display("  |    %2d    |    %2d    |    %2d    |    %2d    |", i, entries[i].reg_idx, entries[i].ready, entries[i].valid);
-                $display("  ---------------------------------------------");
+                //$display("  ---------------------------------------------");
             end
             $display("");
         end

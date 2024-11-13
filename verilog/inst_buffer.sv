@@ -43,7 +43,7 @@ module inst_buffer #(
 
         next_tail = (tail + num_accept) % DEPTH;
         
-        for(int j=0;j < N; ++j) begin
+        for(int j=0;j < DEPTH; ++j) begin
             if(j < num_accept) begin
                 next_entries[(tail+j) % DEPTH] = in_insts[j];
             end
@@ -69,5 +69,17 @@ module inst_buffer #(
             entries <= next_entries;
         end
     end
+
+    `ifdef DEBUG
+        always_ff @(posedge clock) begin
+            $display("      INST BUFF      ");
+            $display("---------------------");
+            $display(" valid  |\tinst ");
+            for (int i = 0; i < num_entries; i++) begin
+                $display("\t%0d\t|\t%0h\t", entries[i].valid, entries[i].inst);
+            end
+            $display("num_entries: %0d, num_dispatch: %0d, open_entries: %0d, num_accept: %0d", num_entries, num_dispatch, open_entries, num_accept);
+        end
+    `endif
 
 endmodule
