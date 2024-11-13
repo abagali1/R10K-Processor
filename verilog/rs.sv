@@ -2,7 +2,7 @@
 `include "psel_gen.sv"
 `include "rs_psel.sv"
 
-module RS #(
+module rs #(
     parameter DEPTH = `RS_SZ,
     parameter N = `N
 )
@@ -244,7 +244,7 @@ module RS #(
 
         for(int i=0;i<`NUM_FU_STORE;i++) begin
             for(int j=0;j<DEPTH;j++) begin
-                if(br_issued_bus[i][j]) begin
+                if(store_issued_bus[i][j]) begin
                     issued_store[i] = entries[j];
                     if(br_id == entries[j].b_mask) begin
                         if(br_task == CLEAR) begin

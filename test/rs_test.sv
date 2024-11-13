@@ -21,8 +21,8 @@
 
 module RS_tb();
 
-    parameter DEPTH = 8;
-    parameter N = 3;
+    parameter DEPTH = `RS_SZ;
+    parameter N = `N;
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     logic                                                                            clock;
@@ -72,7 +72,7 @@ module RS_tb();
 
     logic                       [`NUM_FU_BR-1:0][DEPTH-1:0]                          debug_br_issued_bus;
     logic                       [DEPTH-1:0]                                          debug_br_req;
-    logic                       [`NUM_FU_BR-1:0][`NUM_FU_BR-1:0]                   debug_br_fu_gnt_bus;
+    logic                       [`NUM_FU_BR-1:0][`NUM_FU_BR-1:0]                     debug_br_fu_gnt_bus;
     logic                       [`NUM_FU_BR-1:0][DEPTH-1:0]                          debug_br_inst_gnt_bus;
 `endif
 
@@ -85,10 +85,56 @@ module RS_tb();
     RS_PACKET issued_store_buffer[$:(`NUM_FU_STORE)] = '{`NUM_FU_STORE{0}};
     RS_PACKET issued_br_buffer[$:(`NUM_FU_BR)] = '{`NUM_FU_BR{0}};
 
-    RS #(
+    rs #(
         .DEPTH(DEPTH),
         .N(N))
-    dut (.*);
+    dut (
+        .clock(clock),
+        .reset(reset),
+        .rs_in(rs_in),
+        .t_in(t_in),
+        .t1_in(t1_in),
+        .t2_in(t2_in),
+        .b_mask_in(b_mask_in),
+        .cdb_in(cdb_in),
+        .num_accept(num_accept),
+        .br_id(br_id),
+        .br_task(br_task),
+        .fu_alu_busy(fu_alu_busy),
+        .fu_mult_busy(fu_mult_busy),
+        .fu_ld_busy(fu_ld_busy),
+        .fu_store_busy(fu_store_busy),
+        .fu_br_busy(fu_br_busy),
+        .issued_alu(issued_alu),
+        .issued_mult(issued_mult),
+        .issued_ld(issued_ld),
+        .issued_store(issued_store),
+        .issued_br(issued_br),
+        .open_entries(open_entries)
+        `ifdef DEBUG
+        ,   .debug_entries(debug_entries),
+            .debug_open_spots(debug_open_spots),
+            .debug_other_sig(debug_other_sig),
+            .debug_dis_entries_bus(debug_dis_entries_bus),
+            .debug_open_entries(debug_open_entries),
+            .debug_all_issued_insts(debug_all_issued_insts),
+
+            .debug_alu_issued_bus(debug_alu_issued_bus),
+            .debug_alu_req(debug_alu_req),
+            .debug_alu_fu_gnt_bus(debug_alu_fu_gnt_bus),
+            .debug_alu_inst_gnt_bus(debug_alu_inst_gnt_bus),
+
+            .debug_mult_issued_bus(debug_mult_issued_bus),
+            .debug_mult_req(debug_mult_req),
+            .debug_mult_fu_gnt_bus(debug_mult_fu_gnt_bus),
+            .debug_mult_inst_gnt_bus(debug_mult_inst_gnt_bus),
+
+            .debug_br_issued_bus(debug_br_issued_bus),
+            .debug_br_req(debug_br_req),
+            .debug_br_fu_gnt_bus(debug_br_fu_gnt_bus),
+            .debug_br_inst_gnt_bus(debug_br_inst_gnt_bus)
+        `endif
+    );
 
     always begin
         #(`CLOCK_PERIOD/2.0);
@@ -283,6 +329,8 @@ module RS_tb();
         fu_ld_busy = 0;
         fu_store_busy = 0;
         fu_br_busy = 0;
+
+        decoded_inst_buffer = {};
     endfunction
 
     function void model_rs_insert(RS_PACKET in, int lsb);

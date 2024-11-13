@@ -4,33 +4,33 @@
 
 `include "sys_defs.svh"
 
-module ROB #(
+module rob #(
     parameter DEPTH = `PHYS_REG_SZ_R10K,
     parameter N = `N
 )
 (
-    input                                           clock, 
-    input                                           reset,
+    input                                                               clock, 
+    input                                                               reset,
 
-    input DECODED_PACKET          [N-1:0]           wr_data,
-    input PHYS_REG_IDX            [N-1:0]           t,
-    input PHYS_REG_IDX            [N-1:0]           t_old,
+    input DECODED_PACKET                        [N-1:0]                 wr_data,
+    input PHYS_REG_IDX                          [N-1:0]                 t,
+    input PHYS_REG_IDX                          [N-1:0]                 t_old,
 
-    input PHYS_REG_IDX        [N-1:0]               complete_t, // comes from the FU
-    input                     [$clog2(N+1)-1:0]     num_accept, // input signal from min block, dependent on open_entries 
-    input logic               [$clog2(DEPTH)-1:0]   br_tail,
-    input logic                                     br_en,                        
+    input PHYS_REG_IDX                          [N-1:0]                 complete_t, // comes from the FU
+    input                                       [$clog2(N+1)-1:0]       num_accept, // input signal from min block, dependent on open_entries 
+    input logic                                 [$clog2(DEPTH)-1:0]     br_tail,
+    input logic                                                         br_en,
 
-    output ROB_PACKET         [N-1:0]               retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
-    output logic              [$clog2(N+1)-1:0]     open_entries, // number of open entires AFTER retirement
-    output logic              [$clog2(N+1)-1:0]     num_retired,
-    output logic              [$clog2(DEPTH)-1:0]   out_tail
+    output ROB_PACKET                           [N-1:0]                 retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
+    output logic                                [$clog2(N+1)-1:0]       open_entries, // number of open entires AFTER retirement
+    output logic                                [$clog2(N+1)-1:0]       num_retired,
+    output logic                                [$clog2(DEPTH)-1:0]     out_tail
 
 
     `ifdef DEBUG
-    ,   output ROB_PACKET [DEPTH-1:0] debug_entries,
-        output logic [$clog2(DEPTH)-1:0] debug_head,
-        output logic [$clog2(DEPTH)-1:0] debug_tail
+    ,   output ROB_PACKET                       [DEPTH-1:0]             debug_entries,
+        output logic                            [$clog2(DEPTH)-1:0]     debug_head,
+        output logic                            [$clog2(DEPTH)-1:0]     debug_tail
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
