@@ -19,29 +19,29 @@ module ROB_tb();
 
     logic                                  clock;
     logic                                  reset;
-    ROB_ENTRY_PACKET [N-1:0]               wr_data;
+    ROB_PACKET [N-1:0]               wr_data;
     PHYS_REG_IDX     [N-1:0]               complete_t;
     logic            [$clog2(N+1)-1:0]     num_accept;
-    ROB_ENTRY_PACKET [N-1:0]               retiring_data;
+    ROB_PACKET [N-1:0]               retiring_data;
     logic            [$clog2(DEPTH+1)-1:0] open_entries;
     logic            [$clog2(N+1)-1:0]     num_retired;
     logic            [$clog2(DEPTH)-1:0]   br_tail = '0;
     logic                                  br_en = '0;
 
     `ifdef DEBUG
-        ROB_ENTRY_PACKET [DEPTH-1:0]     entry_data;
+        ROB_PACKET [DEPTH-1:0]     entry_data;
         logic            [LOG_DEPTH-1:0] debug_head;
         logic            [LOG_DEPTH-1:0] debug_tail;
     `endif
 
-    ROB_ENTRY_PACKET rob_model [$:(DEPTH)];
-    ROB_ENTRY_PACKET inst_buf [$:((DEPTH)*2)];
+    ROB_PACKET rob_model [$:(DEPTH)];
+    ROB_PACKET inst_buf [$:((DEPTH)*2)];
     PHYS_REG_IDX complete_queue [$:(DEPTH)];
 
-    ROB_ENTRY_PACKET empty_packet = '{op_code: 0, t: 0, t_old: 0, complete: 0, valid: 0};
+    ROB_PACKET empty_packet = '{op_code: 0, t: 0, t_old: 0, complete: 0, valid: 0};
 
-    
-    ROB #(
+
+    rob #(
         .DEPTH(DEPTH),
         .N(N))
     dut (
@@ -285,7 +285,7 @@ module ROB_tb();
 
     // Retired Entries Validation
     function void check_retired_entries();
-        ROB_ENTRY_PACKET inst;
+        ROB_PACKET inst;
         for (int i = 0; i < num_retired; i++) begin
             inst = rob_model.pop_front();
             if (inst.op_code !== retiring_data[i].op_code) begin
