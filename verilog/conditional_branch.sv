@@ -35,10 +35,10 @@ module conditional_branch (
     always_comb begin
         if (stall) begin
             next_out = out;
-            data_ready = rd_in;
+            data_ready = '0;
         end else begin
             next_out = '{alu_result: '0, decoded_vals: is_pack.decoded_vals, take_conditional: take};
-            data_ready = '0;
+            data_ready = rd_in;
         end
     end
 
