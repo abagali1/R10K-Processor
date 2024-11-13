@@ -228,6 +228,39 @@ module dispatch_tb();
 
         $display("PASSED TEST 5");
 
+        // ------------------------------ Test 6 ------------------------------ //
+        $display("\nTest 6: Invalid Instructions");
+
+        reset = 1;
+        @(negedge clock);
+        reset = 0;
+
+        // N valid instructions
+        // first inst is branch
+        // third instruction is branch
+        // rob_open = 4
+        // rs_open = 3
+        // bs_full = 0
+        // so should dispatch up to branch, two instructions;
+
+        rob_open = 4;
+        rs_open = 3;
+        bs_full = 0;
+        insts_temp[2].valid = 0;
+        insts_temp[3].valid = 0;
+        insts_temp[4].valid = 0;
+        insts = insts_temp;
+        print_in_insts();
+        print_other_inputs();
+        @(negedge clock);
+        @(negedge clock);
+        check_dispatched(2);
+        rob_open = 0;
+        rs_open = 0;
+        bs_full = 0;
+
+        $display("PASSED TEST 6");
+
         $finish;
     end
 
