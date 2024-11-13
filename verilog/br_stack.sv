@@ -9,7 +9,6 @@ module br_stack #(
     input                                                               reset,
 
     input DECODED_PACKET                                                dis_inst, // first dispatched instruction
-    input ADDR                                                          in_PC,
     input MAP_TABLE_PACKET          [`ARCH_REG_SZ-1:0]                  in_mt,
     input logic                     [$clog2(`ROB_SZ+1)-1:0]             in_fl_head,
     input logic                     [$clog2(`PHYS_REG_SZ_R10K)-1:0]     in_rob_tail,
@@ -53,12 +52,6 @@ module br_stack #(
     assign full = free_entries == 0;
 
     always_comb begin
-        $display("stack grant from module");
-        for (int i = 0; i < DEPTH; i++) begin
-            $display("%0d ", stack_gnt[i]);
-        end
-        $display("\n");
-
         next_entries = entries;
         next_free_entries = free_entries;
 
@@ -67,10 +60,6 @@ module br_stack #(
             debug_free_entries = free_entries;
             debug_stack_gnt = stack_gnt;
         `endif
-
-        // ok something to consider, the outputted checkpoint may not be fully updated by the 
-        // ready bits in the current cycle's cdb.
-        // so this might be something that we check for again after recovering the map table
 
         // Branch clear or branch squash
         if (br_task == SQUASH) begin
@@ -103,14 +92,11 @@ module br_stack #(
                 if (stack_gnt[k]) begin
                     next_entries[k].valid = 1;
                     next_entries[k].b_id = stack_gnt;
-                    next_entries[k].rec_PC = in_PC;
+                    next_entries[k].rec_PC = dis_inst.PC;
                     next_entries[k].rec_mt = in_mt;
                     next_entries[k].fl_head = in_fl_head;
                     next_entries[k].rob_tail = in_rob_tail;
 
-                    $display("input values - valid: %d, b_id: %0d, rec_PC: %0d, fl_head: %b, rob_tail: %0d", next_entries[k].valid, stack_gnt, in_PC, in_fl_head, in_rob_tail);
-                    $display("next entries - valid: %d, b_id: %0d, rec_PC: %0d, fl_head: %b, rob_tail: %0d", next_entries[k].valid, next_entries[k].b_id, next_entries[k].rec_PC, next_entries[k].fl_head, next_entries[k].rob_tail);
-                    
                     for (int i = 0; i < DEPTH; i++) begin
                         next_entries[k].b_mask |= next_entries[i].b_id;
                     end
@@ -135,11 +121,9 @@ module br_stack #(
         if (reset) begin
             entries <= '0;
             free_entries <= '1;
-            //$display("in reset, free entries: %0d", free_entries);
         end else begin
             entries <= next_entries;
             free_entries <= next_free_entries;
-            //$display("in reset2, free entries: %0d", free_entries);
         end
     end
 

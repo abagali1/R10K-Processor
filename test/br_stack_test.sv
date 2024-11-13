@@ -19,7 +19,6 @@ module br_stack_tb();
     logic                                                       clock;
     logic                                                       reset;
     DECODED_PACKET                                              dis_inst; 
-    ADDR                                                        in_PC;
     MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                  in_mt;
     logic                   [$clog2(`ROB_SZ+1)-1:0]             in_fl_head;
     logic                   [$clog2(`PHYS_REG_SZ_R10K)-1:0]     in_rob_tail;
@@ -39,7 +38,6 @@ module br_stack_tb();
     `endif
 
     CHECKPOINT [DEPTH-1:0] model_entries;
-    ADDR test_in_PC;
     MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0]  test_in_mt;  
     logic [$clog2(`ROB_SZ+1)-1:0] test_in_fl_head;
     logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] test_in_rob_tail;
@@ -53,7 +51,6 @@ module br_stack_tb();
         .clock(clock),
         .reset(reset),
         .dis_inst(dis_inst),  
-        .in_PC(in_PC),
         .in_fl_head(in_fl_head),
         .in_mt(in_mt),  
         .in_rob_tail(in_rob_tail),  
@@ -90,7 +87,6 @@ module br_stack_tb();
         reset = 0;
 
         dis_inst_temp = '0;
-        test_in_PC = '0;
         test_in_mt = '0;  
         test_in_fl_head = '0;
         test_in_rob_tail = '0;
@@ -114,8 +110,6 @@ module br_stack_tb();
         // dis_inst_temp.uncond_branch = 1;
         // dis_inst_temp.valid = 1;
 
-        in_PC = 0;
-
         in_mt[0] = {32'd13, 1'b1, 1'b1};
         in_mt[1] = {32'd14, 1'b1, 1'b1}; 
         in_mt[2] = {32'd15, 1'b1, 1'b1};   
@@ -123,7 +117,7 @@ module br_stack_tb();
         in_fl_head = 5'b00001;
         in_rob_tail = 6'b000100;
 
-
+        dis_inst.PC = 0;
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
@@ -192,7 +186,6 @@ module br_stack_tb();
 
 function void clear_inputs();
     dis_inst = 0;
-    in_PC = 0;
     in_mt = 0;  
     in_rob_tail = 0;
     in_fl_head = 0;
@@ -201,9 +194,8 @@ function void clear_inputs();
     rem_b_id = 0;
 endfunction
 
-function void add_checkpoint(ADDR test_in_PC, MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] test_in_mt, logic [$clog2(`ROB_SZ+1)-1:0] test_in_fl_head, logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] test_in_rob_tail, DECODED_PACKET dis_inst_temp);
+function void add_checkpoint(MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] test_in_mt, logic [$clog2(`ROB_SZ+1)-1:0] test_in_fl_head, logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] test_in_rob_tail, DECODED_PACKET dis_inst_temp);
     //stack_gnt = data.b_id;
-    in_PC = test_in_PC;
     in_mt = test_in_mt;
     in_fl_head = test_in_fl_head;
     in_rob_tail = test_in_rob_tail;
@@ -234,11 +226,6 @@ function void check_entries();
         if (model_entries[i].b_mask != debug_entries[i].b_mask) begin
             $error("@@@ FAILED @@@");
             $error("Check entry error: expected %0d, but got %0d", model_entries[i].b_mask, debug_entries[i].b_mask);
-            $finish;
-        end
-        if (model_entries[i].rec_PC != debug_entries[i].rec_PC) begin
-            $error("@@@ FAILED @@@");
-            $error("Check entry error: expected %0d, but got %0d", model_entries[i].rec_PC, debug_entries[i].rec_PC);
             $finish;
         end
         if (model_entries[i].fl_head != debug_entries[i].fl_head) begin
