@@ -223,10 +223,10 @@ module RS_tb();
         @(negedge clock); // dispatch 1
         fu_alu_busy = '1;
         @(negedge clock); // issue 1 BR, dispatch N-1
-        br_id = 4'b0001;
-        br_task = CLEAR;
         fu_alu_busy = 0;
         @(negedge clock);
+        br_id = 4'b0001;
+        br_task = CLEAR;
         @(negedge clock);
 
         reset = 1;
@@ -311,12 +311,13 @@ module RS_tb();
 
     function RS_PACKET model_rs_pop(int lsb, FU_TYPE fu_type);
         RS_PACKET res;
+        res = 0;
         if(lsb) begin
             for(int i=0;i<DEPTH;i++) begin
                 if(model_rs[i].decoded_vals.fu_type == fu_type && model_rs[i].decoded_vals.valid && model_rs[i].t1.ready && model_rs[i].t2.ready) begin
                     res = model_rs[i];
                     model_rs_delete(i);
-                    return res;
+                    break;
                 end
             end
         end else begin
@@ -324,11 +325,11 @@ module RS_tb();
                 if(model_rs[i].decoded_vals.fu_type == fu_type && model_rs[i].decoded_vals.valid && model_rs[i].t1.ready && model_rs[i].t2.ready) begin
                     res = model_rs[i];
                     model_rs_delete(i);
-                    return res;
+                    break;
                 end
             end
         end
-        return '0;
+        return res;
     endfunction
 
     function void model_rs_delete(int idx);
@@ -364,6 +365,14 @@ module RS_tb();
     endfunction
 
     function int rs_equal(RS_PACKET gt, RS_PACKET val);
+        if(br_id == gt.b_mask) begin
+            if(br_task == CLEAR) begin
+                gt.b_mask = 0;
+            end
+            if(br_task == SQUASH) begin
+                gt = 0;
+            end
+        end
         return gt.decoded_vals.valid == val.decoded_vals.valid && gt.t == val.t && gt.t1 == val.t1 && gt.t2 == val.t2 && gt.b_mask == val.b_mask && gt.decoded_vals.fu_type == val.decoded_vals.fu_type;
     endfunction
 

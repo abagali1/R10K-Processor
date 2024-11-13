@@ -196,35 +196,84 @@ module RS #(
 
         for(int i=0;i<`NUM_FU_ALU;i++) begin
             for(int j=0;j<DEPTH;j++) begin
-                issued_alu[i] |= alu_issued_bus[i][j] ? entries[j] : 0;
+                if(alu_issued_bus[i][j]) begin
+                    issued_alu[i] = entries[j];
+                    if(br_id == entries[j].b_mask) begin
+                        if(br_task == CLEAR) begin
+                            issued_alu[i].b_mask = 0;
+                        end
+                        if(br_task == SQUASH) begin
+                            issued_alu[i] = 0;
+                        end
+                    end
+                end
             end
         end
 
         for(int i=0;i<`NUM_FU_MULT;i++) begin
             for(int j=0;j<DEPTH;j++) begin
-                issued_mult[i] |= mult_issued_bus[i][j] ? entries[j] : 0;
+                if(mult_issued_bus[i][j]) begin
+                    issued_mult[i] = entries[j];
+                    if(br_id == entries[j].b_mask) begin
+                        if(br_task == CLEAR) begin
+                            issued_mult[i].b_mask = 0;
+                        end
+                        if(br_task == SQUASH) begin
+                            issued_mult[i] = 0;
+                        end
+                    end
+                end
             end
         end
 
         for(int i=0;i<`NUM_FU_LD;i++) begin
             for(int j=0;j<DEPTH;j++) begin
-                issued_ld[i] |= ld_issued_bus[i][j] ? entries[j] : 0;
+                if(ld_issued_bus[i][j]) begin
+                    issued_ld[i] = entries[j];
+                    if(br_id == entries[j].b_mask) begin
+                        if(br_task == CLEAR) begin
+                            issued_ld[i].b_mask = 0;
+                        end
+                        if(br_task == SQUASH) begin
+                            issued_ld[i] = 0;
+                        end
+                    end
+                end
             end
         end
 
         for(int i=0;i<`NUM_FU_STORE;i++) begin
             for(int j=0;j<DEPTH;j++) begin
-                issued_store[i] |= store_issued_bus[i][j] ? entries[j] : 0;
+                if(br_issued_bus[i][j]) begin
+                    issued_store[i] = entries[j];
+                    if(br_id == entries[j].b_mask) begin
+                        if(br_task == CLEAR) begin
+                            issued_store[i].b_mask = 0;
+                        end
+                        if(br_task == SQUASH) begin
+                            issued_store[i] = 0;
+                        end
+                    end
+                end
             end
         end
 
         for(int i=0;i<`NUM_FU_BR;i++) begin
             for(int j=0;j<DEPTH;j++) begin
-                issued_br[i] |= br_issued_bus[i][j] ? entries[j] : 0;
+                if(br_issued_bus[i][j]) begin
+                    issued_br[i] = entries[j];
+                    if(br_id == entries[j].b_mask) begin
+                        if(br_task == CLEAR) begin
+                            issued_br[i].b_mask = 0;
+                        end
+                        if(br_task == SQUASH) begin
+                            issued_br[i] = 0;
+                        end
+                    end
+                end
             end
         end
     end
-
 
     psel_gen #(
         .WIDTH(DEPTH),
