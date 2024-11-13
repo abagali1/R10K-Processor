@@ -83,11 +83,23 @@ module cpu (
     // output of br stack
     // CHECKPOINT  cp_out;
     logic br_full;
-
-    assign rs_open = 2;
+    
+    // hardcoded values
     assign br_full = 0;
 
+    logic [`NUM_FU_ALU-1:0]    fu_alu_busy;
+    logic [`NUM_FU_MULT-1:0]   fu_mult_busy;
+    logic [`NUM_FU_LD-1:0]     fu_ld_busy;
+    logic [`NUM_FU_STORE-1:0]  fu_store_busy;
+    logic [`NUM_FU_BR-1:0]     fu_br_busy;
 
+    assign fu_alu_busy   = '1;
+    assign fu_mult_busy  = '1;
+    assign fu_ld_busy    = '1;
+    assign fu_store_busy = '1;
+    assign fu_br_busy    = '1;
+
+     
 
     inst_buffer buffet (
         .clock(clock),
@@ -119,7 +131,7 @@ module cpu (
     PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
     logic        [`N-1:0] dis_incoming_valid;
 
-    always_comb begin    
+    always_comb begin
         for (int i = 0; i < `N; i++) begin
             dis_r1_idx[i] = dis_insts[i].reg1;
             dis_r2_idx[i] = dis_insts[i].reg2;       
@@ -128,60 +140,6 @@ module cpu (
             dis_incoming_valid[i] = dis_insts[i].valid;
         end
     end
-
-    // RS rasam (
-    //     .clock(clock),
-    //     .reset(reset),
-
-    //     .rs_in(dis_insts),
-    //     .t_in(fl_reg),
-    //     .t1_in(r1_p_reg),
-    //     .t2_in(r2_p_reg),
-    //     .b_mask_in(),
-
-    //     .cdb_in(),
-
-    //     // ebr logic
-    //     .br_id(),
-    //     .br_task(),
-
-    //     // busy bits from FUs to mark when available to issue
-    //     .fu_alu_busy(),
-    //     .fu_mult_busy(),
-    //     .fu_ld_busy(),
-    //     .fu_store_busy(),
-    //     .fu_br_busy(), 
-
-    //     .num_accept(),
-
-    //     // output packets directly to FUs (they all are pipelined)
-    //     .issued_alu(), 
-    //     .issued_mult(),
-    //     .issued_ld(),
-    //     .issued_store(),
-    //     .issued_br(),
-
-    //     .open_entries(rs_open)
-    // );
-
-    rob robert (
-        .clock(clock), 
-        .reset(reset),
-
-        .wr_data(dis_insts),
-        .t(dis_free_reg),
-        .t_old(t_old_data),
-
-        .complete_t(0), // comes from the CDB
-        .num_accept(num_dis), // input signal from min block, dependent on open_entries 
-        .br_tail(0),
-        .br_en(0),                        
-
-        .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
-        .open_entries(rob_open), // number of open entires AFTER retirement
-        .num_retired(num_retired),
-        .out_tail(rob_tail)
-    );
 
     free_list flo_from_progressive (
         .clock(clock),
@@ -219,6 +177,60 @@ module cpu (
         .r1_p_reg(r1_p_reg),
         .r2_p_reg(r2_p_reg),
         .out_mt(out_mt)
+    );
+
+    rs rasam (
+        .clock(clock),
+        .reset(reset),
+
+        .rs_in(dis_insts),
+        .t_in(fl_reg),
+        .t1_in(r1_p_reg),
+        .t2_in(r2_p_reg),
+        .b_mask_in(0),
+
+        .cdb_in(0),
+
+        // ebr logic
+        .br_id(0),
+        .br_task(0),
+
+        // busy bits from FUs to mark when available to issue
+        .fu_alu_busy(fu_alu_busy),
+        .fu_mult_busy(fu_mult_busy),
+        .fu_ld_busy(fu_ld_busy),
+        .fu_store_busy(fu_store_busy),
+        .fu_br_busy(fu_br_busy), 
+
+        .num_accept(num_dis),
+
+        // output packets directly to FUs (they all are pipelined)
+        .issued_alu(0), 
+        .issued_mult(0),
+        .issued_ld(0),
+        .issued_store(0),
+        .issued_br(0),
+
+        .open_entries(rs_open)
+    );
+
+    rob robert (
+        .clock(clock), 
+        .reset(reset),
+
+        .wr_data(dis_insts),
+        .t(dis_free_reg),
+        .t_old(t_old_data),
+
+        .complete_t(0), // comes from the CDB
+        .num_accept(num_dis), // input signal from min block, dependent on open_entries 
+        .br_tail(0),
+        .br_en(0),                        
+
+        .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
+        .open_entries(rob_open), // number of open entires AFTER retirement
+        .num_retired(num_retired),
+        .out_tail(rob_tail)
     );
 
     // br_stack pancake (
