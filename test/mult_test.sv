@@ -33,7 +33,7 @@ endmodule // correct_mult
 
 module testbench;
 
-    DATA r1, r2, correct_r, mul_r;
+    DATA r1, r2, correct_r, prev_r, mul_r;
     MULT_FUNC f;
 
     logic clock;
@@ -44,8 +44,6 @@ module testbench;
     logic rd_in;
     FU_PACKET fu_pack;
     logic data_ready;
-
-    logic stall_every_other;
 
     assign mul_r = fu_pack.alu_result;
 
@@ -78,11 +76,10 @@ module testbench;
 
     task wait_until_done;
         forever begin : wait_loop
-            @(posedge data_ready);
-            @(negedge clock);
             if (data_ready) begin
                 disable wait_until_done;
             end
+            @(negedge clock);
         end
     endtask
 
@@ -91,19 +88,10 @@ module testbench;
     always @(posedge clock) begin
         if (rd_in) begin
             cycles = 0;
-        end else if (~stall) begin
+        end else begin
             cycles++;
         end
     end
-
-    always @(posedge clock) begin
-        if (stall_every_other) begin
-            stall = ~stall;
-        end else begin
-            stall = 0;
-        end
-    end
-
 
     task test;
         input MULT_FUNC func;
@@ -138,13 +126,52 @@ module testbench;
         end
     endtask
 
+    task test_stall;
+        input MULT_FUNC func;
+        input DATA reg_1, reg_2;
+        begin
+            @(negedge clock);
+            rd_in = 1;
+            r1 = reg_1;
+            r2 = reg_2;
+            f = func;
+            is_pack = '0;
+            is_pack.decoded_vals.decoded_vals.valid = 1;
+            is_pack.rs1_value = reg_1;
+            is_pack.rs2_value = reg_2;
+            is_pack.decoded_vals.decoded_vals.mult = 1;
+            is_pack.decoded_vals.decoded_vals.inst.r.funct3 = func;
+            cycles = 0;
+            @(negedge clock);
+            rd_in = 0;
+            is_pack = '0;
+            @(negedge clock);
+            @(negedge clock);
+            @(negedge clock);
+            prev_r = mul_r;
+            stall = 1;
+            @(negedge clock);
+            stall = 0;
+            wait_until_done();
+            if (prev_r != mul_r) begin
+                $display("NOT EQUAL");
+                failed = 1;
+            end
+            if (cycles !== `MULT_STAGES) begin
+                $display("WRONG NUM CYCLES: %0d", cycles);
+                failed = 1;
+            end
+            $display(fmt, f.name(), r1, r2, prev_r, mul_r);
+            @(negedge clock);
+        end
+    endtask
+
 
     initial begin
         clock = 0;
         reset = 1;
         failed = 0;
         stall = 0;
-        stall_every_other = 0;
         @(negedge clock);
         @(negedge clock);
         reset = 0;
@@ -184,10 +211,12 @@ module testbench;
         $display(""); repeat (10) test(M_MULHSU, $random, $random);
 
         // stall testing
-        
-        stall_every_other = 1;
-        test(M_MUL, 30, 30);
-        stall_every_other = 0;
+
+        fmt = "%-8s | %d * %d = correct: %d | mul: %d";
+        $display(""); repeat (10) test_stall(M_MUL,    $random, $random);
+        $display(""); repeat (10) test_stall(M_MULH,   $random, $random);
+        $display(""); repeat (10) test_stall(M_MULHU,  $random, $random);
+        $display(""); repeat (10) test_stall(M_MULHSU, $random, $random);
 
         if (failed)
             $display("@@@ Failed\n");
