@@ -43,6 +43,8 @@ module rob #(
 
     ROB_PACKET [DEPTH-1:0] entries, next_entries;
 
+    assign out_tail = tail + 1; 
+
     // use head and tail because this updates between clock cycles, so will update to correct value
     // with head and tail on posedge
     // keeping the original version alongside simplified comb logic
@@ -54,7 +56,7 @@ module rob #(
         next_head = head;
         retiring_data = '0;
         num_retired = '0;
-        next_num_entries = num_entries;
+        next_num_entries = num_entries; // TODO: doesnt reflect EBR
         next_entries = entries;
 
         // Dependent for-loop to retire instructions. 
@@ -72,7 +74,13 @@ module rob #(
         end
 
         // These statements are dependent on updated num_accept
-        next_tail = (br_en) ? (br_tail + 1) % DEPTH : (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
+        next_tail = (br_en) ? (br_tail + num_accept) % DEPTH : (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
+        // needed for loop to squash valid bits
+        if (br_en) begin
+            for (int i = br_tail; i != tail; i = (i + 1) % DEPTH) begin
+                next_entries[i] = '0;
+            end
+        end
         next_num_entries += num_accept;
 
         for(int j=0;j < N; ++j) begin
@@ -96,7 +104,6 @@ module rob #(
         // two assumptions:
         // - branch is the first instruction in the the dispatched instruction window
         // - only one branch per dispatched instruction window
-        out_tail = tail; 
         
         `ifdef DEBUG
             debug_entries = entries;
@@ -128,11 +135,11 @@ module rob #(
         always @(posedge clock) begin
             $display("====================== ROB ======================");
             $display("Entries: ");
-            $display("dest_reg_idx\tt\tt_old\tcomplete\tvalid\thalt\t");
+            $display("dest_reg_idx\tt\tt_old\tcomplete\tvalid");
             for (int j = 0; j < DEPTH; j++) begin
-                $display("\t%0d\t%0d\t%0d\t%0d\t%0b\t%0b",
+                $display("\t%4d\t%1d\t%5d\t%8d\t%5d",
                     entries[j].dest_reg_idx, entries[j].t, entries[j].t_old,
-                    entries[j].complete, entries[j].valid, entries[j].halt
+                    entries[j].complete, entries[j].valid
                 );
             end
             $display("");
