@@ -98,6 +98,7 @@ module dispatch_tb();
         print_other_inputs();
         @(negedge clock);
         @(negedge clock);
+        check_dispatched(2);
         rob_open = 0;
         rs_open = 0;
         bs_full = 0;
@@ -120,12 +121,14 @@ module dispatch_tb();
 
         rob_open = 2;
         rs_open = 3;
-        bs_full = 0;
+        bs_full = 1;
+        insts_temp[0].inst = 32'h00610463;
         insts = insts_temp;
         print_in_insts();
         print_other_inputs();
         @(negedge clock);
         @(negedge clock);
+        check_dispatched(0);
         rob_open = 0;
         rs_open = 0;
         bs_full = 0;
@@ -134,6 +137,10 @@ module dispatch_tb();
 
         // ------------------------------ Test 3 ------------------------------ //
         $display("\nTest 3:");
+
+        reset = 1;
+        @(negedge clock);
+        reset = 0;
 
         // N valid instructions
         // first instruction is branch
@@ -171,7 +178,13 @@ module dispatch_tb();
 
     // functions
 
-
+    function void check_dispatched(logic [$clog2(N+1)-1:0] dispatch_check);
+        if (dispatch_check != num_dispatch) begin
+            $error("@@@ FAILED @@@");
+            $error("Check dispatched: expected %0d, but got %0d", dispatch_check, num_dispatch);
+            $finish;
+        end
+    endfunction
 
     // print
 
