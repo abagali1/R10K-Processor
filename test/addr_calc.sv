@@ -10,7 +10,7 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
 
-module alu_tb();
+module addr_calc_tb();
     logic               clock; 
     logic               reset;
     ISSUE_PACKET        is_pack;
@@ -18,6 +18,7 @@ module alu_tb();
     logic               rd_in;
 
     FU_PACKET           fu_pack;
+    logic               data_ready;
 
     DECODED_PACKET      disp_pack;
     RS_PACKET           rs_pack;
@@ -33,13 +34,14 @@ module alu_tb();
     // FREE_LIST_PACKET  [2:0] pr_list;
     // logic [$clog2(DEPTH)-1:0] k = 0;
 
-    alu dut (
+    addr_calc dut (
         .clock(clock),
         .reset(reset),
         .is_pack(is_pack),
         .stall(stall),
         .rd_in(rd_in),
-        .fu_pack(fu_pack)
+        .fu_out(fu_pack),
+        .data_ready(data_ready)
     );
 
     always begin 
@@ -92,6 +94,9 @@ module alu_tb();
         // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Check basic addition");
         
+        disp_pack.uncond_branch = 1;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack
         is_pack.rs1_value = 0;
         is_pack.rs2_value = 0;
         rd_in = 1;
