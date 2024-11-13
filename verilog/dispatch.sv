@@ -1,3 +1,11 @@
+`include "decode.sv"
+
+// if you have instructions that don't include a branch, choose rob, rs, valid instruction min
+// if you have a branch, that is the first one list of instructions, go up until min of next branch, rob, rs, or valid
+// if you have a branch, that's in the middle, go up until that branch and stop
+
+// 00610463 - branch instruction
+
 module dispatch #(
     parameter N = `N
 )(
@@ -11,21 +19,28 @@ module dispatch #(
     output logic            [$clog2(N+1)-1:0]    num_dispatch,
     output DECODED_PACKET   [N-1:0]              out_insts
 
+    
+    `ifdef DEBUG
+    , logic [$clog2(N+1)-1:0] debug_num_valid_inst
+    `endif
 );
 
     logic [$clog2(N+1)-1:0] num_rob_rs; 
     logic [$clog2(N+1)-1:0] num_valid_inst;
-    logic br_included;
+    logic [$clog2(N+1)-1:0] limit;
     
     assign num_rob_rs = rob_open < rs_open ? rob_open : rs_open;
     assign limit = num_valid_inst < num_rob_rs ? num_valid_inst : num_rob_rs;
+    
+    `ifdef DEBUG
+        assign debug_num_valid_inst = num_valid_inst;
+    `endif
 
     DECODED_PACKET [N-1:0] decoded_insts;
     
     decode #(
         .N(N)
-    )  
-    (
+    ) decode (
         .clock(clock),           // system clock
         .reset(reset),           // system reset
         .insts(insts),
@@ -35,28 +50,30 @@ module dispatch #(
 
 
     always_comb begin
+        // debugging purposes
         num_valid_inst = 0;
         for (int i = 0; i < N; i++) begin
-            if (inst[i].valid) begin
+            if (insts[i].valid) begin
                 num_valid_inst++;
             end
         end
     end
 
+    
     always_comb begin
         num_dispatch = 0;
+        
         for (int i = 0; i < N; i++) begin
-            if (decoded_insts[i].valid & i < limit) begin
+            if (decoded_insts[i].valid && i < limit) begin
                 if ((decoded_insts[i].uncond_branch || decoded_insts[i].cond_branch)) begin
-                    if (br_included == 0 & i == 0 & bs_full) begin
-                        br_included = 1;
-                        out_insts[i] = insts[i];
+                    if (i == 0 && !bs_full) begin 
+                        out_insts[i] = decoded_insts[i];
                         num_dispatch++;
                     end else begin
                         break;
                     end
                 end else begin
-                    out_insts[i] = insts[i];
+                    out_insts[i] = decoded_insts[i];
                     num_dispatch++;
                 end                
             end
