@@ -32,7 +32,7 @@ module inst_buffer_tb();
         logic            [LOG_DEPTH-1:0] debug_tail;
     `endif
     
-    INST_PACKET inst_buffer_model [$:(DEPTH)];
+    INST_PACKET [$:(DEPTH)] inst_buffer_model;
     int instruction = 4'b1000;
     int pc = 8'b00001000; 
     int npc = 8'b00001001; 
@@ -86,7 +86,6 @@ module inst_buffer_tb();
         // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Put Instructions in the Buffa");
         
-
         num_accept = 4;
         num_dispatch = 0;
         add_inst();

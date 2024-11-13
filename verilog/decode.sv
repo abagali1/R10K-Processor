@@ -17,7 +17,7 @@ module decoder
 (
     input INST_PACKET inst,
 
-    output FU_TYPE         fu_type;
+    output FU_TYPE         fu_type,
     output ALU_OPA_SELECT  opa_select,
     output ALU_OPB_SELECT  opb_select,
     output logic           has_dest, // if there is a destination register
@@ -47,7 +47,7 @@ module decoder
         fu_type       = ALU_INST;
 
         if (inst.valid) begin
-            casez (insts.inst)
+            casez (inst.inst)
                 `RV32_LUI: begin
                     has_dest   = `TRUE;
                     opa_select = OPA_IS_ZERO;
@@ -201,7 +201,7 @@ endmodule // decoder
 
 
 module decode #(
-    parameter N = `N;
+    parameter N = `N
 )(
     input                         clock,           // system clock
     input                         reset,           // system reset
@@ -210,24 +210,28 @@ module decode #(
     output DECODED_PACKET [N-1:0] id_packet
 );
 
-    assign id_packet.inst = insts.inst;
-    assign id_packet.PC   = insts.PC;
-    assign id_packet.NPC  = insts.NPC;
-    assign id_packet.valid = insts.valid;
-    assign id_packet.reg1 = insts.inst.r.rs1;
-    assign id_packet.reg2 = insts.inst.r.rs2;
-
     logic [N-1:0] has_dest_reg;
-    assign id_packet.dest_reg_idx = (has_dest_reg) ? insts.inst.r.rd : `ZERO_REG;
-    assign id_packet.pred_taken = insts.pred_taken;
+    always_comb begin
+        for (int i = 0; i < N; i++) begin
+            id_packet[i].inst = insts[i].inst;
+            id_packet[i].PC   = insts[i].PC;
+            id_packet[i].NPC  = insts[i].NPC;
+            id_packet[i].valid = insts[i].valid;
+            id_packet[i].reg1 = insts[i].inst.r.rs1;
+            id_packet[i].reg2 = insts[i].inst.r.rs2;
+            id_packet[i].dest_reg_idx = (has_dest_reg[i]) ? insts[i].inst.r.rd : `ZERO_REG;
+            id_packet[i].pred_taken = insts[i].pred_taken;
+        end
+    end
+    
+   
 
     // Instantiate the instruction decoder
     generate
-        for (genvar i = 0; i < N; i++) begin
+        for (genvar i = 0; i < N; i++) begin : decode_gen
             decoder decoder_0 (
                 // Inputs
-                .inst  (insts[i].inst),
-                .valid (insts[i].valid),
+                .inst  (insts[i]),
 
                 // Outputs
                 .fu_type       (id_packet[i].fu_type),
