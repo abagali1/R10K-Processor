@@ -45,6 +45,8 @@ module testbench;
     FU_PACKET fu_pack;
     logic data_ready;
 
+    logic stall_every_other;
+
     assign mul_r = fu_pack.alu_result;
 
 
@@ -84,6 +86,24 @@ module testbench;
         end
     endtask
 
+    int cycles;
+
+    always @(posedge clock) begin
+        if (rd_in) begin
+            cycles = 0;
+        end else if (~stall) begin
+            cycles++;
+        end
+    end
+
+    always @(posedge clock) begin
+        if (stall_every_other) begin
+            stall = ~stall;
+        end else begin
+            stall = 0;
+        end
+    end
+
 
     task test;
         input MULT_FUNC func;
@@ -100,6 +120,7 @@ module testbench;
             is_pack.rs2_value = reg_2;
             is_pack.decoded_vals.decoded_vals.mult = 1;
             is_pack.decoded_vals.decoded_vals.inst.r.funct3 = func;
+            cycles = 0;
             @(negedge clock);
             rd_in = 0;
             is_pack = '0;
@@ -107,6 +128,10 @@ module testbench;
             $display(fmt, f.name(), r1, r2, correct_r, mul_r);
             if (correct_r != mul_r) begin
                 $display("NOT EQUAL");
+                failed = 1;
+            end
+            if (cycles !== `MULT_STAGES - 1) begin
+                $display("WRONG NUM CYCLES: %0d", cycles);
                 failed = 1;
             end
             @(negedge clock);
@@ -119,13 +144,13 @@ module testbench;
         reset = 1;
         failed = 0;
         stall = 0;
+        stall_every_other = 0;
         @(negedge clock);
         @(negedge clock);
         reset = 0;
         @(negedge clock);
 
         fmt = "%-8s | %3d * %3d = correct: %3d | mul: %3d";
-        $display("HERE");
         test(M_MUL, 0, 0);
         test(M_MUL, 1, 0);
         test(M_MUL, 0, 1);
@@ -158,7 +183,11 @@ module testbench;
         $display(""); repeat (10) test(M_MULHU,  $random, $random);
         $display(""); repeat (10) test(M_MULHSU, $random, $random);
 
-        $display("");
+        // stall testing
+        
+        stall_every_other = 1;
+        test(M_MUL, 30, 30);
+        stall_every_other = 0;
 
         if (failed)
             $display("@@@ Failed\n");
