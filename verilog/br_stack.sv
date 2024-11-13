@@ -1,7 +1,7 @@
 `include "sys_defs.svh"
 `include "psel_gen.sv"
 
-module BR_STACK #(
+module br_stack #(
     parameter DEPTH = `BRANCH_PRED_SZ,
     parameter N = `N
 )(
@@ -53,11 +53,11 @@ module BR_STACK #(
     assign full = free_entries == 0;
 
     always_comb begin
-        // $display("stack grant");
-        // for (int i = 0; i < DEPTH; i++) begin
-        //     $display("%0d ", stack_gnt[i]);
-        // end
-        // $display("\n");
+        $display("stack grant from module");
+        for (int i = 0; i < DEPTH; i++) begin
+            $display("%0d ", stack_gnt[i]);
+        end
+        $display("\n");
 
         next_entries = entries;
         next_free_entries = free_entries;
@@ -108,6 +108,9 @@ module BR_STACK #(
                     next_entries[k].fl_head = in_fl_head;
                     next_entries[k].rob_tail = in_rob_tail;
 
+                    $display("input values - valid: %d, b_id: %0d, rec_PC: %0d, fl_head: %d, rob_tail: %0d", next_entries[k].valid, stack_gnt, in_PC, in_fl_head, in_rob_tail);
+                    $display("next entries - valid: %d, b_id: %0d, rec_PC: %0d, fl_head: %d, rob_tail: %0d", next_entries[k].valid, next_entries[k].b_id, next_entries[k].rec_PC, next_entries[k].fl_head, next_entries[k].rob_tail);
+                    
                     for (int i = 0; i < DEPTH; i++) begin
                         next_entries[k].b_mask |= next_entries[k + i].b_id;
                     end
@@ -132,9 +135,11 @@ module BR_STACK #(
         if (reset) begin
             entries <= '0;
             free_entries <= '1;
+            //$display("in reset, free entries: %0d", free_entries);
         end else begin
             entries <= next_entries;
             free_entries <= next_free_entries;
+            //$display("in reset2, free entries: %0d", free_entries);
         end
     end
 

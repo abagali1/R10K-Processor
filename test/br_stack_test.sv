@@ -45,7 +45,7 @@ module br_stack_tb();
     logic [2:0] test_in_rob_tail;
     DECODED_PACKET dis_inst_temp;
    
-    BR_STACK #(
+    br_stack #(
         .DEPTH(DEPTH),
         .N(N)
     )
@@ -82,6 +82,10 @@ module br_stack_tb();
         reset = 0;
 
         dis_inst_temp = '0;
+        test_in_PC = '0;
+        test_in_mt = '0;  
+        test_in_fl_head = '0;
+        test_in_rob_tail = '0;
         
         // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Test Checkpoint Coming In\n");
@@ -90,20 +94,34 @@ module br_stack_tb();
         clear_inputs();
         @(negedge clock);  
 
-        test_in_PC = 0;
+        test_in_PC = '0;
 
         test_in_mt[0] = {13, 1, 1};
         test_in_mt[1] = {14, 1, 1}; 
         test_in_mt[2] = {15, 1, 1};   
 
-        test_in_fl_head = 2;
-        test_in_rob_tail = 2;
+        test_in_fl_head = 5'b00001;
+        test_in_rob_tail = 6'b000100;
 
         dis_inst_temp.uncond_branch = 1;
         dis_inst_temp.valid = 1;
 
+        // in_PC = 0;
+
+        // in_mt[0] = {13, 1, 1};
+        // in_mt[1] = {14, 1, 1}; 
+        // in_mt[2] = {15, 1, 1};   
+
+        // in_fl_head = ;
+        // in_rob_tail = ;
+
         add_checkpoint(test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail, dis_inst_temp); 
-        
+
+        @(negedge clock);  
+
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
         @(negedge clock);  
 
         // ------------------------------ Test 2 ------------------------------ //
@@ -152,9 +170,9 @@ module br_stack_tb();
         #(`CLOCK_PERIOD * 0.2);
         print_entries();
         //print_model_entries();
-        print_stack_gnt();
+        // print_stack_gnt();
         // check_entries();
-        $display("@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
+        $display("\n@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
         cycle_number++;
     end
 
@@ -227,7 +245,7 @@ endfunction
 function void print_entries();
     $display("\nEntries\n");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("index: %0d, b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d\n", i, debug_entries[i].b_id, debug_entries[i].b_mask, debug_entries[i].rec_PC, debug_entries[i].fl_head, debug_entries[i].rob_tail);
+        $display("index: %0d, b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d", i, dut.next_entries[i].b_id, dut.next_entries[i].b_mask, dut.next_entries[i].rec_PC, dut.next_entries[i].fl_head, dut.next_entries[i].rob_tail);
     end
 endfunction
 
