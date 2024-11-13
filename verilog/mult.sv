@@ -27,6 +27,8 @@ module mult (
     assign rs1 = is_pack.rs1_value;
     assign rs2 = is_pack.rs2_value;
 
+    logic done;
+
     // keep track of each instruction's is_pack
     RS_PACKET [`MULT_STAGES-1:0] packets, next_packets;
 
@@ -85,7 +87,7 @@ module mult (
 
     `ifdef DEBUG_MULT
         always_ff @(posedge clock) begin
-            $display("============== MULT ==============");
+            $display("============== MULT ================");
             for (int i = 0; i < `MULT_STAGES; i++) begin
                 $display("   Packets[%0d] = %0d", i, packets[i].decoded_vals.inst);
             end
