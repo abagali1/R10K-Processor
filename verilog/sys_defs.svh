@@ -28,7 +28,7 @@
 // `define DEBUG_RS '1
 
 // superscalar width
-`define N 1
+`define N 3
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
@@ -325,7 +325,8 @@ typedef struct packed {
 } FREE_LIST_PACKET;
 
 typedef struct packed {
-    PHYS_REG_IDX reg_idx;
+    REG_IDX reg_idx;
+    PHYS_REG_IDX p_reg_idx;
     DATA reg_val;
     logic valid;
 } CDB_PACKET;
@@ -334,6 +335,15 @@ typedef struct packed {
     logic [`BRANCH_PRED_SZ-1:0] b_mask;
 } BR_MASK;
 
+typedef struct packed {
+    logic valid;
+    logic [`BRANCH_PRED_SZ-1:0] b_id;
+    logic [`BRANCH_PRED_SZ-1:0] b_mask;
+    ADDR rec_PC;
+    MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] rec_mt;
+    logic [$clog2(`ROB_SZ+1)-1:0] fl_head;
+    logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] rob_tail;
+} CHECKPOINT;
 
 /* END */
 
