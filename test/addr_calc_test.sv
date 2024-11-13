@@ -57,8 +57,8 @@ module addr_calc_tb();
         rd_in = 0;
         stall = 0;
         disp_pack = '{
-            inst: '0,
-            PC: '0,
+            inst: 0,
+            PC: 10,
             NPC: 1,
             opa_select: OPA_IS_RS1,
             opb_select: OPB_IS_RS2,
@@ -85,90 +85,120 @@ module addr_calc_tb();
             t2: '{reg_idx: 2, ready: 0, valid: 1},
             b_mask: '0
         };
-        is_pack.decoded_vals = rs_pack;
+        is_pack = '{
+            decoded_vals: rs_pack,
+            rs1_value: 0,
+            rs2_value: 0
+        };
 
         @(negedge clock);
         @(negedge clock);
         reset = 0;
         
         // ------------------------------ Test 1 ------------------------------ //
-        $display("\nTest 1: Check basic addition");
-        
-        disp_pack.uncond_branch = 1;
-        rs_pack.decoded_vals = disp_pack;
-        is_pack.decoded_vals = rs_pack
-        is_pack.rs1_value = 0;
-        is_pack.rs2_value = 0;
-        rd_in = 1;
-        expected = 0;
-        @(negedge clock);
-        
-        is_pack.rs1_value = 1;
-        is_pack.rs2_value = 2;
-        expected = 3;
-        @(negedge clock);
+        $display("\nTest 1: Check JAL");
 
-        is_pack.rs1_value = 0;
-        is_pack.rs2_value = 8;
-        expected = 8;
+        disp_pack.opa_select = OPA_IS_PC;
+        disp_pack.opb_select = OPB_IS_J_IMM;
+        disp_pack.inst[30:21] = 9'b1;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack;
+        rd_in = 1;
+
+        expected = 12;
+        @(negedge clock);
+        
+        disp_pack.inst[30:21] = 9'b1000;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack;
+        expected = 26;
         @(negedge clock);
 
         $display("PASSED TEST 1");
 
         // ------------------------------ Test 2 ------------------------------ //
-        $display("\nTest 1: Check basic subtraction");
-        
-        disp_pack.alu_func = ALU_SUB;
+        $display("\nTest 1: Check JALR");
+
+        disp_pack.opa_select = OPA_IS_RS1;
+        disp_pack.opb_select = OPB_IS_I_IMM;
+        is_pack.rs1_value = 3;
+        disp_pack.inst = 0;
+        disp_pack.inst[30:20] = 10'b10;
         rs_pack.decoded_vals = disp_pack;
         is_pack.decoded_vals = rs_pack;
+        rd_in = 1;
 
-        is_pack.rs1_value = 12;
-        is_pack.rs2_value = 0;
-        expected = 12;
+        expected = 5;
         @(negedge clock);
         
-        is_pack.rs1_value = 0;
-        is_pack.rs2_value = 2;
-        expected = -2;
+        is_pack.rs1_value = 8;
+        disp_pack.inst = 0;
+        disp_pack.inst[30:20] = 10'b10000;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack;
+        rd_in = 1;
+
+        expected = 24;
+        @(negedge clock);
+
+        is_pack.rs1_value = -8;
+        disp_pack.inst = 0;
+        disp_pack.inst[30:20] = 10'b10000;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack;
+        rd_in = 1;
+
+        expected = 8;
         @(negedge clock);
 
         $display("PASSED TEST 2");
 
         // ------------------------------ Test 3 ------------------------------ //
-        $display("\nTest 1: Check basic and");
+        $display("\nTest 3: Check basic LW");
         
-        disp_pack.alu_func = ALU_AND;
+        disp_pack.opa_select = OPA_IS_RS1;
+        disp_pack.opb_select = OPB_IS_I_IMM;
+        is_pack.rs1_value = 3;
+        disp_pack.inst[30:20] = 10'b10;
         rs_pack.decoded_vals = disp_pack;
         is_pack.decoded_vals = rs_pack;
-        
-        is_pack.rs1_value = 0;
-        is_pack.rs2_value = 1;
-        expected = 0;
-        @(negedge clock);
-        
-        is_pack.rs1_value = 15;
-        is_pack.rs2_value = 5;
+        rd_in = 1;
+
         expected = 5;
+        @(negedge clock);
+
+        is_pack.rs1_value = -3;
+        disp_pack.inst[30:20] = 10'b10;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack;
+        rd_in = 1;
+
+        expected = -1;
         @(negedge clock);
 
         $display("PASSED TEST 3");
 
         // ------------------------------ Test 4 ------------------------------ //
-        $display("\nTest 1: Check that ALU stalls");
+        $display("\nTest 4: Check basic SW");
         
-        disp_pack.alu_func = ALU_AND;
+        disp_pack.opa_select = OPA_IS_RS1;
+        disp_pack.opb_select = OPB_IS_S_IMM;
+        is_pack.rs1_value = 3;
+        disp_pack.inst[11:7] = 4'b10;
         rs_pack.decoded_vals = disp_pack;
         is_pack.decoded_vals = rs_pack;
-        
-        is_pack.rs1_value = 0;
-        is_pack.rs2_value = 1;
-        expected = 0;
+        rd_in = 1;
+
+        expected = 5;
         @(negedge clock);
-        
-        stall = 1;
-        is_pack.rs1_value = 15;
-        is_pack.rs2_value = 5;
-        expected = 0; // expect the value from the last calculation because stall
+
+        is_pack.rs1_value = -3;
+        disp_pack.inst[11:7] = 4'b10;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack;
+        rd_in = 1;
+
+        expected = -1;
         @(negedge clock);
 
         $display("PASSED TEST 4");
@@ -182,7 +212,6 @@ module addr_calc_tb();
         #(`CLOCK_PERIOD * 0.2);
         $display("expected: %d", expected);
         $display("result: %d\n", fu_pack.alu_result);
-        $display("rs1: %d   rs2: %d\n", is_pack.rs1_value, is_pack.rs2_value);
         check_expected();
         $display("@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
         cycle_number++;
