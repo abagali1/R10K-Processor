@@ -40,9 +40,9 @@ module br_stack_tb();
 
     CHECKPOINT [DEPTH-1:0] model_entries;
     ADDR test_in_PC;
-    MAP_TABLE_PACKET [2:0] test_in_mt;  
-    logic [2:0] test_in_fl_head;
-    logic [2:0] test_in_rob_tail;
+    MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0]  test_in_mt;  
+    logic [$clog2(`ROB_SZ+1)-1:0] test_in_fl_head;
+    logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] test_in_rob_tail;
     DECODED_PACKET dis_inst_temp;
    
     br_stack #(
@@ -94,29 +94,34 @@ module br_stack_tb();
         clear_inputs();
         @(negedge clock);  
 
-        test_in_PC = '0;
+        // test_in_PC = '0;
 
-        test_in_mt[0] = {13, 1, 1};
-        test_in_mt[1] = {14, 1, 1}; 
-        test_in_mt[2] = {15, 1, 1};   
+        // test_in_mt[0] = {13, 1, 1};
+        // test_in_mt[1] = {14, 1, 1}; 
+        // test_in_mt[2] = {15, 1, 1};   
 
-        test_in_fl_head = 5'b00001;
-        test_in_rob_tail = 6'b000100;
+        // test_in_fl_head = 5'b00001;
+        // test_in_rob_tail = 6'b000100;
 
-        dis_inst_temp.uncond_branch = 1;
-        dis_inst_temp.valid = 1;
+        // dis_inst_temp.uncond_branch = 1;
+        // dis_inst_temp.valid = 1;
 
-        // in_PC = 0;
+        in_PC = 0;
 
-        // in_mt[0] = {13, 1, 1};
-        // in_mt[1] = {14, 1, 1}; 
-        // in_mt[2] = {15, 1, 1};   
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};   
 
-        // in_fl_head = ;
-        // in_rob_tail = ;
+        in_fl_head = 5'b00001;
+        in_rob_tail = 6'b000100;
 
-        add_checkpoint(test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail, dis_inst_temp); 
 
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        //add_checkpoint(test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail, dis_inst_temp); 
+
+        @(negedge clock);  
         @(negedge clock);  
 
         dis_inst.uncond_branch = 0;
@@ -187,7 +192,7 @@ function void clear_inputs();
     rem_b_id = '0;
 endfunction
 
-function void add_checkpoint(ADDR test_in_PC, MAP_TABLE_PACKET [2:0] test_in_mt, logic [2:0] test_in_fl_head, logic [2:0] test_in_rob_tail, DECODED_PACKET dis_inst_temp);
+function void add_checkpoint(ADDR test_in_PC, MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] test_in_mt, logic [$clog2(`ROB_SZ+1)-1:0] test_in_fl_head, logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] test_in_rob_tail, DECODED_PACKET dis_inst_temp);
     //stack_gnt = data.b_id;
     in_PC = test_in_PC;
     in_mt = test_in_mt;
