@@ -81,9 +81,11 @@ module cpu (
     logic            [$clog2(`ROB_SZ+1)-1:0]  fl_head_ptr;
 
     // output of br stack
-    // CHECKPOINT  cp_out;
+    CHECKPOINT  cp_out;
     logic br_full;
     
+
+
     // hardcoded values
     assign br_full = 0;
 
@@ -99,7 +101,8 @@ module cpu (
     assign fu_store_busy = '1;
     assign fu_br_busy    = '1;
 
-     
+
+    
 
     inst_buffer buffet (
         .clock(clock),
@@ -233,25 +236,24 @@ module cpu (
         .out_tail(rob_tail)
     );
 
-    // br_stack pancake (
-    //     .clock(clock),
-    //     .reset(reset),
+    br_stack pancake (
+        .clock(clock),
+        .reset(reset),
 
-    //     .valid_assign(),
-    //     .in_PC(),
-    //     .in_mt(out_mt),
-    //     .in_fl_head(fl_head_ptr),
-    //     .in_rob_tail(rob_tail),
+        .dis_inst(dis_insts[0]),
+        .in_mt(out_mt),
+        .in_fl_head(fl_head_ptr),
+        .in_rob_tail(rob_tail),
     
-    //     .cdb_in(),
+        .cdb_in(0),
     
-    //     .br_task(), // not defined here. in main sysdefs
-    //     .rem_b_id(), // b_id to remove
+        .br_task(0), // not defined here. in main sysdefs
+        .rem_b_id(0), // b_id to remove
     
     
-    //     .cp_out(cp_out),
-    //     .full(br_full)
-    // );
+        .cp_out(cp_out),
+        .full(br_full)
+    );
 
     //////////////////////////////////////////////////
     //                                              //
