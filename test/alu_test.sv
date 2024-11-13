@@ -149,6 +149,26 @@ module alu_tb();
 
         $display("PASSED TEST 3");
 
+        // ------------------------------ Test 4 ------------------------------ //
+        $display("\nTest 1: Check that ALU stalls");
+        
+        disp_pack.alu_func = ALU_AND;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack;
+        
+        is_pack.rs1_value = 0;
+        is_pack.rs2_value = 1;
+        expected = 0;
+        @(negedge clock);
+        
+        stall = 1;
+        is_pack.rs1_value = 15;
+        is_pack.rs2_value = 5;
+        expected = 0; // expect the value from the last calculation because stall
+        @(negedge clock);
+
+        $display("PASSED TEST 4");
+
         $finish;
     end
 
