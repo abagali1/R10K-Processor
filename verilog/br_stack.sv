@@ -108,11 +108,11 @@ module br_stack #(
                     next_entries[k].fl_head = in_fl_head;
                     next_entries[k].rob_tail = in_rob_tail;
 
-                    $display("input values - valid: %d, b_id: %0d, rec_PC: %0d, fl_head: %d, rob_tail: %0d", next_entries[k].valid, stack_gnt, in_PC, in_fl_head, in_rob_tail);
-                    $display("next entries - valid: %d, b_id: %0d, rec_PC: %0d, fl_head: %d, rob_tail: %0d", next_entries[k].valid, next_entries[k].b_id, next_entries[k].rec_PC, next_entries[k].fl_head, next_entries[k].rob_tail);
+                    $display("input values - valid: %d, b_id: %0d, rec_PC: %0d, fl_head: %b, rob_tail: %0d", next_entries[k].valid, stack_gnt, in_PC, in_fl_head, in_rob_tail);
+                    $display("next entries - valid: %d, b_id: %0d, rec_PC: %0d, fl_head: %b, rob_tail: %0d", next_entries[k].valid, next_entries[k].b_id, next_entries[k].rec_PC, next_entries[k].fl_head, next_entries[k].rob_tail);
                     
                     for (int i = 0; i < DEPTH; i++) begin
-                        next_entries[k].b_mask |= next_entries[k + i].b_id;
+                        next_entries[k].b_mask |= next_entries[i].b_id;
                     end
 
                     next_free_entries[k] = 0;
