@@ -33,21 +33,31 @@ endmodule // correct_mult
 
 module testbench;
 
-    logic clock, start, reset, done, failed;
     DATA r1, r2, correct_r, mul_r;
     MULT_FUNC f;
+
+    logic clock;
+    logic reset;
+    logic failed;
+    ISSUE_PACKET is_pack;
+    logic stall;
+    logic rd_in;
+    FU_PACKET fu_pack;
+    logic data_ready;
+
+    assign mul_r = fu_pack.alu_result;
+
 
     string fmt;
 
     mult dut(
         .clock(clock),
         .reset(reset),
-        .start(start),
-        .rs1(r1),
-        .rs2(r2),
-        .func(f),
-        .result(mul_r),
-        .done(done)
+        .is_pack(is_pack),
+        .stall(stall),
+        .rd_in(rd_in),
+        .fu_pack(fu_pack),
+        .data_ready(data_ready)
     );
 
     correct_mult not_dut(
@@ -66,9 +76,9 @@ module testbench;
 
     task wait_until_done;
         forever begin : wait_loop
-            @(posedge done);
+            @(posedge data_ready);
             @(negedge clock);
-            if (done) begin
+            if (data_ready) begin
                 disable wait_until_done;
             end
         end
@@ -80,12 +90,19 @@ module testbench;
         input DATA reg_1, reg_2;
         begin
             @(negedge clock);
-            start = 1;
+            rd_in = 1;
             r1 = reg_1;
             r2 = reg_2;
             f = func;
+            is_pack = '0;
+            is_pack.decoded_vals.decoded_vals.valid = 1;
+            is_pack.rs1_value = reg_1;
+            is_pack.rs2_value = reg_2;
+            is_pack.decoded_vals.decoded_vals.mult = 1;
+            is_pack.decoded_vals.decoded_vals.inst.r.funct3 = func;
             @(negedge clock);
-            start = 0;
+            rd_in = 0;
+            is_pack = '0;
             wait_until_done();
             $display(fmt, f.name(), r1, r2, correct_r, mul_r);
             if (correct_r != mul_r) begin
@@ -101,13 +118,14 @@ module testbench;
         clock = 0;
         reset = 1;
         failed = 0;
+        stall = 0;
         @(negedge clock);
         @(negedge clock);
         reset = 0;
         @(negedge clock);
 
         fmt = "%-8s | %3d * %3d = correct: %3d | mul: %3d";
-        $display("");
+        $display("HERE");
         test(M_MUL, 0, 0);
         test(M_MUL, 1, 0);
         test(M_MUL, 0, 1);

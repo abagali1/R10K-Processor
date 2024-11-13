@@ -16,18 +16,22 @@ module mult (
     output FU_PACKET    fu_pack,
     output logic        data_ready
 );
+    logic [`MULT_STAGES-2:0] internal_dones;
+    logic [(64*(`MULT_STAGES-1))-1:0] internal_sums, internal_mcands, internal_mpliers;
+    logic [63:0] mcand, mplier, product;
+    logic [63:0] mcand_out, mplier_out; // unused, just for wiring
+
+    MULT_FUNC func;
+    DATA rs1, rs2;
+    assign func = is_pack.decoded_vals.decoded_vals.inst.r.funct3;
+    assign rs1 = is_pack.rs1_value;
+    assign rs2 = is_pack.rs2_value;
+
     // keep track of each instruction's is_pack
-    RS_PACKET [`MULT_STAGES-1:0] orig_packets;
+    RS_PACKET [`MULT_STAGES-1:0] packets, next_packets;
 
     MULT_FUNC [`MULT_STAGES-2:0] internal_funcs;
     MULT_FUNC func_out;
-
-    logic [(64*(`MULT_STAGES-1))-1:0] internal_sums, internal_mcands, internal_mpliers;
-    logic [`MULT_STAGES-2:0] internal_dones;
-
-    logic [63:0] mcand, mplier, product;
-    logic [63:0] mcand_out, mplier_out; // unused, just for wiring
-    logic done;
 
     // instantiate an array of mult_stage modules
     // this uses concatenation syntax for internal wiring, see lab 2 slides
@@ -35,7 +39,7 @@ module mult (
         .clock (clock),
         .reset (reset),
         .stall (stall),
-        .func        ({internal_funcs,   is_pack.decoded_vals.decoded_vals.inst.r.funct3}),
+        .func        ({internal_funcs,   func}),
         .start       ({internal_dones,   rd_in}), // forward prev done as next start
         .prev_sum    ({internal_sums,    64'h0}), // start the sum at 0
         .mplier      ({internal_mpliers, mplier}),
@@ -49,30 +53,44 @@ module mult (
 
     // Sign-extend the multiplier inputs based on the operation
     always_comb begin
-        case (is_pack.decoded_vals.decoded_vals.inst.r.funct3)
-            M_MUL, M_MULH, M_MULHSU: mcand = {{(32){is_pack.rs1_value[31]}}, is_pack.rs1_value};
-            default:                 mcand = {32'b0, is_pack.rs1_value};
+        case (func)
+            M_MUL, M_MULH, M_MULHSU: mcand = {{(32){rs1[31]}}, rs1};
+            default:                 mcand = {32'b0, rs1};
         endcase
-        case (is_pack.decoded_vals.decoded_vals.inst.r.funct3)
-            M_MUL, M_MULH: mplier = {{(32){is_pack.rs2_value[31]}}, is_pack.rs2_value};
-            default:       mplier = {32'b0, is_pack.rs2_value};
+        case (func)
+            M_MUL, M_MULH: mplier = {{(32){rs2[31]}}, rs2};
+            default:       mplier = {32'b0, rs2};
         endcase
     end
 
-    always_ff begin
-        if (~stall & rd_in) begin 
-            // if it's not stalled and we're reading, shift orig_packets and store is_pack in spot 0
-            orig_packets <= {orig_packets[`MULT_STAGES-2:0], is_pack.decoded_vals};
+    always_comb begin 
+        next_packets = {packets[`MULT_STAGES-2:0], is_pack.decoded_vals};
+    end
+
+    always_ff @(posedge clock) begin
+        if (reset) begin 
+            packets <= '0;
+        end else if (stall) begin
+            packets <= packets;
         end else begin
-            orig_packets <= orig_packets;
+            packets <= next_packets;
         end
     end
 
     // Use the high or low bits of the product based on the output func
     assign fu_pack.alu_result = (func_out == M_MUL) ? product[31:0] : product[63:32];
     // populate the rest of fu_pack using the final element of orig_packets
-    assign fu_pack.decoded_vals = orig_packets[`MULT_STAGES-1];
+    assign fu_pack.decoded_vals = packets[`MULT_STAGES-1];
     assign data_ready = ~stall & done;
+
+    `ifdef DEBUG_MULT
+        always_ff @(posedge clock) begin
+            $display("============== MULT ==============");
+            for (int i = 0; i < `MULT_STAGES; i++) begin
+                $display("   Packets[%0d] = %0d", i, packets[i].decoded_vals.inst);
+            end
+        end
+    `endif
 
 endmodule // mult
 
