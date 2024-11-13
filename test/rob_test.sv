@@ -10,6 +10,13 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
 
+typedef struct packed {
+    PHYS_REG_IDX    t;
+    PHYS_REG_IDX    t_old; // look up t_old in arch map table to get arch reg and update to t on retire
+    logic           complete;
+    logic           valid;
+} TEST_ROB_PACKET;
+
 module ROB_tb();
 
     parameter DEPTH = 8;
@@ -19,26 +26,27 @@ module ROB_tb();
 
     logic                                                                           clock;
     logic                                                                           reset;
-    ROB_PACKET                                  [N-1:0]                             wr_data;
+    DECODED_PACKET                              [N-1:0]                             wr_data;
+    PHYS_REG_IDX                                [N-1:0]                             t;
+    PHYS_REG_IDX                                [N-1:0]                             t_old;
     PHYS_REG_IDX                                [N-1:0]                             complete_t;
     logic                                       [$clog2(N+1)-1:0]                   num_accept;
+    logic                                       [$clog2(DEPTH)-1:0]                 br_tail;
+    logic                                                                           br_en;
     ROB_PACKET                                  [N-1:0]                             retiring_data;
-    logic                                       [$clog2(DEPTH+1)-1:0]               open_entries;
+    logic                                       [$clog2(N+1)-1:0]                   open_entries;
     logic                                       [$clog2(N+1)-1:0]                   num_retired;
-    logic                                       [$clog2(DEPTH)-1:0]                 br_tail = '0;
-    logic                                                                           br_en = '0;
+    logic                                       [$clog2(DEPTH)-1:0]                 out_tail;
 
     `ifdef DEBUG
-        ROB_PACKET                              [DEPTH-1:0]                         entry_data;
+        ROB_PACKET                              [DEPTH-1:0]                         debug_entries;
         logic                                   [LOG_DEPTH-1:0]                     debug_head;
         logic                                   [LOG_DEPTH-1:0]                     debug_tail;
     `endif
 
-    ROB_PACKET rob_model [$:(DEPTH)];
-    ROB_PACKET inst_buf [$:((DEPTH)*2)];
+    TEST_ROB_PACKET rob_model [$:(DEPTH)];
+    TEST_ROB_PACKET inst_buf [$:((DEPTH)*2)];
     PHYS_REG_IDX complete_queue [$:(DEPTH)];
-
-    ROB_PACKET empty_packet = '{op_code: 0, t: 0, t_old: 0, complete: 0, valid: 0};
 
 
     rob #(
@@ -48,6 +56,8 @@ module ROB_tb();
         .clock(clock),
         .reset(reset),
         .wr_data(wr_data),
+        .t(t),
+        .t_old(t_old),
         .complete_t(complete_t),
         .num_accept(num_accept),
         .br_tail(br_tail),
@@ -55,10 +65,11 @@ module ROB_tb();
 
         .retiring_data(retiring_data),
         .open_entries(open_entries),
-        .num_retired(num_retired)
+        .num_retired(num_retired),
+        .out_tail(out_tail)
 
         `ifdef DEBUG
-        , .debug_entries(entry_data),
+        , .debug_entries(debug_entries),
         .debug_head(debug_head),
         .debug_tail(debug_tail)
         `endif
@@ -74,9 +85,7 @@ module ROB_tb();
 
         clock = 0;
         reset = 1;
-        num_accept = 0;
-        wr_data = 0;
-        complete_t = 0;
+        clear_inputs();
 
         @(negedge clock);
         @(negedge clock);
@@ -226,17 +235,24 @@ module ROB_tb();
     // Correctness Verification
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
-        check_retired_entries();
-        check_open_entries();
+        if (~reset) begin
+            check_retired_entries();
+            check_open_entries();
+        end
     end
 
     // Helper function to clear inputs to ROB
     function void clear_inputs();
         num_accept = 0;
-        wr_data = 0;
-        complete_t = 0;
+        wr_data = '0;
+        t = '0;
+        t_old = '0;
+        complete_t = '0;
+        br_tail = '0;
+        br_en = 0;
     endfunction
 
+    TEST_ROB_PACKET pack;
     // Helper function that adds entries to rob_model, writes them to wr_data, sets num_accept, also adds tag to complete queue
     function void add_entries(int num);
         if (num > N) begin
@@ -246,9 +262,12 @@ module ROB_tb();
         end
         num_accept = num < inst_buf.size() ? num : inst_buf.size();
         for (int i = 0; i < num_accept; i++) begin
-            wr_data[i] = inst_buf.pop_front();
-            rob_model.push_back(wr_data[i]);
-            complete_queue.push_back(wr_data[i].t);
+            pack = inst_buf.pop_front();
+            t[i] = pack.t;
+            t_old[i] = pack.t_old;
+            wr_data[i].valid = 1;
+            rob_model.push_back(pack);
+            complete_queue.push_back(pack.t);
         end
     endfunction
 
@@ -258,7 +277,7 @@ module ROB_tb();
         logic [6:0] op;
         for (i = 0; i < num; i++) begin
             op = i[6:0];
-            inst_buf.push_back('{op_code: op, t: ((i % DEPTH)+1), t_old: 5'b0, complete: 1'b0, valid: 1'b1});
+            inst_buf.push_back('{t: ((i % DEPTH)+1), t_old: 5'b0, complete: 1'b0, valid: 1'b1});
         end
     endfunction
 
@@ -273,12 +292,15 @@ module ROB_tb();
             complete_t[i] = complete_queue.pop_front();
         end
     endfunction
+    
 
-    // Open entries validation
+    // Open Entries Validation
     function void check_open_entries();
-        if (open_entries !== (DEPTH - rob_model.size())) begin
+        int model_open_entries;
+        model_open_entries = (N < (DEPTH - rob_model.size())) ? N : (DEPTH - rob_model.size());
+        if (open_entries != model_open_entries) begin
             $error("@@@ FAILED @@@");
-            $error("Open entries error: expected %0d, but got %0d", (DEPTH - rob_model.size()), open_entries);
+            $error("Open entries error: expected %d, but got %d", model_open_entries, open_entries);
             $finish;
         end
     endfunction
@@ -288,24 +310,19 @@ module ROB_tb();
         ROB_PACKET inst;
         for (int i = 0; i < num_retired; i++) begin
             inst = rob_model.pop_front();
-            if (inst.op_code !== retiring_data[i].op_code) begin
-                $error("@@@ FAILED @@@");
-                $error("Retirement data error: opcode expected (%0d), but got %0d!", inst.op_code, retiring_data[i].op_code);
-                $finish;
-            end
             if (inst.t !== retiring_data[i].t) begin
                 $error("@@@ FAILED @@@");
-                $error("Retirement data error: opcode[%0d]: t expected (%0d), but got %0d!", inst.op_code, inst.t, retiring_data[i].t);
+                $error("Retirement data error: t expected (%0d), but got %0d!", inst.t, retiring_data[i].t);
                 $finish;
             end
             if (inst.t_old !== retiring_data[i].t_old) begin
                 $error("@@@ FAILED @@@");
-                $error("Retirement data error: opcode[%0d]: t_old expected (%0d), but got %0d!", inst.op_code, inst.t_old, retiring_data[i].t_old);
+                $error("Retirement data error: t_old expected (%0d), but got %0d!", inst.t_old, retiring_data[i].t_old);
                 $finish;
             end
             if (~retiring_data[i].complete) begin
                 $error("@@@ FAILED @@@");
-                $error("Retirement data error: opcode[%0d]: instruction not marked complete", inst.op_code);
+                $error("Retirement data error: instruction not marked complete");
                 $finish;
             end
         end
@@ -313,9 +330,9 @@ module ROB_tb();
 
     // Ensure ROB is empty
     function void assert_empty();
-        if (open_entries !== DEPTH) begin
+        if (open_entries !== N) begin
             $error("@@@ FAILED @@@");
-            $error("Open entries error: expected %0d, but got %0d", DEPTH, open_entries);
+            $error("Open entries error: expected %0d, but got %0d", N, open_entries);
            $finish;
         end
     endfunction
@@ -332,8 +349,8 @@ module ROB_tb();
 
         $display("   Write Data:");
         for (int i = 0; i < num_accept; i++) begin
-            $display("      wr_data[%0d]: op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
-                i, wr_data[i].op_code, wr_data[i].t, wr_data[i].t_old, wr_data[i].complete, wr_data[i].valid
+            $display("      wr_data[%0d]: t=%0d, t_old=%0d, valid=%0b",
+                i, t[i], t_old[i], wr_data[i].valid
             );
         end
         $display("");
@@ -348,8 +365,8 @@ module ROB_tb();
 
         $display("   Retiring Data:");
         for (int i = 0; i < num_retired; i++) begin
-            $display("      retiring_data[%0d]: op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
-                i, retiring_data[i].op_code, retiring_data[i].t, retiring_data[i].t_old,
+            $display("      retiring_data[%0d]: t=%0d, t_old=%0d, complete=%0b, valid=%0b",
+                i, retiring_data[i].t, retiring_data[i].t_old,
                 retiring_data[i].complete, retiring_data[i].valid
             );
         end
@@ -361,9 +378,9 @@ module ROB_tb();
             $display("      Tail: %0d", debug_tail);
             $display("      Entries: ");
             for (int j = 0; j < DEPTH; j++) begin
-                $display("         entry_data[%0d]:  op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
-                    j, entry_data[j].op_code, entry_data[j].t, entry_data[j].t_old,
-                    entry_data[j].complete, entry_data[j].valid
+                $display("         debug_entries[%0d]: t=%0d, t_old=%0d, complete=%0b, valid=%0b",
+                    j, debug_entries[j].t, debug_entries[j].t_old,
+                    debug_entries[j].complete, debug_entries[j].valid
                 );
             end
             $display("");
