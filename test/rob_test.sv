@@ -80,11 +80,16 @@ module ROB_tb();
         clock = ~clock;
     end
 
+    // Variable for Test 5
+    int tmp_tail;
+    logic auto_test;
+
     initial begin
         $display("\nStart Testbench");
 
         clock = 0;
         reset = 1;
+        auto_test = 1;
         clear_inputs();
 
         @(negedge clock);
@@ -225,6 +230,34 @@ module ROB_tb();
         assert_empty();
         $display("PASSED TEST 4");
 
+        // ------------------------------ Test 5 ------------------------------ //
+        $display("\nTest 5: EBR, adding instructions then resetting tail again");
+        generate_instructions(N);
+
+        tmp_tail = out_tail - 1;
+
+        $display("Write N values");
+        add_entries(N);
+        @(negedge clock);
+        clear_inputs();
+
+        $display("Wait one cycle");
+        @(negedge clock);
+
+        $display("Reset Tail");
+        br_en = 1;
+        br_tail = tmp_tail;
+        auto_test = 0; // turn off rob_model check
+        @(negedge clock);
+        clear_inputs();
+
+        $display("Assert tail is reset");
+        assert_empty();
+        
+        @(negedge clock);
+        assert_empty();
+        $display("PASSED TEST 5");
+
 
 
         $display("@@@ PASSED ALL TESTS @@@");
@@ -235,7 +268,7 @@ module ROB_tb();
     // Correctness Verification
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
-        if (~reset) begin
+        if (~reset && auto_test) begin
             check_retired_entries();
             check_open_entries();
         end
@@ -330,9 +363,10 @@ module ROB_tb();
 
     // Ensure ROB is empty
     function void assert_empty();
-        if (open_entries !== N) begin
+        if (open_entries !== N || debug_head != debug_tail) begin
             $error("@@@ FAILED @@@");
             $error("Open entries error: expected %0d, but got %0d", N, open_entries);
+            $error("Expected tail=%0d, but got tail=%0d", tmp_tail, debug_tail);
            $finish;
         end
     endfunction
