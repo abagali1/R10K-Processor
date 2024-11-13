@@ -256,7 +256,8 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/rs.sv \
 			  verilog/map_table.sv \
 			  verilog/freelist.sv \
-			  verilog/dispatch.sv
+			  verilog/dispatch.sv \
+			  verilog/rob.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
 # ---- Running ---- #
