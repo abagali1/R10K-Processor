@@ -34,7 +34,7 @@ module br_stack_tb();
 
     `ifdef DEBUG
         CHECKPOINT [DEPTH-1:0] debug_entries;
-        CHECKPOINT [DEPTH-1:0] debug_free_entries;
+        logic [DEPTH-1:0] debug_free_entries;
         logic [DEPTH-1:0] debug_stack_gnt;
     `endif
 
@@ -53,7 +53,8 @@ module br_stack_tb();
         .clock(clock),
         .reset(reset),
         .dis_inst(dis_inst),  
-        .in_PC(in_PC),  
+        .in_PC(in_PC),
+        .in_fl_head(in_fl_head),
         .in_mt(in_mt),  
         .in_rob_tail(in_rob_tail),  
         .cdb_in(cdb_in),  
@@ -63,6 +64,12 @@ module br_stack_tb();
         .assigned_b_id(assigned_b_id),
         .cp_out(cp_out),
         .full(full)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_entries),
+            .debug_free_entries(debug_free_entries),
+            .debug_stack_gnt(debug_stack_gnt)
+        `endif 
 
     );
 
@@ -76,6 +83,7 @@ module br_stack_tb();
 
         clock = 0;
         reset = 1;
+        clear_inputs();
 
         @(negedge clock);
         @(negedge clock);
@@ -88,10 +96,10 @@ module br_stack_tb();
         test_in_rob_tail = '0;
         
         // ------------------------------ Test 1 ------------------------------ //
+        clear_inputs();
         $display("\nTest 1: Test Checkpoint Coming In\n");
         // send in checkpoint and check all the outputs are correct
         
-        clear_inputs();
         @(negedge clock);  
 
         // test_in_PC = '0;
@@ -122,8 +130,7 @@ module br_stack_tb();
         //add_checkpoint(test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail, dis_inst_temp); 
 
         @(negedge clock);  
-        @(negedge clock);  
-
+        print_entries();
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
@@ -173,7 +180,7 @@ module br_stack_tb();
     // Correctness Verification
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
-        print_entries();
+        //print_entries();
         //print_model_entries();
         // print_stack_gnt();
         // check_entries();
@@ -184,12 +191,14 @@ module br_stack_tb();
 // updating
 
 function void clear_inputs();
-    in_PC = '0;
-    in_mt = '0;  
-    in_rob_tail = '0;
-    cdb_in = '0;
-    br_task = '0;
-    rem_b_id = '0;
+    dis_inst = 0;
+    in_PC = 0;
+    in_mt = 0;  
+    in_rob_tail = 0;
+    in_fl_head = 0;
+    cdb_in = 0;
+    br_task = 0;
+    rem_b_id = 0;
 endfunction
 
 function void add_checkpoint(ADDR test_in_PC, MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] test_in_mt, logic [$clog2(`ROB_SZ+1)-1:0] test_in_fl_head, logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] test_in_rob_tail, DECODED_PACKET dis_inst_temp);
@@ -250,7 +259,7 @@ endfunction
 function void print_entries();
     $display("\nEntries\n");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("index: %0d, b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d", i, dut.next_entries[i].b_id, dut.next_entries[i].b_mask, dut.next_entries[i].rec_PC, dut.next_entries[i].fl_head, dut.next_entries[i].rob_tail);
+        $display("index: %0d, b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d", i, dut.entries[i].b_id, dut.entries[i].b_mask, dut.entries[i].rec_PC, dut.entries[i].fl_head, dut.entries[i].rob_tail);
     end
 endfunction
 
