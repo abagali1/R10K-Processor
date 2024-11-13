@@ -104,116 +104,116 @@ module RS_tb();
         @(negedge clock);
         reset = 0;
 
-        // // ------------------------------ Test 1 ------------------------------ //
-        // $display("\nTest 1: Basic Dispatch/Issue N ALU Instructions");
-        // generate_ops(N, ALU_INST);
-        // @(negedge clock); // dispatch
-        // fu_alu_busy = 0;
-        // @(negedge clock); // issue
+        // ------------------------------ Test 1 ------------------------------ //
+        $display("\nTest 1: Basic Dispatch/Issue N ALU Instructions");
+        generate_ops(N, ALU_INST);
+        @(negedge clock); // dispatch
+        fu_alu_busy = 0;
+        @(negedge clock); // issue
 
-        // reset = 1;
-        // clear_signals();
-        // @(negedge clock); // verify issued
-        // $display("TEST 1: PASSED");
+        reset = 1;
+        clear_signals();
+        @(negedge clock); // verify issued
+        $display("TEST 1: PASSED");
 
-        // // ------------------------------ Test 2 ------------------------------ //
-        // $display("\nTest 2: Basic Dispatch/Issue N MULT Instructions");
-        // reset = 0;
-        // generate_ops(N, MULT_INST);
-        // @(negedge clock); // dispatch
-        // fu_mult_busy = 0;
-        // @(negedge clock); // issue
+        // ------------------------------ Test 2 ------------------------------ //
+        $display("\nTest 2: Basic Dispatch/Issue N MULT Instructions");
+        reset = 0;
+        generate_ops(N, MULT_INST);
+        @(negedge clock); // dispatch
+        fu_mult_busy = 0;
+        @(negedge clock); // issue
 
-        // reset = 1;
-        // clear_signals();
-        // @(negedge clock); // verify issued
-        // $display("TEST 2: PASSED");
+        reset = 1;
+        clear_signals();
+        @(negedge clock); // verify issued
+        $display("TEST 2: PASSED");
 
-        // // ------------------------------ Test 3 ------------------------------ //
-        // $display("\nTest 3: Basic Dispatch/Stall N ALU Instructions");
-        // reset = 0;
-        // generate_ops(N, ALU_INST);
-        // @(negedge clock); // dispatch
-        // fu_alu_busy = '1;
-        // @(negedge clock); // issue
-        // @(negedge clock);
+        // ------------------------------ Test 3 ------------------------------ //
+        $display("\nTest 3: Basic Dispatch/Stall N ALU Instructions");
+        reset = 0;
+        generate_ops(N, ALU_INST);
+        @(negedge clock); // dispatch
+        fu_alu_busy = '1;
+        @(negedge clock); // issue
+        @(negedge clock);
 
-        // reset = 1;
-        // clear_signals();
-        // @(negedge clock);
-        // $display("TEST 3: PASSED");
+        reset = 1;
+        clear_signals();
+        @(negedge clock);
+        $display("TEST 3: PASSED");
 
-        // // ------------------------------ Test 4 ------------------------------ //
-        // $display("\nTest 4: Basic Dispatch/Stall N MULT Instructions");
-        // reset = 0;
-        // generate_ops(N, MULT_INST);
-        // @(negedge clock); // dispatch
-        // fu_mult_busy = '1;
-        // @(negedge clock); // issue
-        // @(negedge clock)
+        // ------------------------------ Test 4 ------------------------------ //
+        $display("\nTest 4: Basic Dispatch/Stall N MULT Instructions");
+        reset = 0;
+        generate_ops(N, MULT_INST);
+        @(negedge clock); // dispatch
+        fu_mult_busy = '1;
+        @(negedge clock); // issue
+        @(negedge clock)
 
-        // reset = 1;
-        // clear_signals();
-        // @(negedge clock); // verify issued
-        // $display("TEST 4: PASSED");
+        reset = 1;
+        clear_signals();
+        @(negedge clock); // verify issued
+        $display("TEST 4: PASSED");
 
-        // // ------------------------------ Test 5 ------------------------------ //
-        // $display("\nTest 5: 2N Dispatch/Stall ALU Instructions");
-        // reset = 0;
-        // generate_ops(2*N, ALU_INST);
-        // @(negedge clock); // dispatch N
-        // fu_alu_busy = '1;
-        // @(negedge clock); // issue 0, dispatch N
-        // @(negedge clock); // verify 0, 6 entries
-        // @(negedge clock); 
+        // ------------------------------ Test 5 ------------------------------ //
+        $display("\nTest 5: 2N Dispatch/Stall ALU Instructions");
+        reset = 0;
+        generate_ops(2*N, ALU_INST);
+        @(negedge clock); // dispatch N
+        fu_alu_busy = '1;
+        @(negedge clock); // issue 0, dispatch N
+        @(negedge clock); // verify 0, 6 entries
+        @(negedge clock); 
 
-        // reset = 1;
-        // clear_signals();
-        // @(negedge clock); // verify issued
-        // $display("TEST 5: PASSED");
+        reset = 1;
+        clear_signals();
+        @(negedge clock); // verify issued
+        $display("TEST 5: PASSED");
 
-        // // ------------------------------ Test 6 ------------------------------ //
-        // $display("\nTest 6: Fill RS");
-        // reset = 0;
-        // generate_ops(DEPTH+1, ALU_INST);
-        // @(negedge clock); // dispatch N
-        // fu_alu_busy = '1;
-        // for(int i=0;i<(DEPTH/N)+1;i++) begin
-        //     @(negedge clock); // issue 0, dispatch N
-        // end
-        // @(negedge clock); 
+        // ------------------------------ Test 6 ------------------------------ //
+        $display("\nTest 6: Fill RS");
+        reset = 0;
+        generate_ops(DEPTH+1, ALU_INST);
+        @(negedge clock); // dispatch N
+        fu_alu_busy = '1;
+        for(int i=0;i<(DEPTH/N)+1;i++) begin
+            @(negedge clock); // issue 0, dispatch N
+        end
+        @(negedge clock); 
 
-        // reset = 1;
-        // clear_signals();
-        // @(negedge clock); // verify issued
-        // $display("TEST 6: PASSED");
+        reset = 1;
+        clear_signals();
+        @(negedge clock); // verify issued
+        $display("TEST 6: PASSED");
 
-        // // ------------------------------ Test 7 ------------------------------ //
-        // $display("\nTest 7: Unready Registers");
-        // reset = 0;
-        // generate_ops(N, ALU_INST, 0);
-        // @(negedge clock); // dispatch N
-        // fu_alu_busy = '0;
-        // @(negedge clock); // issue 0, dispatch N
-        // @(negedge clock); 
+        // ------------------------------ Test 7 ------------------------------ //
+        $display("\nTest 7: Unready Registers");
+        reset = 0;
+        generate_ops(N, ALU_INST, 0);
+        @(negedge clock); // dispatch N
+        fu_alu_busy = '0;
+        @(negedge clock); // issue 0, dispatch N
+        @(negedge clock); 
 
-        // reset = 1;
-        // clear_signals();
-        // @(negedge clock); // verify issued
-        // $display("TEST 7: PASSED");
+        reset = 1;
+        clear_signals();
+        @(negedge clock); // verify issued
+        $display("TEST 7: PASSED");
 
-        // // ------------------------------ Test 8 ------------------------------ //
-        // $display("\nTest 8: Unready Registers & CDB");
-        // reset = 0;
-        // generate_ops(N, ALU_INST, 0);
-        // @(negedge clock); // dispatch N
-        // fu_alu_busy = '0;
-        // @(negedge clock); // issue 0, dispatch N
+        // ------------------------------ Test 8 ------------------------------ //
+        $display("\nTest 8: Unready Registers & CDB");
+        reset = 0;
+        generate_ops(N, ALU_INST, 0);
+        @(negedge clock); // dispatch N
+        fu_alu_busy = '0;
+        @(negedge clock); // issue 0, dispatch N
 
-        // reset = 1;
-        // clear_signals();
-        // @(negedge clock); // verify issued
-        // $display("TEST 8: PASSED");
+        reset = 1;
+        clear_signals();
+        @(negedge clock); // verify issued
+        $display("TEST 8: PASSED");
 
         // ------------------------------ Test 9 ------------------------------ //
         $display("\nTest 9: Dispatch BR and Clear dependent insts b_ids");
