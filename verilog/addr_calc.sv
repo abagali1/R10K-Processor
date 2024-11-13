@@ -14,7 +14,7 @@ module addr_calc (
     FU_PACKET out_packet, next_out_packet;
     DATA opa, opb;
 
-    assign fu_pack = out;
+    assign fu_out = out_packet;
 
     // ALU opA mux
     always_comb begin
@@ -43,7 +43,7 @@ module addr_calc (
     always_ff @(posedge clock) begin
         if (reset) begin
             out_packet <= '0;
-        end else if (stall_unit) begin
+        end else if (stall) begin
             out_packet <= out_packet;
         end else begin
             out_packet <= next_out_packet;
