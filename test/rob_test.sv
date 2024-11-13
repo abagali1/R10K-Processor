@@ -17,21 +17,21 @@ module ROB_tb();
     parameter N = 3;
     localparam LOG_DEPTH = $clog2(DEPTH);
 
-    logic                                  clock;
-    logic                                  reset;
-    ROB_PACKET [N-1:0]               wr_data;
-    PHYS_REG_IDX     [N-1:0]               complete_t;
-    logic            [$clog2(N+1)-1:0]     num_accept;
-    ROB_PACKET [N-1:0]               retiring_data;
-    logic            [$clog2(DEPTH+1)-1:0] open_entries;
-    logic            [$clog2(N+1)-1:0]     num_retired;
-    logic            [$clog2(DEPTH)-1:0]   br_tail = '0;
-    logic                                  br_en = '0;
+    logic                                                                           clock;
+    logic                                                                           reset;
+    ROB_PACKET                                  [N-1:0]                             wr_data;
+    PHYS_REG_IDX                                [N-1:0]                             complete_t;
+    logic                                       [$clog2(N+1)-1:0]                   num_accept;
+    ROB_PACKET                                  [N-1:0]                             retiring_data;
+    logic                                       [$clog2(DEPTH+1)-1:0]               open_entries;
+    logic                                       [$clog2(N+1)-1:0]                   num_retired;
+    logic                                       [$clog2(DEPTH)-1:0]                 br_tail = '0;
+    logic                                                                           br_en = '0;
 
     `ifdef DEBUG
-        ROB_PACKET [DEPTH-1:0]     entry_data;
-        logic            [LOG_DEPTH-1:0] debug_head;
-        logic            [LOG_DEPTH-1:0] debug_tail;
+        ROB_PACKET                              [DEPTH-1:0]                         entry_data;
+        logic                                   [LOG_DEPTH-1:0]                     debug_head;
+        logic                                   [LOG_DEPTH-1:0]                     debug_tail;
     `endif
 
     ROB_PACKET rob_model [$:(DEPTH)];

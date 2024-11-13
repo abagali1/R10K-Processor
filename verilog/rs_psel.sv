@@ -10,8 +10,8 @@ module rs_psel #(
     output logic            [DEPTH-1:0]                         all_issued_insts  // issued insts w.r.t all RS entires
 
     `ifdef DEBUG
-        ,   output logic    [NUM_FU-1:0][NUM_FU-1:0]            debug_fu_gnt_bus,
-            output logic    [NUM_FU-1:0][DEPTH-1:0]             debug_inst_gnt_bus
+    ,   output logic        [NUM_FU-1:0][NUM_FU-1:0]            debug_fu_gnt_bus,
+        output logic        [NUM_FU-1:0][DEPTH-1:0]             debug_inst_gnt_bus
     `endif
 );
 
