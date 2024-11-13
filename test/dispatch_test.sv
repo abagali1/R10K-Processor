@@ -106,7 +106,7 @@ module dispatch_tb();
         $display("PASSED TEST 1");
 
         // ------------------------------ Test 2 ------------------------------ //
-        $display("\nTest 2:");
+        $display("\nTest 2: First Inst Branch, Branch Stack Full");
 
         reset = 1;
         @(negedge clock);
@@ -136,7 +136,7 @@ module dispatch_tb();
         $display("PASSED TEST 2");
 
         // ------------------------------ Test 3 ------------------------------ //
-        $display("\nTest 3:");
+        $display("\nTest 3: First Inst Branch, Branch Stack Not Full");
 
         reset = 1;
         @(negedge clock);
@@ -149,10 +149,28 @@ module dispatch_tb();
         // bs_full = 0
         // so should dispatch up to 3;
 
+        rob_open = 4;
+        rs_open = 3;
+        bs_full = 0;
+        insts_temp[0].inst = 32'h00610463;
+        insts = insts_temp;
+        print_in_insts();
+        print_other_inputs();
+        @(negedge clock);
+        @(negedge clock);
+        check_dispatched(3);
+        rob_open = 0;
+        rs_open = 0;
+        bs_full = 0;
+
         $display("PASSED TEST 3");
 
         // ------------------------------ Test 4 ------------------------------ //
-        $display("\nTest 4:");
+        $display("\nTest 4: Third Inst Branch, Branch Stack Not Full");
+
+        reset = 1;
+        @(negedge clock);
+        reset = 0;
 
         // N valid instructions
         // third instruction is branch
@@ -161,7 +179,54 @@ module dispatch_tb();
         // bs_full = 0
         // so should dispatch up to branch, two instructions;
 
+        rob_open = 4;
+        rs_open = 3;
+        bs_full = 0;
+        insts_temp[2].inst = 32'h00610463;
+        insts = insts_temp;
+        print_in_insts();
+        print_other_inputs();
+        @(negedge clock);
+        @(negedge clock);
+        check_dispatched(2);
+        rob_open = 0;
+        rs_open = 0;
+        bs_full = 0;
+
         $display("PASSED TEST 4");
+
+
+        // ------------------------------ Test 5 ------------------------------ //
+        $display("\nTest 5: Two Branches");
+
+        reset = 1;
+        @(negedge clock);
+        reset = 0;
+
+        // N valid instructions
+        // first inst is branch
+        // third instruction is branch
+        // rob_open = 4
+        // rs_open = 3
+        // bs_full = 0
+        // so should dispatch up to branch, two instructions;
+
+        rob_open = 4;
+        rs_open = 3;
+        bs_full = 0;
+        insts_temp[0].inst = 32'h00610463;
+        insts_temp[2].inst = 32'h00610463;
+        insts = insts_temp;
+        print_in_insts();
+        print_other_inputs();
+        @(negedge clock);
+        @(negedge clock);
+        check_dispatched(2);
+        rob_open = 0;
+        rs_open = 0;
+        bs_full = 0;
+
+        $display("PASSED TEST 5");
 
         $finish;
     end
