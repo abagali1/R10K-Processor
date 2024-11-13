@@ -135,7 +135,7 @@ module mult_stage (
         if (reset) begin
             done <= 1'b0;
         end else begin
-            done <= start;
+            done <= start | stall;
         end
     end
 
