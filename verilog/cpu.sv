@@ -67,8 +67,8 @@ module cpu (
 
     // output of ROB
     logic [$clog2(`N+1)-1:0] rob_open, num_retired; 
-    // ROB_PACKET [`N-1:0] retiring_data; // rob entry packet, but want register vals to update architectural map table + free list
-    // logic [$clog2(`ARCH_REG_SZ)-1:0] rob_tail;
+    ROB_PACKET [`N-1:0] retiring_data; // rob entry packet, but want register vals to update architectural map table + free list
+    logic [$clog2(`ARCH_REG_SZ)-1:0] rob_tail;
 
     // output of MT
     PHYS_REG_IDX             [`N-1:0]             t_old_data;
@@ -84,13 +84,12 @@ module cpu (
     // CHECKPOINT  cp_out;
     logic br_full;
 
-    assign rob_open = 3;
     assign rs_open = 2;
     assign br_full = 0;
 
 
 
-    inst_buffer inst_buffer (
+    inst_buffer buffet (
         .clock(clock),
         .reset(reset),
 
@@ -102,7 +101,7 @@ module cpu (
         .open_entries(ib_open)
     );
 
-    dispatch dispatch(
+    dispatch disbitch (
         .clock(clock),
         .reset(reset),
         .rob_open(rob_open),
@@ -114,7 +113,23 @@ module cpu (
         .out_insts(dis_insts)
     );
 
-    // RS rs (
+    REG_IDX      [`N-1:0] dis_r1_idx;
+    REG_IDX      [`N-1:0] dis_r2_idx;       
+    REG_IDX      [`N-1:0] dis_dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
+    PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
+    logic        [`N-1:0] dis_incoming_valid;
+
+    always_comb begin    
+        for (int i = 0; i < `N; i++) begin
+            dis_r1_idx[i] = dis_insts[i].reg1;
+            dis_r2_idx[i] = dis_insts[i].reg2;       
+            dis_dest_reg_idx[i] = dis_insts[i].dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
+            dis_free_reg[i] = fl_reg[i].reg_idx;  // comes from the free list
+            dis_incoming_valid[i] = dis_insts[i].valid;
+        end
+    end
+
+    // RS rasam (
     //     .clock(clock),
     //     .reset(reset),
 
@@ -149,31 +164,31 @@ module cpu (
     //     .open_entries(rs_open)
     // );
 
-    // ROB rob (
-    //     .clock(clock), 
-    //     .reset(reset),
+    rob robert (
+        .clock(clock), 
+        .reset(reset),
 
-    //     .wr_data(dis_insts),
-    //     .t(fl_reg.reg_idx),
-    //     .t_old(t_old),
+        .wr_data(dis_insts),
+        .t(dis_free_reg),
+        .t_old(t_old_data),
 
-    //     .complete_t(), // comes from the CDB
-    //     .num_accept(num_dis), // input signal from min block, dependent on open_entries 
-    //     .br_tail(),
-    //     .br_en(),                        
+        .complete_t(0), // comes from the CDB
+        .num_accept(num_dis), // input signal from min block, dependent on open_entries 
+        .br_tail(0),
+        .br_en(0),                        
 
-    //     .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
-    //     .open_entries(rob_open), // number of open entires AFTER retirement
-    //     .num_retired(num_retired),
-    //     .out_tail(rob_tail)
-    // );
+        .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
+        .open_entries(rob_open), // number of open entires AFTER retirement
+        .num_retired(num_retired),
+        .out_tail(rob_tail)
+    );
 
-    free_list free_list(
+    free_list flo_from_progressive (
         .clock(clock),
         .reset(reset),
 
         .rd_num(num_dis),  // number of regs to take off of the free list
-        .wr_num(0),//num_retired),  // number of regs to add back to the free list
+        .wr_num(num_retired),  // number of regs to add back to the free list
         .wr_reg(0),//{retiring_data.t_old, retiring_data.valid}),  // reg idxs to add to free list
         .br_en(0),  // enable signal for EBR
         .head_ptr_in(0),//cp_out.fl_head),  // free list copy for EBR
@@ -182,15 +197,16 @@ module cpu (
         .head_ptr(fl_head_ptr)
     );
 
-    map_table map_table(
+
+    map_table im_the_map (
         .clock(clock),
         .reset(reset), 
 
-        .r1_idx(dis_insts.reg1),
-        .r2_idx(dis_insts.reg2),       
-        .dest_reg_idx(dis_insts.dest_reg_idx), // dest_regs that are getting mapped to a new phys_reg from free_list
-        .free_reg(fl_reg.reg_idx),  // comes from the free list
-        .incoming_valid(dis_insts.valid), // inputs to expect                       
+        .r1_idx(dis_r1_idx),
+        .r2_idx(dis_r2_idx),       
+        .dest_reg_idx(dis_dest_reg_idx), // dest_regs that are getting mapped to a new phys_reg from free_list
+        .free_reg(dis_free_reg),  // comes from the free list
+        .incoming_valid(dis_incoming_valid), // inputs to expect                       
 
         .ready_reg_idx(0), // readys from CDB - arch reg
         .ready_phys_idx(0), // corresponding phys reg
@@ -205,7 +221,7 @@ module cpu (
         .out_mt(out_mt)
     );
 
-    // BR_STACK br_stack (
+    // br_stack pancake (
     //     .clock(clock),
     //     .reset(reset),
 

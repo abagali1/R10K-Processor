@@ -124,18 +124,18 @@ module rob #(
     end
 
     // DEBUG OUTPUT
-    `ifdef DEBUG_ROB
+    `ifdef DEBUG
         always @(posedge clock) begin
             $display("====================== ROB ======================");
-            $display("      Entries: ");
+            $display("Entries: ");
+            $display("dest_reg_idx\tt\tt_old\tcomplete\tvalid\thalt\t");
             for (int j = 0; j < DEPTH; j++) begin
-                $display("         entry_data[%0d]:  op_code=%0d, t=%0d, t_old=%0d, complete=%0b, valid=%0b",
-                    j, entry_data[j].op_code, entry_data[j].t, entry_data[j].t_old,
-                    entry_data[j].complete, entry_data[j].valid
+                $display("\t%0d\t%0d\t%0d\t%0d\t%0b\t%0b",
+                    entries[j].dest_reg_idx, entries[j].t, entries[j].t_old,
+                    entries[j].complete, entries[j].valid, entries[j].halt
                 );
             end
             $display("");
-
         end
     `endif
 
