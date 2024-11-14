@@ -64,8 +64,7 @@ module alu (
         if (reset) begin
             data_ready  <= '0;
             out         <= '0;
-        end 
-        if (stall) begin
+        end else if (stall) begin
             data_ready  <= data_ready;
             out         <= out;
         end else if (rd_in) begin
