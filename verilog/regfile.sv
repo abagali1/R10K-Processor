@@ -23,7 +23,7 @@ module regfile #(
 );
 
     // Intermediate data before accounting for register 0
-    DATA  rdata2, rdata1;
+    DATA [NUM_FU-1:0] rdata2, rdata1;
     // Don't read or write when dealing with register 0
     logic [NUM_FU-1:0] re1, re2;
     logic [NUM_FU-1:0] we;
@@ -51,12 +51,12 @@ module regfile #(
     // Read port 1
     always_comb begin
         for (int i = 0; i < 2*NUM_FU; i++) begin
-            if (read_idx_1 == `ZERO_REG) begin
-                read_out_1 = '0;
-                re1        = 1'b0;
+            if (read_idx_1[i] == `ZERO_REG) begin
+                re1[i]        = 1'b0;
+                read_out_1[i] = '0;
             end else begin
-                read_out_1 = rdata1;
-                re1        = 1'b1;
+                re1[i]        = 1'b1;
+                read_out_1[i] = rdata1[i];
             end
         end
     end
@@ -64,18 +64,22 @@ module regfile #(
     // Read port 2
     always_comb begin
         for (int i = 0; i < 2*NUM_FU; i++) begin
-            if (read_idx_2 == `ZERO_REG) begin
-                read_out_2 = '0;
-                re2        = 1'b0;
+            if (read_idx_2[i] == `ZERO_REG) begin
+                re2[i]        = 1'b0;
+                read_out_2[i] = '0;
             end else begin
-                read_out_2 = rdata2;
-                re2        = 1'b1;
+                re2[i]        = 1'b1;
+                read_out_2[i] = rdata2[i];
             end
         end
     end
 
     // Write port
     // Can't write to zero register
-    assign we = write_en && (write_idx != `ZERO_REG);
+    always_comb begin
+        for (int i = 0; i < NUM_FU; i++) begin
+            we[i] = write_en[i] & (write_idx[i] != `ZERO_REG);
+        end
+    end
 
 endmodule // regfile
