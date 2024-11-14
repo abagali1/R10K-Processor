@@ -110,29 +110,92 @@ module br_stack_tb();
         dis_inst.valid = 1;
 
         @(negedge clock);  
-        print_entries();
+        //print_entries();
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
         @(negedge clock);  
 
+        $display("PASSED TEST 1");
+
         // ------------------------------ Test 2 ------------------------------ //
         $display("\nTest 2: Squash Branch, Check Dependent Checkpoints\n");
         
-        // if you squash the first branch that came in, 
+        // if you squash a branch that came in, 
         // it should get rid of all the dependent checkpoints
 
-        // add in 2 checkpoints (two branches?)
-        // squash the first branch
-
-        // check that all checkpoints = 0
-
-        // probably will need to add in debug signals to view all the checkpoints at any given time
-        // also maybe output a signal from the psel about which checkpoint idx to check in test bench
+        // 2nd checkpoint in
 
         in_mt[0] = {32'd13, 1'b1, 1'b1};
         in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};   
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b00100;
+        in_rob_tail = 6'b000110; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        //print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock);  
+
+        // 3rd checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b01010;
+        in_rob_tail = 6'b000001; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+
+        // 4th checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b00010;
+        in_rob_tail = 6'b000010; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+
+        // squashing third branch, second and first branch should go too
+
+        rem_b_id = 4'b0100;
+        br_task = SQUASH;
+
+        @(negedge clock);
+
+        rem_b_id = '0;
+        br_task = '0;
+
+        @(negedge clock);
+
+        $display("PASSED TEST 2");
 
         // ------------------------------ Test 3 ------------------------------ //
          $display("\nTest 3: Clear Checkpoint, Check Bits in other Checkpoints\n");
@@ -143,19 +206,319 @@ module br_stack_tb();
         // add in 3 checkpoints with different branch_ids but one is  
         // clear the second one
 
-        // ------------------------------ Test 4 ------------------------------ //
-        $display("\nTest 4: CDB Outputs Register\n");
-        // when cdb outputs a register that's updated, recover maptable in 
-        // checkpoint should also update
+        // 2nd checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b00100;
+        in_rob_tail = 6'b000110; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock);  
+
+        // 3rd checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b01010;
+        in_rob_tail = 6'b000001; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+
+        // 4th checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b00010;
+        in_rob_tail = 6'b000010; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        //print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+
+        rem_b_id = 4'b0010;
+        br_task = CLEAR;
+
+        @(negedge clock);
+
+        rem_b_id = '0;
+        br_task = '0;
+
+        $display("PASSED TEST 3");
 
         // ------------------------------ Test 5 ------------------------------ //
          $display("\nTest 5: Squash and Take in New Checkpoint\n");
         // squash and try to take in a new checkpoint
 
+        clock = 0;
+        reset = 1;
+        clear_inputs();
+
+        @(negedge clock);
+        reset = 0;
+
+        // 1st checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};   
+
+        in_fl_head = 5'b00001;
+        in_rob_tail = 6'b000100;
+
+        dis_inst.PC = 0;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        //print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock);  
+
+        // 2nd checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b00100;
+        in_rob_tail = 6'b000110; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock);  
+
+        // 3rd checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b01010;
+        in_rob_tail = 6'b000001; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+
+        // 4th checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b00010;
+        in_rob_tail = 6'b000010; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        //print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+      
+        rem_b_id = 4'b0010;
+        br_task = SQUASH;
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd16, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b01010;
+        in_rob_tail = 6'b010010; 
+
+        dis_inst.PC = 3;
+
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+        
+        //@(negedge clock); // this instruction only writes in if i put two negedges?
+        @(negedge clock); 
+
+        rem_b_id = '0;
+        br_task = '0;
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+
+        $display("PASSED TEST 5");
+
         // ------------------------------ Test 6 ------------------------------ //
          $display("\nTest 6: Clear Checkpoint, Add in a New One\n");
         // when you clear a checkpoint and add in a new one,
         //  want to make sure the bit mask is correct
+        
+        clock = 0;
+        reset = 1;
+        clear_inputs();
+
+        @(negedge clock);
+        reset = 0;
+
+        // 1st checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};   
+
+        in_fl_head = 5'b00001;
+        in_rob_tail = 6'b000100;
+
+        dis_inst.PC = 0;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        //print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock);  
+
+        // 2nd checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b00100;
+        in_rob_tail = 6'b000110; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock);  
+
+        // 3rd checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b01010;
+        in_rob_tail = 6'b000001; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+
+        // 4th checkpoint in
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b00010;
+        in_rob_tail = 6'b000010; 
+
+        dis_inst.PC = 1;
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+
+        @(negedge clock);  
+        //print_entries();
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+      
+        rem_b_id = 4'b0010;
+        br_task = CLEAR;
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd16, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+
+        in_fl_head = 5'b01010;
+        in_rob_tail = 6'b010010; 
+
+        dis_inst.PC = 3;
+
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
+        
+        @(negedge clock); // this instruction only writes in if i put two negedges?
+        @(negedge clock); 
+
+        rem_b_id = '0;
+        br_task = '0;
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock); 
+
+        $display("PASSED TEST 6");
+
+        // ------------------------------ Test 4 ------------------------------ //
+        $display("\nTest 4: CDB Outputs Register\n");
+        // when cdb outputs a register that'sready, maptable in 
+        // checkpoint should also update
+
+        
 
         $finish;
     end
@@ -164,10 +527,7 @@ module br_stack_tb();
     // Correctness Verification
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
-        //print_entries();
-        //print_model_entries();
-        // print_stack_gnt();
-        // check_entries();
+        print_entries();
         $display("\n@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
         cycle_number++;
     end
@@ -236,7 +596,7 @@ endfunction
 function void print_entries();
     $display("\nEntries\n");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("index: %0d, b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d", i, dut.entries[i].b_id, dut.entries[i].b_mask, dut.entries[i].rec_PC, dut.entries[i].fl_head, dut.entries[i].rob_tail);
+        $display("index: %0d, b_id: %b, b_mask: %b, rec_PC: %0d, fl_head: %0d, rob_tail: %0d", i, dut.entries[i].b_id, dut.entries[i].b_mask, dut.entries[i].rec_PC, dut.entries[i].fl_head, dut.entries[i].rob_tail);
     end
 endfunction
 
