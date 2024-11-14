@@ -10,13 +10,15 @@ module conditional_branch (
     input logic         rd_in,
 
     output FU_PACKET    fu_pack,
+    output BR_TASK      br_task,
     output logic        data_ready
 );
     FU_PACKET out, next_out;
     DATA rs1, rs2, target;
-    logic take;
+    logic take, correct;
 
     assign fu_pack = out;
+    assign correct = is_pack.decoded_vals.decoded_vals.pred_taken == take;
 
     // Combinational logic for choosing taken
     always_comb begin
@@ -40,15 +42,19 @@ module conditional_branch (
         if (reset) begin
             out         <= '0;
             data_ready  <= '0;
+            br_task     <= NOTHING;
         end else if (stall) begin
             out         <= out;
             data_ready  <= data_ready;
+            br_task     <= br_task;
         end else if (rd_in) begin
             out         <= '{alu_result: target, decoded_vals: is_pack.decoded_vals, take_conditional: take};
             data_ready  <= 1;
+            br_task     <= (correct ? CLEAR : SQUASH);
         end else begin
             out         <= '0;
             data_ready  <= '0;
+            br_task     <= NOTHING;
         end
     end
 
