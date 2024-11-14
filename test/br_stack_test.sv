@@ -98,18 +98,6 @@ module br_stack_tb();
         
         @(negedge clock);  
 
-        // test_in_PC = '0;
-
-        // test_in_mt[0] = {13, 1, 1};
-        // test_in_mt[1] = {14, 1, 1}; 
-        // test_in_mt[2] = {15, 1, 1};   
-
-        // test_in_fl_head = 5'b00001;
-        // test_in_rob_tail = 6'b000100;
-
-        // dis_inst_temp.uncond_branch = 1;
-        // dis_inst_temp.valid = 1;
-
         in_mt[0] = {32'd13, 1'b1, 1'b1};
         in_mt[1] = {32'd14, 1'b1, 1'b1}; 
         in_mt[2] = {32'd15, 1'b1, 1'b1};   
@@ -120,8 +108,6 @@ module br_stack_tb();
         dis_inst.PC = 0;
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
-
-        //add_checkpoint(test_in_PC, test_in_mt, test_in_fl_head, test_in_rob_tail, dis_inst_temp); 
 
         @(negedge clock);  
         print_entries();
@@ -143,6 +129,10 @@ module br_stack_tb();
 
         // probably will need to add in debug signals to view all the checkpoints at any given time
         // also maybe output a signal from the psel about which checkpoint idx to check in test bench
+
+        in_mt[0] = {32'd13, 1'b1, 1'b1};
+        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b1};   
 
         // ------------------------------ Test 3 ------------------------------ //
          $display("\nTest 3: Clear Checkpoint, Check Bits in other Checkpoints\n");
