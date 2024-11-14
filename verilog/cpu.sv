@@ -68,7 +68,7 @@ module cpu (
     // output of ROB
     logic [$clog2(`N+1)-1:0] rob_open, num_retired; 
     ROB_PACKET [`N-1:0] retiring_data; // rob entry packet, but want register vals to update architectural map table + free list
-    logic [$clog2(`ARCH_REG_SZ)-1:0] rob_tail;
+    logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] rob_tail;
 
     // output of MT
     PHYS_REG_IDX             [`N-1:0]             t_old_data;
@@ -87,7 +87,6 @@ module cpu (
     
 
     // hardcoded values
-    assign br_full = 0;
 
     logic [`NUM_FU_ALU-1:0]    fu_alu_busy;
     logic [`NUM_FU_MULT-1:0]   fu_mult_busy;
@@ -195,7 +194,7 @@ module cpu (
         .cdb_in(0),
 
         // ebr logic
-        .br_id(0),
+        .br_id(assigned_b_id),
         .br_task(0),
 
         // busy bits from FUs to mark when available to issue
@@ -247,7 +246,7 @@ module cpu (
     
         .cdb_in(0),
     
-        .br_task(`NOTHING), // not defined here. in main sysdefs
+        .br_task(0), // not defined here. in main sysdefs
         .rem_b_id(0), // b_id to remove
     
         .assigned_b_id(assigned_b_id), // CHECK added

@@ -1,5 +1,4 @@
 `include "sys_defs.svh"
-`include "psel_gen.sv"
 
 module br_stack #(
     parameter DEPTH = `BRANCH_PRED_SZ,
@@ -9,7 +8,7 @@ module br_stack #(
     input                                                               reset,
 
     input DECODED_PACKET                                                dis_inst, // first dispatched instruction
-    input MAP_TABLE_PACKET          [`ARCH_REG_SZ-1:0]                  in_mt,
+    input MAP_TABLE_PACKET          [`ARCH_REG_SZ:0]                    in_mt,
     input logic                     [$clog2(`ROB_SZ+1)-1:0]             in_fl_head,
     input logic                     [$clog2(`PHYS_REG_SZ_R10K)-1:0]     in_rob_tail,
     
@@ -127,17 +126,17 @@ module br_stack #(
         end
     end
 
-    // `ifdef DEBUG
-    //     always @(posedge clock) begin
-    //         $display("============== BRANCH STACK ==============\n");
-    //         $display("  Entries:");
-    //         $display("-------------------------------------");
-    //         $display("i | b_id |  b_mask | rec_PC | fl_head | rob_tail  |");
-    //         for (int i = 0; i < DEPTH; i++) begin
-    //             $display("%02d|  %02d  |   %02d   |   %02d   |  %02d  |   %01d   |", i, entries[i].b_id, entries[i].b_mask, entries[i].rec_PC, entries[i].fl_head, entries[i].rob_tail);
-    //         end
-    //         $display("");
-    //     end
-    // `endif
+    `ifdef DEBUG
+        always @(posedge clock) begin
+            $display("============== BRANCH STACK ==============\n");
+            $display("  Entries:");
+            $display("-------------------------------------");
+            $display("i | b_id |  b_mask | rec_PC | fl_head | rob_tail  |");
+            for (int i = 0; i < DEPTH; i++) begin
+                $display("%02d|  %02d  |   %02d   |   %02d   |  %02d  |   %01d   |", i, entries[i].b_id, entries[i].b_mask, entries[i].rec_PC, entries[i].fl_head, entries[i].rob_tail);
+            end
+            $display("");
+        end
+    `endif
 
 endmodule
