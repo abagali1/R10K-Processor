@@ -366,7 +366,7 @@ module rs #(
         end
 
         next_open_spots = other_sig;
-        next_b_mask |= b_id;
+        next_b_mask = (b_mask | b_id) & ~rem_b_id;
         // Reads in new entries (parallelized)
         for (int i = 0; i < N; ++i) begin
             if (rs_in[i].valid && dis_entries_bus[i]) begin
