@@ -83,6 +83,7 @@ module cpu (
     // output of br stack
     CHECKPOINT  cp_out;
     logic br_full;
+    logic [`BRANCH_PRED_SZ-1:0] assigned_b_id;
 
     // hardcoded values
 
