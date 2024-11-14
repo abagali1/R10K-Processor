@@ -370,6 +370,8 @@ module br_stack_tb();
         rem_b_id = 4'b0010;
         br_task = SQUASH;
 
+        @(negedge clock);  
+
         in_mt[0] = {32'd13, 1'b1, 1'b1};
         in_mt[1] = {32'd16, 1'b1, 1'b1}; 
         in_mt[2] = {32'd15, 1'b1, 1'b1};  
@@ -489,6 +491,8 @@ module br_stack_tb();
         rem_b_id = 4'b0010;
         br_task = CLEAR;
 
+        @(negedge clock);  
+
         in_mt[0] = {32'd13, 1'b1, 1'b1};
         in_mt[1] = {32'd16, 1'b1, 1'b1}; 
         in_mt[2] = {32'd15, 1'b1, 1'b1};  
@@ -501,7 +505,7 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
         
-        @(negedge clock); // this instruction only writes in if i put two negedges?
+        //@(negedge clock); // this instruction only writes in if i put two negedges?
         @(negedge clock); 
 
         rem_b_id = '0;
