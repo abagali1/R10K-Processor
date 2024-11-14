@@ -79,7 +79,6 @@ always_ff @(posedge clock) begin
         for (int j = 0; j < WRITE_PORTS; j++) begin
             if (we[j]) begin
                 memData[waddr[j]] <= wdata[j];
-                break;
             end
         end
     end
@@ -94,18 +93,24 @@ end
     
     // Track which entries are valid
     always_ff @(posedge clock) begin
-        if      (reset) valid        <= '0;
-        else if (we)    valid[waddr] <= 1'b1;       
+        for (int i = 0; i < WRITE_PORTS; i++) begin
+            if      (reset) valid        <= '0;
+            else if (we[i])    valid[waddr[i]] <= 1'b1; 
+        end      
     end
 
     // ---------- Verify Write Interface ---------- 
-    clocking cb_read @(posedge clock);
-        property waddr_valid;
-            we |-> waddr < DEPTH;
-        endproperty
-    endclocking
+    generate
+        for (int i = 0; i < WRITE_PORTS; i++) begin
+            clocking cb_read @(posedge clock);
+                property waddr_valid;
+                    we[i] |-> waddr[i] < DEPTH;
+                endproperty
+            endclocking
 
-    validWaddr:    assert property(cb_read.waddr_valid);
+            validWaddr:    assert property(cb_read.waddr_valid);
+        end
+    endgenerate
     
     // ---------- Verify Read Interface ---------- 
     generate
