@@ -14,12 +14,12 @@ module rs #(
     input FREE_LIST_PACKET          [N-1:0]                                             t_in,
     input MAP_TABLE_PACKET          [N-1:0]                                             t1_in,
     input MAP_TABLE_PACKET          [N-1:0]                                             t2_in,
-    input BR_MASK                   [N-1:0]                                             b_mask_in,
+    input BR_MASK                                                                       b_id,
 
     input CDB_PACKET                [N-1:0]                                             cdb_in,
 
     // ebr logic
-    input BR_MASK                                                                       br_id,
+    input BR_MASK                                                                       rem_b_id,
     input BR_TASK                                                                       br_task,
 
     // busy bits from FUs to mark when available to issue
@@ -91,6 +91,8 @@ module rs #(
     logic [$clog2(`NUM_FU_LD+1)-1:0]        num_ld_issued;
     logic [$clog2(`NUM_FU_STORE+1)-1:0]     num_store_issued;
     logic [$clog2(`NUM_FU_BR+1)-1:0]        num_br_issued;
+
+    BR_MASK b_mask, next_b_mask;
 
     assign open_entries = (DEPTH - num_entries > N) ? N : DEPTH - num_entries;
 
@@ -198,13 +200,15 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(alu_issued_bus[i][j]) begin
                     issued_alu[i] = entries[j];
-                    if(br_id == entries[j].b_mask) begin
-                        if(br_task == CLEAR) begin
-                            issued_alu[i].b_mask = 0;
+                    if (br_task == CLEAR) begin
+                        if (entries[j].b_id == rem_b_id) begin
+                            issued_alu[j] = 0;
+                        end else begin
+                            issued_alu[i].b_mask = issued_alu[i].b_mask & ~rem_b_id;
                         end
-                        if(br_task == SQUASH) begin
-                            issued_alu[i] = 0;
-                        end
+                    end
+                    if (br_task == SQUASH) begin
+                        issued_alu[j] = (issued_alu[i].b_mask & ~rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -214,13 +218,15 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(mult_issued_bus[i][j]) begin
                     issued_mult[i] = entries[j];
-                    if(br_id == entries[j].b_mask) begin
-                        if(br_task == CLEAR) begin
-                            issued_mult[i].b_mask = 0;
+                    if (br_task == CLEAR) begin
+                        if (entries[j].b_id == rem_b_id) begin
+                            issued_mult[j] = 0;
+                        end else begin
+                            issued_mult[i].b_mask = issued_mult[i].b_mask & ~rem_b_id;
                         end
-                        if(br_task == SQUASH) begin
-                            issued_mult[i] = 0;
-                        end
+                    end
+                    if (br_task == SQUASH) begin
+                        issued_mult[j] = (issued_mult[i].b_mask & ~rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -230,13 +236,15 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(ld_issued_bus[i][j]) begin
                     issued_ld[i] = entries[j];
-                    if(br_id == entries[j].b_mask) begin
-                        if(br_task == CLEAR) begin
-                            issued_ld[i].b_mask = 0;
+                    if (br_task == CLEAR) begin
+                        if (entries[j].b_id == rem_b_id) begin
+                            issued_ld[j] = 0;
+                        end else begin
+                            issued_ld[i].b_mask = issued_ld[i].b_mask & ~rem_b_id;
                         end
-                        if(br_task == SQUASH) begin
-                            issued_ld[i] = 0;
-                        end
+                    end
+                    if (br_task == SQUASH) begin
+                        issued_ld[j] = (issued_ld[i].b_mask & ~rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -246,13 +254,15 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(store_issued_bus[i][j]) begin
                     issued_store[i] = entries[j];
-                    if(br_id == entries[j].b_mask) begin
-                        if(br_task == CLEAR) begin
-                            issued_store[i].b_mask = 0;
+                    if (br_task == CLEAR) begin
+                        if (entries[j].b_id == rem_b_id) begin
+                            issued_store[j] = 0;
+                        end else begin
+                            issued_store[i].b_mask = issued_store[i].b_mask & ~rem_b_id;
                         end
-                        if(br_task == SQUASH) begin
-                            issued_store[i] = 0;
-                        end
+                    end
+                    if (br_task == SQUASH) begin
+                        issued_store[j] = (issued_store[i].b_mask & ~rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -262,13 +272,15 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(br_issued_bus[i][j]) begin
                     issued_br[i] = entries[j];
-                    if(br_id == entries[j].b_mask) begin
-                        if(br_task == CLEAR) begin
-                            issued_br[i].b_mask = 0;
+                    if (br_task == CLEAR) begin
+                        if (entries[j].b_id == rem_b_id) begin
+                            issued_br[j] = 0;
+                        end else begin
+                            issued_br[i].b_mask = issued_br[i].b_mask & ~rem_b_id;
                         end
-                        if(br_task == SQUASH) begin
-                            issued_br[i] = 0;
-                        end
+                    end
+                    if (br_task == SQUASH) begin
+                        issued_br[j] = (issued_br[i].b_mask & ~rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -338,7 +350,7 @@ module rs #(
         // Branch mask logic
         if (br_task == SQUASH) begin
             for (int i = 0; i < DEPTH; i++) begin
-                if ((entries[i].b_mask & br_id) != 0) begin
+                if ((entries[i].b_mask & rem_b_id) != 0) begin
                     next_entries[i] = 0;
                     other_sig[i] = 1;
                     next_num_entries--;
@@ -347,13 +359,14 @@ module rs #(
         end 
         if (br_task == CLEAR) begin
             for (int i = 0; i < DEPTH; i++) begin
-                if ((entries[i].b_mask & br_id) != 0) begin
-                    next_entries[i].b_mask = entries[i].b_mask ^ br_id;
+                if ((entries[i].b_mask & rem_b_id) != 0) begin
+                    next_entries[i].b_mask = entries[i].b_mask ^ rem_b_id;
                 end
             end
         end
 
-        next_open_spots = other_sig; 
+        next_open_spots = other_sig;
+        next_b_mask |= b_id;
         // Reads in new entries (parallelized)
         for (int i = 0; i < N; ++i) begin
             if (rs_in[i].valid && dis_entries_bus[i]) begin
@@ -363,7 +376,8 @@ module rs #(
                         next_entries[j].t = t_in[i];
                         next_entries[j].t1 = t1_in[i]; 
                         next_entries[j].t2 = t2_in[i];
-                        next_entries[j].b_mask = b_mask_in[i];
+                        next_entries[j].b_mask = next_b_mask;
+                        next_entries[j].b_id = (i == 0) ? b_id : '0;
 
                         next_open_spots[j] = 0;
                     end
@@ -380,10 +394,12 @@ module rs #(
             entries <= 0;
             num_entries <= 0;
             open_spots <= '1;
+            b_mask <= '0;
         end else begin
             entries <= next_entries;
             num_entries <= next_num_entries;
             open_spots <= next_open_spots;
+            b_mask <= next_b_mask;
         end
     end
 

@@ -403,6 +403,7 @@ typedef struct packed {
     FREE_LIST_PACKET t;
     MAP_TABLE_PACKET t1;
     MAP_TABLE_PACKET t2;
+    BR_MASK b_id;
     BR_MASK b_mask;
     /* END */
 } RS_PACKET;
