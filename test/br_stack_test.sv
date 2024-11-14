@@ -13,7 +13,7 @@
 module br_stack_tb();
 
     parameter DEPTH = `BRANCH_PRED_SZ;
-    parameter N = 2;
+    parameter N = 3;
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     logic                                                       clock;
@@ -88,9 +88,9 @@ module br_stack_tb();
         
         @(negedge clock);  
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};   
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};   
 
         in_fl_head = 5'b00001;
         in_rob_tail = 6'b000100;
@@ -116,9 +116,9 @@ module br_stack_tb();
 
         // 2nd checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b00100;
         in_rob_tail = 6'b000110; 
@@ -136,9 +136,9 @@ module br_stack_tb();
 
         // 3rd checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b01010;
         in_rob_tail = 6'b000001; 
@@ -156,9 +156,9 @@ module br_stack_tb();
 
         // 4th checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b00010;
         in_rob_tail = 6'b000010; 
@@ -198,9 +198,9 @@ module br_stack_tb();
 
         // 2nd checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b00100;
         in_rob_tail = 6'b000110; 
@@ -218,9 +218,9 @@ module br_stack_tb();
 
         // 3rd checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b01010;
         in_rob_tail = 6'b000001; 
@@ -238,9 +238,9 @@ module br_stack_tb();
 
         // 4th checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b00010;
         in_rob_tail = 6'b000010; 
@@ -279,9 +279,9 @@ module br_stack_tb();
 
         // 1st checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};   
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};   
 
         in_fl_head = 5'b00001;
         in_rob_tail = 6'b000100;
@@ -299,9 +299,9 @@ module br_stack_tb();
 
         // 2nd checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b00100;
         in_rob_tail = 6'b000110; 
@@ -319,9 +319,9 @@ module br_stack_tb();
 
         // 3rd checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b01010;
         in_rob_tail = 6'b000001; 
@@ -339,9 +339,9 @@ module br_stack_tb();
 
         // 4th checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b00010;
         in_rob_tail = 6'b000010; 
@@ -362,9 +362,9 @@ module br_stack_tb();
 
         @(negedge clock);  
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd16, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd16, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b01010;
         in_rob_tail = 6'b010010; 
@@ -400,9 +400,9 @@ module br_stack_tb();
 
         // 1st checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};   
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};   
 
         in_fl_head = 5'b00001;
         in_rob_tail = 6'b000100;
@@ -420,9 +420,9 @@ module br_stack_tb();
 
         // 2nd checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b00100;
         in_rob_tail = 6'b000110; 
@@ -440,9 +440,9 @@ module br_stack_tb();
 
         // 3rd checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b01010;
         in_rob_tail = 6'b000001; 
@@ -460,9 +460,9 @@ module br_stack_tb();
 
         // 4th checkpoint in
 
-        in_mt[0] = {32'd13, 1'b1, 1'b1};
-        in_mt[1] = {32'd14, 1'b1, 1'b1}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b1};  
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd14, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
 
         in_fl_head = 5'b00010;
         in_rob_tail = 6'b000010; 
@@ -519,9 +519,12 @@ module br_stack_tb();
         @(negedge clock);
         reset = 0;
 
-        in_mt[0] = {32'd13, 1'b1, 1'b0};
-        in_mt[1] = {32'd16, 1'b1, 1'b0}; 
-        in_mt[2] = {32'd15, 1'b1, 1'b0};  
+        //in_mt[0] = {32'd14, 1'b0, 1'b0};
+        in_mt[1] = {32'd13, 1'b0, 1'b0}; 
+        in_mt[2] = {32'd16, 1'b0, 1'b0}; 
+        in_mt[3] = {32'd17, 1'b0, 1'b0}; 
+
+        in_mt[0].ready = 0; 
 
         in_fl_head = 5'b01010;
         in_rob_tail = 6'b010010; 
@@ -530,6 +533,28 @@ module br_stack_tb();
 
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
+
+        @(negedge clock);
+
+        $display("map table");
+        for (int i = 1; i < 4; i++) begin
+            $display("i: %0d, reg_idx: %0d, valid: %0d, ready: %0d", i, dut.entries[3].rec_mt[i].reg_idx, dut.entries[3].rec_mt[i].valid, dut.entries[3].rec_mt[i].ready);
+        end
+
+        dis_inst.uncond_branch = 0;
+        dis_inst.valid = 0;
+
+        @(negedge clock);
+
+        cdb_in[0] = {32'd16, 32'd2, 4, 1'b1};
+        cdb_in[1] = {32'd19, 32'd5, 6, 1'b1};
+
+        @(negedge clock);
+
+        $display("map table again");
+        for (int i = 1; i < 4; i++) begin
+            $display("i: %0d, reg_idx: %0d, valid: %0d, ready: %0d", i, dut.entries[3].rec_mt[i].reg_idx, dut.entries[3].rec_mt[i].valid, dut.entries[3].rec_mt[i].ready);
+        end
 
         $finish;
     end
@@ -547,10 +572,10 @@ module br_stack_tb();
 
 function void clear_inputs();
     dis_inst = 0;
-    in_mt = 0;  
+    in_mt = '0;  
     in_rob_tail = 0;
     in_fl_head = 0;
-    cdb_in = 0;
+    cdb_in = '0;
     br_task = 0;
     rem_b_id = 0;
 endfunction
