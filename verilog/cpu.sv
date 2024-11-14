@@ -83,8 +83,6 @@ module cpu (
     // output of br stack
     CHECKPOINT  cp_out;
     logic br_full;
-    logic [`BRANCH_PRED_SZ-1:0] assigned_b_id;
-    
 
     // hardcoded values
 
@@ -101,13 +99,11 @@ module cpu (
     assign fu_br_busy    = '1;
 
 
-    
-
     inst_buffer buffet (
         .clock(clock),
         .reset(reset),
 
-        .in_insts(in_insts),                 
+        .in_insts(in_insts),
         .num_dispatch(num_dis),
         .num_accept(num_input),
 
@@ -163,10 +159,10 @@ module cpu (
         .reset(reset), 
 
         .r1_idx(dis_r1_idx),
-        .r2_idx(dis_r2_idx),       
+        .r2_idx(dis_r2_idx),
         .dest_reg_idx(dis_dest_reg_idx), // dest_regs that are getting mapped to a new phys_reg from free_list
         .free_reg(dis_free_reg),  // comes from the free list
-        .incoming_valid(dis_incoming_valid), // inputs to expect                       
+        .incoming_valid(dis_incoming_valid), // inputs to expect
 
         .ready_reg_idx(0), // readys from CDB - arch reg
         .ready_phys_idx(0), // corresponding phys reg
@@ -227,7 +223,7 @@ module cpu (
         .complete_t(0), // comes from the CDB
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
         .br_tail(0),
-        .br_en(0),                        
+        .br_en(0),
 
         .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
         .open_entries(rob_open), // number of open entires AFTER retirement
