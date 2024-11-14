@@ -58,26 +58,22 @@ module alu (
         endcase
     end
 
-    // Set Next Out
-    always_comb begin
-        if (stall) begin
-            next_out = out;
-        end else begin
-            next_out = '{alu_result: result, decoded_vals: is_pack.decoded_vals, take_conditional: 0};
-        end
-    end
+    assign next_out = '{alu_result: result, decoded_vals: is_pack.decoded_vals, take_conditional: 0};
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            out <= '0;
-            data_ready <= '0;
+            data_ready  <= '0;
+            out         <= '0;
+        end 
+        if (stall) begin
+            data_ready  <= data_ready;
+            out         <= out;
+        end else if (rd_in) begin
+            data_ready  <= 1;
+            out         <= next_out;
         end else begin
-            out <= next_out;
-            if (stall) begin
-                data_ready <= data_ready;
-            end else begin
-                data_ready <= rd_in;
-            end
+            data_ready  <= '0;
+            out         <= '0;
         end
     end
 
