@@ -315,7 +315,7 @@ typedef enum logic [1:0] {
 
 typedef struct packed {
     PHYS_REG_IDX reg_idx;
-    logic valid;
+    logic valid; // POST MILESTONE 2: DO WE NEED THIS
     logic ready;
 } MAP_TABLE_PACKET;
 

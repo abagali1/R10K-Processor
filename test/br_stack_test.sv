@@ -509,10 +509,27 @@ module br_stack_tb();
 
         // ------------------------------ Test 4 ------------------------------ //
         $display("\nTest 4: CDB Outputs Register\n");
-        // when cdb outputs a register that'sready, maptable in 
+        // when cdb outputs a register that's ready, maptable in 
         // checkpoint should also update
 
-        
+        clock = 0;
+        reset = 1;
+        clear_inputs();
+
+        @(negedge clock);
+        reset = 0;
+
+        in_mt[0] = {32'd13, 1'b1, 1'b0};
+        in_mt[1] = {32'd16, 1'b1, 1'b0}; 
+        in_mt[2] = {32'd15, 1'b1, 1'b0};  
+
+        in_fl_head = 5'b01010;
+        in_rob_tail = 6'b010010; 
+
+        dis_inst.PC = 3;
+
+        dis_inst.uncond_branch = 1;
+        dis_inst.valid = 1;
 
         $finish;
     end
