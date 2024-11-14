@@ -18,10 +18,12 @@ module alu_tb();
     logic               rd_in;
 
     FU_PACKET           fu_pack;
+    logic               data_ready;
 
     DECODED_PACKET      disp_pack;
     RS_PACKET           rs_pack;
     DATA                expected;
+    logic               expected_dr;
 
     // // queue declaration for free_list model
     // FREE_LIST_PACKET free_list_model [$:(DEPTH)];
@@ -39,7 +41,8 @@ module alu_tb();
         .is_pack(is_pack),
         .stall(stall),
         .rd_in(rd_in),
-        .fu_pack(fu_pack)
+        .fu_pack(fu_pack),
+        .data_ready(data_ready)
     );
 
     always begin 
@@ -88,16 +91,17 @@ module alu_tb();
         @(negedge clock);
         @(negedge clock);
         reset = 0;
-        
+
         // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Check basic addition");
-        
+
         is_pack.rs1_value = 0;
         is_pack.rs2_value = 0;
         rd_in = 1;
         expected = 0;
+        expected_dr = 1;
         @(negedge clock);
-        
+
         is_pack.rs1_value = 1;
         is_pack.rs2_value = 2;
         expected = 3;
@@ -108,11 +112,11 @@ module alu_tb();
         expected = 8;
         @(negedge clock);
 
-        $display("PASSED TEST 1");
+        $display("@@@ PASSED TEST 1");
 
         // ------------------------------ Test 2 ------------------------------ //
-        $display("\nTest 1: Check basic subtraction");
-        
+        $display("\nTest 2: Check basic subtraction");
+
         disp_pack.alu_func = ALU_SUB;
         rs_pack.decoded_vals = disp_pack;
         is_pack.decoded_vals = rs_pack;
@@ -121,52 +125,88 @@ module alu_tb();
         is_pack.rs2_value = 0;
         expected = 12;
         @(negedge clock);
-        
+
         is_pack.rs1_value = 0;
         is_pack.rs2_value = 2;
         expected = -2;
         @(negedge clock);
 
-        $display("PASSED TEST 2");
+        $display("@@@ PASSED TEST 2");
 
         // ------------------------------ Test 3 ------------------------------ //
-        $display("\nTest 1: Check basic and");
-        
+        $display("\nTest 3: Check basic and");
+
         disp_pack.alu_func = ALU_AND;
         rs_pack.decoded_vals = disp_pack;
         is_pack.decoded_vals = rs_pack;
-        
+
         is_pack.rs1_value = 0;
         is_pack.rs2_value = 1;
         expected = 0;
         @(negedge clock);
-        
+
         is_pack.rs1_value = 15;
         is_pack.rs2_value = 5;
         expected = 5;
         @(negedge clock);
 
-        $display("PASSED TEST 3");
+        $display("@@@ PASSED TEST 3");
 
         // ------------------------------ Test 4 ------------------------------ //
-        $display("\nTest 1: Check that ALU stalls");
-        
+        $display("\nTest 4: Check that ALU stalls");
+
         disp_pack.alu_func = ALU_AND;
         rs_pack.decoded_vals = disp_pack;
         is_pack.decoded_vals = rs_pack;
-        
+
         is_pack.rs1_value = 0;
         is_pack.rs2_value = 1;
         expected = 0;
         @(negedge clock);
-        
+
         stall = 1;
         is_pack.rs1_value = 15;
         is_pack.rs2_value = 5;
         expected = 0; // expect the value from the last calculation because stall
         @(negedge clock);
 
-        $display("PASSED TEST 4");
+        $display("@@@ PASSED TEST 4");
+
+        // ------------------------------ Test 5 ------------------------------ //
+        $display("\nTest 5: Check that ALU stalls");
+
+        disp_pack.alu_func = ALU_AND;
+        rs_pack.decoded_vals = disp_pack;
+        is_pack.decoded_vals = rs_pack;
+
+        is_pack.rs1_value = 0;
+        is_pack.rs2_value = 1;
+        expected = 0;
+        @(negedge clock);
+
+        stall = 1;
+        is_pack.rs1_value = 1;
+        is_pack.rs2_value = 1;
+        expected = 0; // expect the value from the last calculation because stall
+        @(negedge clock);
+
+        is_pack.rs1_value = 1;
+        is_pack.rs2_value = 1;
+        expected = 0;
+        @(negedge clock);
+
+        stall = 0;
+        expected = 1;
+        @(negedge clock);
+
+        rd_in = 0;
+        expected = 0;
+        expected_dr = 0;
+        @(negedge clock);
+
+        $display("@@@ PASSED TEST 5");
+        $display();
+        $display("@@@ PASSED ALL TESTS");
 
         $finish;
     end
@@ -177,7 +217,7 @@ module alu_tb();
         #(`CLOCK_PERIOD * 0.2);
         $display("expected: %d", expected);
         $display("result: %d\n", fu_pack.alu_result);
-        $display("rs1: %d   rs2: %d\n", is_pack.rs1_value, is_pack.rs2_value);
+        $display("rd_in: %b, rs1: %d   rs2: %d\n", rd_in, is_pack.rs1_value, is_pack.rs2_value);
         check_expected();
         $display("@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
         cycle_number++;
@@ -187,6 +227,12 @@ module alu_tb();
         if (expected != fu_pack.alu_result) begin
             $error("@@@ FAILED @@@");
             $error("Check entry error: expected %0d, but got %0d", expected, fu_pack.alu_result);
+            $finish;
+        end
+
+        if(expected_dr != data_ready) begin
+            $error("@@@ FAILED @@@");
+            $error("Data Ready Mismatch: expected %b, but got %b", expected_dr, data_ready);
             $finish;
         end
     endfunction
