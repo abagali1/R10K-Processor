@@ -67,7 +67,7 @@ module mult (
 
     always_comb begin 
         empty_packet = '0;
-        next_packets = {packets[`MULT_STAGES-2:0], (rd_in) ? is_pack.decoded_vals : empty_packet};
+        next_packets = {packets[`MULT_STAGES-2:0], (rd_in ? is_pack.decoded_vals : empty_packet)};
     end
 
     always_ff @(posedge clock) begin
