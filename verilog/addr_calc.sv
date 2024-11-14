@@ -55,3 +55,8 @@ module addr_calc (
 
     assign data_ready = ~stall & rd_in;
 endmodule
+
+target_adder (
+    input RS_PACKET  is_pack,
+
+)

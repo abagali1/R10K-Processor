@@ -30,7 +30,7 @@ module mult (
     logic done;
 
     // keep track of each instruction's is_pack
-    RS_PACKET [`MULT_STAGES-1:0] packets, next_packets, empty_packet;
+    RS_PACKET [`MULT_STAGES-1:0] packets, next_packets, input_packet;
 
     MULT_FUNC [`MULT_STAGES-2:0] internal_funcs;
     MULT_FUNC func_out;
@@ -66,22 +66,21 @@ module mult (
     end
 
     always_comb begin 
-        empty_packet = '0;
-        next_packets = {packets[`MULT_STAGES-2:0], (rd_in ? is_pack.decoded_vals : empty_packet)};
+        input_packet = (rd_in ? is_pack.decoded_vals : '0);
+        next_packets = {packets[`MULT_STAGES-2:0], input_packet};
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin 
             packets <= '0;
-            data_ready <= '0;
         end else if (stall) begin
             packets <= packets;
-            data_ready <= data_ready;
         end else begin
             packets <= next_packets;
-            data_ready <= done;
         end
     end
+
+    assign data_ready = (reset) ? '0 : done;
 
     // Use the high or low bits of the product based on the output func
     assign fu_pack.alu_result = (func_out == M_MUL) ? product[31:0] : product[63:32];
