@@ -74,7 +74,7 @@ module cpu (
     PHYS_REG_IDX             [`N-1:0]             t_old_data;
     MAP_TABLE_PACKET         [`N-1:0]             r1_p_reg;
     MAP_TABLE_PACKET         [`N-1:0]             r2_p_reg;
-    MAP_TABLE_PACKET         [`ARCH_REG_SZ:0]     out_mt;
+    MAP_TABLE_PACKET         [`ARCH_REG_SZ:0]     out_mt; // CHECK: this size does not match up to branch stack in_mt
 
     // output of freelist
     FREE_LIST_PACKET [`N-1:0]                 fl_reg; // displayed available reg idxs, these are always output, and only updated based on rd_num
@@ -83,8 +83,8 @@ module cpu (
     // output of br stack
     CHECKPOINT  cp_out;
     logic br_full;
+    logic [`BRANCH_PRED_SZ-1:0] assigned_b_id;
     
-
 
     // hardcoded values
     assign br_full = 0;
@@ -243,14 +243,14 @@ module cpu (
         .dis_inst(dis_insts[0]),
         .in_mt(out_mt),
         .in_fl_head(fl_head_ptr),
-        .in_rob_tail(rob_tail),
+        .in_rob_tail(rob_tail), // CHECK size don't match up
     
         .cdb_in(0),
     
-        .br_task(0), // not defined here. in main sysdefs
+        .br_task(`NOTHING), // not defined here. in main sysdefs
         .rem_b_id(0), // b_id to remove
     
-    
+        .assigned_b_id(assigned_b_id), // CHECK added
         .cp_out(cp_out),
         .full(br_full)
     );
