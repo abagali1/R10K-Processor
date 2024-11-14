@@ -6,7 +6,7 @@ module branch_fu (
     input               clock, 
     input               reset,
     input ISSUE_PACKET  is_pack,
-    input logic         rd_in,
+    input logic         rd_en,
 
     output FU_PACKET    fu_pack,
     output BR_TASK      br_task,
@@ -36,7 +36,7 @@ module branch_fu (
 
     basic_adder branch_target_calc (
         .is_pack(is_pack),
-        .result(target)
+        .result(branch_target)
     );
 
     always_ff @(posedge clock) begin
@@ -44,8 +44,8 @@ module branch_fu (
             out         <= '0;
             data_ready  <= '0;
             br_task     <= NOTHING;
-        end else if (rd_in) begin
-            out         <= '{result: target, decoded_vals: is_pack.decoded_vals, pred_correct: correct };
+        end else if (rd_en) begin
+            out         <= '{result: target, decoded_vals: is_pack.decoded_vals, pred_correct: correct};
             data_ready  <= 1;
             br_task     <= (correct ? CLEAR : SQUASH);
         end else begin
