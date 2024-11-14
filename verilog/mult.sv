@@ -72,10 +72,13 @@ module mult (
     always_ff @(posedge clock) begin
         if (reset) begin 
             packets <= '0;
+            data_ready <= '0;
         end else if (stall) begin
             packets <= packets;
+            data_ready <= data_ready;
         end else begin
             packets <= next_packets;
+            data_ready <= done;
         end
     end
 
@@ -83,7 +86,6 @@ module mult (
     assign fu_pack.alu_result = (func_out == M_MUL) ? product[31:0] : product[63:32];
     // populate the rest of fu_pack using the final element of orig_packets
     assign fu_pack.decoded_vals = packets[`MULT_STAGES-1];
-    assign data_ready = ~stall & done;
 
     `ifdef DEBUG_MULT
         always_ff @(posedge clock) begin
