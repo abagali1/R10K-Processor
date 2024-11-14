@@ -211,7 +211,7 @@ MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack a
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
 
-# TODO: add extra source file dependencies belowg
+# TODO: add extra source file dependencies below
 
 MULT_FILES = verilog/sys_defs.svh
 build/mult.simv: $(MULT_FILES)
