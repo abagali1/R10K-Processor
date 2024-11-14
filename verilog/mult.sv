@@ -30,7 +30,7 @@ module mult (
     logic done;
 
     // keep track of each instruction's is_pack
-    RS_PACKET [`MULT_STAGES-1:0] packets, next_packets;
+    RS_PACKET [`MULT_STAGES-1:0] packets, next_packets, empty_packet;
 
     MULT_FUNC [`MULT_STAGES-2:0] internal_funcs;
     MULT_FUNC func_out;
@@ -66,7 +66,8 @@ module mult (
     end
 
     always_comb begin 
-        next_packets = {packets[`MULT_STAGES-2:0], is_pack.decoded_vals};
+        empty_packet = '0;
+        next_packets = {packets[`MULT_STAGES-2:0], (rd_in) ? is_pack.decoded_vals : empty_packet};
     end
 
     always_ff @(posedge clock) begin
