@@ -129,6 +129,7 @@ module testbench;
     task test_stall;
         input MULT_FUNC func;
         input DATA reg_1, reg_2;
+        integer i;
         begin
             @(negedge clock);
             rd_in = 1;
@@ -145,9 +146,11 @@ module testbench;
             @(negedge clock);
             rd_in = 0;
             is_pack = '0;
-            @(negedge clock);
-            @(negedge clock);
-            @(negedge clock);
+            begin
+                for (i = 0; i < `MULT_STAGES - 1; i = i + 1) begin
+                    @(negedge clock);
+                end
+            end
             prev_r = mul_r;
             stall = 1;
             @(negedge clock);
