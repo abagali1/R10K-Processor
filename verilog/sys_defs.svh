@@ -417,8 +417,8 @@ typedef struct packed {
 typedef struct packed {
     RS_PACKET decoded_vals;
 
-    DATA alu_result;
-    logic take_conditional;
+    DATA result;
+    logic pred_correct;
 } FU_PACKET;
 
 /**
