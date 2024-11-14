@@ -13,7 +13,7 @@ module conditional_branch (
     output logic        data_ready
 );
     FU_PACKET out, next_out;
-    DATA rs1, rs2;
+    DATA rs1, rs2, target;
     logic take;
 
     assign fu_pack = out;
@@ -31,22 +31,24 @@ module conditional_branch (
         endcase
     end
 
-    // Set Next Out
-    always_comb begin
-        if (stall) begin
-            next_out = out;
-            data_ready = '0;
-        end else begin
-            next_out = '{alu_result: '0, decoded_vals: is_pack.decoded_vals, take_conditional: take};
-            data_ready = rd_in;
-        end
-    end
+    basic_adder branch_target (
+        .is_pack(is_pack),
+        .result(target)
+    );
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            out <= '0;
+            out         <= '0;
+            data_ready  <= '0;
+        end else if (stall) begin
+            out         <= out;
+            data_ready  <= data_ready;
+        end else if (rd_in) begin
+            out         <= '{alu_result: target, decoded_vals: is_pack.decoded_vals, take_conditional: take};
+            data_ready  <= 1;
         end else begin
-            out <= next_out;
+            out         <= '0;
+            data_ready  <= '0;
         end
     end
 

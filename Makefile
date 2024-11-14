@@ -212,6 +212,10 @@ MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack a
 ALL_HEADERS = $(CPU_HEADERS)
 
 # TODO: add extra source file dependencies below
+BR_FILES = verilog/sys_defs.svh verilog/addr_calc.sv
+build/conditional_branch.simv: $(BR_FILES)
+build/conditional_branch.cov: $(BR_FILES)
+synth/conditional_branch.vg: $(BR_FILES)
 
 MULT_FILES = verilog/sys_defs.svh
 build/mult.simv: $(MULT_FILES)
