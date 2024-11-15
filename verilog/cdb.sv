@@ -33,7 +33,7 @@ module CDB #(
     `ifdef DEBUG
     ,   output logic [NUM_FU-1:0] debug_cdb_gnt,
         output logic [N-1:0][NUM_FU-1:0] debug_cdb_gnt_bus
-    `endif   
+    `endif
 );
 
     logic [NUM_FU-1:0] cdb_gnt;
@@ -61,7 +61,7 @@ module CDB #(
             end
         end
     endgenerate
-    
+
     always_comb begin
         for (int i = 0; i < N; i++) begin
             entries[i].reg_idx = selected_packets[i].reg_idx;

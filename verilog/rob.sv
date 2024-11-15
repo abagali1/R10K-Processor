@@ -17,6 +17,7 @@ module rob #(
     input PHYS_REG_IDX                          [N-1:0]                 t_old,
 
     input PHYS_REG_IDX                          [N-1:0]                 complete_t, // comes from the FU
+    input PHYS_REG_IDX                                                  br_complete_t,
     input                                       [$clog2(N+1)-1:0]       num_accept, // input signal from min block, dependent on open_entries 
     input logic                                 [$clog2(DEPTH)-1:0]     br_tail,
     input logic                                                         br_en,
@@ -96,7 +97,7 @@ module rob #(
             end
 
             for(int k=0; k < DEPTH; ++k) begin
-                if(entries[k].valid & entries[k].t == complete_t[j]) begin
+                if(entries[k].valid & (entries[k].t == complete_t[j] || entries[k].t == br_complete_t)) begin
                     next_entries[k].complete = 'b1;
                 end
             end
