@@ -67,7 +67,7 @@ module rob #(
                 retiring_data[i] = entries[(head+i) % DEPTH];
                 next_entries[(head+i) % DEPTH] = '0;
                 next_head = (((head+i) % DEPTH) + 1) % DEPTH;
-                next_num_entries--;
+                // next_num_entries--; // TODO: double check that removing this and just counting next_num_entries at the end is ok
                 num_retired++;
             end else begin
                 break;
@@ -82,7 +82,8 @@ module rob #(
                 next_entries[i] = '0;
             end
         end
-        next_num_entries += num_accept;
+        // TODO: verify that commenting this out is ok, and just iterating through next entries is ok to count num_entries
+        // next_num_entries += num_accept;
 
         for(int j=0;j < N; ++j) begin
             if(j < num_accept) begin
@@ -105,6 +106,13 @@ module rob #(
         // two assumptions:
         // - branch is the first instruction in the the dispatched instruction window
         // - only one branch per dispatched instruction window
+        // TODO: would be nice to get another pair of eyes on this to update num_entries (entries in use)
+        next_num_entries = 0;
+        for (int i = 0; i < DEPTH; i++) begin
+            if (next_entries[i].valid) begin
+                next_num_entries++;
+            end
+        end
         
         `ifdef DEBUG
             debug_entries = entries;
@@ -143,6 +151,7 @@ module rob #(
                     entries[j].complete, entries[j].valid
                 );
             end
+            $display("num entries in use: %d\n", next_num_entries);
             $display("");
         end
     `endif

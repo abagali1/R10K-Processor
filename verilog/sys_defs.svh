@@ -415,6 +415,13 @@ typedef struct packed {
     DATA rs2_value; // reg B value
 } ISSUE_PACKET;
 
+typedef struct packed {
+    RS_PACKET decoded_vals;
+
+    DATA result;
+    logic pred_correct;
+} FU_PACKET;
+
 /**
  * EX_MEM Packet:
  * Data exchanged from the EX to the MEM stage
