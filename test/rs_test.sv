@@ -275,6 +275,12 @@ module RS_tb();
         br_task = CLEAR;
         @(negedge clock);
 
+        // just a double check
+        if (~(issued_alu[0].decoded_vals.valid && issued_alu[0].b_mask == '0 && issued_alu[0].b_id == '0)) begin
+            $error("ERROR WITH EBR");
+            $finish;
+        end
+
         reset = 1;
         clear_signals();
         @(negedge clock); // verify issued
@@ -287,24 +293,24 @@ module RS_tb();
 
     int cycle_number = 0;
     // Correctness Verification
-    always @(posedge clock) begin
-        #(`CLOCK_PERIOD/2.0);
+    always @(negedge clock) begin
+        #(`CLOCK_PERIOD * 0.2);
         `ifdef MONITOR
             $display("------------------------------------------------------------");
             $display("@@@ Cycle Number: %0d @@@", cycle_number);
             $display("   Time: %0t", $time);
             $display("   Reset: %0d\n", reset);
 
-            //print_issue_signal();
+            print_issue_signal();
         `endif 
         model_rs_check_comb(); // verify open_entries + issued packets
         cycle_number++;
     end
 
     always @(posedge clock) begin
-        #(`CLOCK_PERIOD/2.0);
+        #(`CLOCK_PERIOD * 0.2);
         `ifdef MONITOR
-            //rs_print();
+            rs_print();
         `endif
         model_rs_check_seq(); // verify entries + open_spots + num_open_entries
 
@@ -504,7 +510,8 @@ module RS_tb();
         for(int i=0;i<DEPTH;i++) begin
             if((model_rs[i].b_mask & rem_b_id) != 0) begin
                 if(br_task == CLEAR) begin
-                    model_rs[i].b_mask = 0;
+                    model_rs[i].b_mask ^= rem_b_id;
+                    model_rs[i].b_id = 0;
                 end else if (br_task == SQUASH) begin
                     model_rs_delete(i);
                 end
@@ -575,13 +582,13 @@ module RS_tb();
         end
     endfunction
 
-    function void generate_ops(int num, FU_TYPE fu_type, int is_ready = 1, logic [`BRANCH_PRED_SZ-1:0] br_mask = 0);
-        RS_PACKET inst;
+    function void generate_ops(int num, FU_TYPE fu_type, int is_ready = 1, logic [`BRANCH_PRED_SZ-1:0] b_id = 0);
+        RS_PACKET inst = '0;
         for(int i=0;i<num;i++) begin
             inst.t  = '{reg_idx: i, valid: 1};
             inst.t1 = '{reg_idx: 0, valid: 1, ready: is_ready};
             inst.t2 = '{reg_idx: 0, valid: 1, ready: is_ready};
-            inst.b_mask = br_mask;
+            inst.b_id = b_id;
 
             inst.decoded_vals = 0;
             inst.decoded_vals.valid = 1;
