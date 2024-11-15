@@ -208,7 +208,7 @@ module rs #(
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_alu[j] = (issued_alu[i].b_mask & ~rem_b_id) ? 0 : entries[j];
+                        issued_alu[j] = (issued_alu[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -226,7 +226,7 @@ module rs #(
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_mult[j] = (issued_mult[i].b_mask & ~rem_b_id) ? 0 : entries[j];
+                        issued_mult[j] = (issued_mult[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -244,7 +244,7 @@ module rs #(
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_ld[j] = (issued_ld[i].b_mask & ~rem_b_id) ? 0 : entries[j];
+                        issued_ld[j] = (issued_ld[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -262,7 +262,7 @@ module rs #(
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_store[j] = (issued_store[i].b_mask & ~rem_b_id) ? 0 : entries[j];
+                        issued_store[j] = (issued_store[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -280,7 +280,7 @@ module rs #(
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_br[j] = (issued_br[i].b_mask & ~rem_b_id) ? 0 : entries[j];
+                        issued_br[j] = (issued_br[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
