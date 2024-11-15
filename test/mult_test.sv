@@ -45,7 +45,7 @@ module testbench;
     FU_PACKET fu_pack;
     logic data_ready;
 
-    assign mul_r = fu_pack.alu_result;
+    assign mul_r = fu_pack.result;
 
 
     string fmt;

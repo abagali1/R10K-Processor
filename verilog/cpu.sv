@@ -185,12 +185,12 @@ module cpu (
         .t_in(fl_reg),
         .t1_in(r1_p_reg),
         .t2_in(r2_p_reg),
-        .b_mask_in(0),
+        .b_id(0),
 
         .cdb_in(0),
 
         // ebr logic
-        .br_id(assigned_b_id),
+        .rem_b_id(assigned_b_id),
         .br_task(0),
 
         // busy bits from FUs to mark when available to issue

@@ -83,7 +83,7 @@ module mult (
     assign data_ready = (reset) ? '0 : done;
 
     // Use the high or low bits of the product based on the output func
-    assign fu_pack.alu_result = (func_out == M_MUL) ? product[31:0] : product[63:32];
+    assign fu_pack.result = (func_out == M_MUL) ? product[31:0] : product[63:32];
     // populate the rest of fu_pack using the final element of orig_packets
     assign fu_pack.decoded_vals = packets[`MULT_STAGES-1];
 
