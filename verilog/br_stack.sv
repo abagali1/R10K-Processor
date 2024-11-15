@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-
+`include "psel_gen.sv"
 module br_stack #(
     parameter DEPTH = `BRANCH_PRED_SZ,
     parameter N = `N
@@ -109,8 +109,12 @@ module br_stack #(
         // Set ready bit for everything in the map table
         for (int i = 0; i < N; i++) begin
             for (int j = 0; j < DEPTH; j++) begin
+                //$display("before cdb reg idx: %0d", cdb_in[i].reg_idx);
                 if (cdb_in[i].p_reg_idx == entries[j].rec_mt[cdb_in[i].reg_idx].reg_idx) begin // CHECK is this not supposed entries[j].rec_mt[cdb_in[i].reg_idx].reg_idx
+                    //$display("entering");
                     next_entries[j].rec_mt[cdb_in[i].reg_idx].ready = 1;
+                    //$display("next entries ready: %0d", next_entries[j].rec_mt[cdb_in[i].reg_idx].ready);
+                    //$display("cdb reg idx: %0d", cdb_in[i].reg_idx);
                 end
             end
         end
@@ -126,17 +130,17 @@ module br_stack #(
         end
     end
 
-    `ifdef DEBUG
-        always @(posedge clock) begin
-            $display("============== BRANCH STACK ==============\n");
-            $display("  Entries:");
-            $display("-------------------------------------");
-            $display("i | b_id |  b_mask | rec_PC | fl_head | rob_tail  |");
-            for (int i = 0; i < DEPTH; i++) begin
-                $display("%02d|  %02d  |   %02d   |   %02d   |  %02d  |   %01d   |", i, entries[i].b_id, entries[i].b_mask, entries[i].rec_PC, entries[i].fl_head, entries[i].rob_tail);
-            end
-            $display("");
-        end
-    `endif
+    // `ifdef DEBUG
+    //     always @(posedge clock) begin
+    //         $display("============== BRANCH STACK ==============\n");
+    //         $display("  Entries:");
+    //         $display("-------------------------------------");
+    //         $display("i | b_id |  b_mask | rec_PC | fl_head | rob_tail  |");
+    //         for (int i = 0; i < DEPTH; i++) begin
+    //             $display("%02d|  %02d  |   %02d   |   %02d   |  %02d  |   %01d   |", i, entries[i].b_id, entries[i].b_mask, entries[i].rec_PC, entries[i].fl_head, entries[i].rob_tail);
+    //         end
+    //         $display("");
+    //     end
+    // `endif
 
 endmodule
