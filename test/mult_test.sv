@@ -33,21 +33,31 @@ endmodule // correct_mult
 
 module testbench;
 
-    logic clock, start, reset, done, failed;
-    DATA r1, r2, correct_r, mul_r;
+    DATA r1, r2, correct_r, prev_r, mul_r;
     MULT_FUNC f;
+
+    logic clock;
+    logic reset;
+    logic failed;
+    ISSUE_PACKET is_pack;
+    logic stall;
+    logic rd_in;
+    FU_PACKET fu_pack;
+    logic data_ready;
+
+    assign mul_r = fu_pack.alu_result;
+
 
     string fmt;
 
     mult dut(
         .clock(clock),
         .reset(reset),
-        .start(start),
-        .rs1(r1),
-        .rs2(r2),
-        .func(f),
-        .result(mul_r),
-        .done(done)
+        .is_pack(is_pack),
+        .stall(stall),
+        .rd_in(rd_in),
+        .fu_pack(fu_pack),
+        .data_ready(data_ready)
     );
 
     correct_mult not_dut(
@@ -66,32 +76,95 @@ module testbench;
 
     task wait_until_done;
         forever begin : wait_loop
-            @(posedge done);
-            @(negedge clock);
-            if (done) begin
+            if (data_ready) begin
                 disable wait_until_done;
             end
+            @(negedge clock);
         end
     endtask
 
+    int cycles;
+
+    always @(posedge clock) begin
+        if (rd_in) begin
+            cycles = 0;
+        end else begin
+            cycles++;
+        end
+    end
 
     task test;
         input MULT_FUNC func;
         input DATA reg_1, reg_2;
         begin
             @(negedge clock);
-            start = 1;
+            rd_in = 1;
             r1 = reg_1;
             r2 = reg_2;
             f = func;
+            is_pack = '0;
+            is_pack.decoded_vals.decoded_vals.valid = 1;
+            is_pack.rs1_value = reg_1;
+            is_pack.rs2_value = reg_2;
+            is_pack.decoded_vals.decoded_vals.mult = 1;
+            is_pack.decoded_vals.decoded_vals.inst.r.funct3 = func;
+            cycles = 0;
             @(negedge clock);
-            start = 0;
+            rd_in = 0;
+            is_pack = '0;
             wait_until_done();
             $display(fmt, f.name(), r1, r2, correct_r, mul_r);
             if (correct_r != mul_r) begin
                 $display("NOT EQUAL");
                 failed = 1;
             end
+            if (cycles !== `MULT_STAGES - 1) begin
+                $display("WRONG NUM CYCLES: %0d", cycles);
+                failed = 1;
+            end
+            @(negedge clock);
+        end
+    endtask
+
+    task test_stall;
+        input MULT_FUNC func;
+        input DATA reg_1, reg_2;
+        integer i;
+        begin
+            @(negedge clock);
+            rd_in = 1;
+            r1 = reg_1;
+            r2 = reg_2;
+            f = func;
+            is_pack = '0;
+            is_pack.decoded_vals.decoded_vals.valid = 1;
+            is_pack.rs1_value = reg_1;
+            is_pack.rs2_value = reg_2;
+            is_pack.decoded_vals.decoded_vals.mult = 1;
+            is_pack.decoded_vals.decoded_vals.inst.r.funct3 = func;
+            cycles = 0;
+            @(negedge clock);
+            rd_in = 0;
+            is_pack = '0;
+            begin
+                for (i = 0; i < `MULT_STAGES - 1; i = i + 1) begin
+                    @(negedge clock);
+                end
+            end
+            prev_r = mul_r;
+            stall = 1;
+            @(negedge clock);
+            stall = 0;
+            wait_until_done();
+            if (prev_r != mul_r) begin
+                $display("NOT EQUAL");
+                failed = 1;
+            end
+            if (cycles !== `MULT_STAGES) begin
+                $display("WRONG NUM CYCLES: %0d", cycles);
+                failed = 1;
+            end
+            $display(fmt, f.name(), r1, r2, prev_r, mul_r);
             @(negedge clock);
         end
     endtask
@@ -101,13 +174,13 @@ module testbench;
         clock = 0;
         reset = 1;
         failed = 0;
+        stall = 0;
         @(negedge clock);
         @(negedge clock);
         reset = 0;
         @(negedge clock);
 
         fmt = "%-8s | %3d * %3d = correct: %3d | mul: %3d";
-        $display("");
         test(M_MUL, 0, 0);
         test(M_MUL, 1, 0);
         test(M_MUL, 0, 1);
@@ -140,7 +213,13 @@ module testbench;
         $display(""); repeat (10) test(M_MULHU,  $random, $random);
         $display(""); repeat (10) test(M_MULHSU, $random, $random);
 
-        $display("");
+        // stall testing
+
+        fmt = "%-8s | %d * %d = correct: %d | mul: %d";
+        $display(""); repeat (10) test_stall(M_MUL,    $random, $random);
+        $display(""); repeat (10) test_stall(M_MULH,   $random, $random);
+        $display(""); repeat (10) test_stall(M_MULHU,  $random, $random);
+        $display(""); repeat (10) test_stall(M_MULHSU, $random, $random);
 
         if (failed)
             $display("@@@ Failed\n");
