@@ -31,11 +31,11 @@ module RS_tb();
     FREE_LIST_PACKET            [N-1:0]                                              t_in;
     MAP_TABLE_PACKET            [N-1:0]                                              t1_in;
     MAP_TABLE_PACKET            [N-1:0]                                              t2_in;
-    BR_MASK                     [N-1:0]                                              b_mask_in;
+    BR_MASK                     [N-1:0]                                              b_id;
 
     CDB_PACKET                  [N-1:0]                                              cdb_in;
     logic                       [$clog2(N+1)-1:0]                                    num_accept;
-    BR_MASK                                                                          br_id;
+    BR_MASK                                                                          rem_b_id;
     BR_TASK                                                                          br_task;
 
     logic                       [`NUM_FU_ALU-1:0]                                    fu_alu_busy;
@@ -95,10 +95,10 @@ module RS_tb();
         .t_in(t_in),
         .t1_in(t1_in),
         .t2_in(t2_in),
-        .b_mask_in(b_mask_in),
+        .b_id(b_id),
         .cdb_in(cdb_in),
         .num_accept(num_accept),
-        .br_id(br_id),
+        .rem_b_id(rem_b_id),
         .br_task(br_task),
         .fu_alu_busy(fu_alu_busy),
         .fu_mult_busy(fu_mult_busy),
@@ -269,9 +269,9 @@ module RS_tb();
         @(negedge clock); // dispatch 1
         fu_alu_busy = '1;
         @(negedge clock); // issue 1 BR, dispatch N-1
-        fu_alu_busy = 0;
+        fu_alu_busy = '0;
         @(negedge clock);
-        br_id = 4'b0001;
+        rem_b_id = 4'b0001;
         br_task = CLEAR;
         @(negedge clock);
 
@@ -285,27 +285,26 @@ module RS_tb();
     end
 
 
-    // Correctness Verification
     int cycle_number = 0;
-    always @(negedge clock) begin
-        #2;
+    // Correctness Verification
+    always @(posedge clock) begin
+        #(`CLOCK_PERIOD/2.0);
         `ifdef MONITOR
             $display("------------------------------------------------------------");
             $display("@@@ Cycle Number: %0d @@@", cycle_number);
             $display("   Time: %0t", $time);
             $display("   Reset: %0d\n", reset);
 
-            print_issue_signal();
+            //print_issue_signal();
         `endif 
         model_rs_check_comb(); // verify open_entries + issued packets
-
         cycle_number++;
     end
 
     always @(posedge clock) begin
-        #2;
+        #(`CLOCK_PERIOD/2.0);
         `ifdef MONITOR
-            rs_print();
+            //rs_print();
         `endif
         model_rs_check_seq(); // verify entries + open_spots + num_open_entries
 
@@ -320,9 +319,9 @@ module RS_tb();
         t_in = 0;
         t1_in = 0;
         t2_in = 0;
-        b_mask_in = 0;
+        b_id = 0;
         cdb_in = 0;
-        br_id = 0;
+        rem_b_id = 0;
         br_task = 0;
         fu_alu_busy = 0;
         fu_mult_busy = 0;
@@ -413,7 +412,7 @@ module RS_tb();
     endfunction
 
     function int rs_equal(RS_PACKET gt, RS_PACKET val);
-        if(br_id == gt.b_mask) begin
+        if((rem_b_id & gt.b_mask) != 0) begin
             if(br_task == CLEAR) begin
                 gt.b_mask = 0;
             end
@@ -431,21 +430,23 @@ module RS_tb();
         for(int i=0;i<`NUM_FU_ALU;i++) begin
             if(!rs_equal(issued_alu_buffer[i], issued_alu[i])) begin
                 $display("@@@ FAILED");
-                $display("ALU ISSUE PACKET MISMATCH AT %d %02d %02d", i, issued_alu_buffer[i].decoded_vals.valid, issued_alu[i].decoded_vals.valid);
+                $display("ALU ISSUE PACKET MISMATCH AT i=%0d", i);
+                $display("  expected v=%0b b_id=%4b b_mask=%4b", issued_alu_buffer[i].decoded_vals.valid, issued_alu_buffer[i].b_id, issued_alu_buffer[i].b_mask);
+                $display("   but got v=%0b b_id=%4b b_mask=%4b", issued_alu[i].decoded_vals.valid, issued_alu[i].b_id, issued_alu[i].b_mask);
                 $finish;
             end
         end
         for(int i=0;i<`NUM_FU_MULT;i++) begin
             if(!rs_equal(issued_mult_buffer[i], issued_mult[i])) begin
                 $display("@@@ FAILED");
-                $display("MULT ISSUE PACKET MISMATCH AT %d %02d %02d", i, issued_mult_buffer[i].decoded_vals.valid, issued_mult[i].decoded_vals.valid);
+                $display("MULT ISSUE PACKET MISMATCH AT i=%d v=%0b b=%4b", i, issued_mult_buffer[i].decoded_vals.valid, issued_mult[i].b_mask);
                 $finish;
             end
         end
         for(int i=0;i<`NUM_FU_BR;i++) begin
             if(!rs_equal(issued_br_buffer[i], issued_br[i])) begin
                 $display("@@@ FAILED");
-                $display("BR ISSUE PACKET MISMATCH AT %d %02d %02d", i, issued_br_buffer[i].decoded_vals.valid, issued_br[i].decoded_vals.valid);
+                $display("BR ISSUE PACKET MISMATCH AT i=%d v=%0b b=%4b", i, issued_br_buffer[i].decoded_vals.valid, issued_br[i].b_mask);
                 $finish;
             end
         end 
@@ -501,7 +502,7 @@ module RS_tb();
         end
 
         for(int i=0;i<DEPTH;i++) begin
-            if(model_rs[i].b_mask == br_id) begin
+            if((model_rs[i].b_mask & rem_b_id) != 0) begin
                 if(br_task == CLEAR) begin
                     model_rs[i].b_mask = 0;
                 end else if (br_task == SQUASH) begin
@@ -598,7 +599,7 @@ module RS_tb();
         t_in = 0;
         t1_in = 0;
         t2_in = 0;
-        b_mask_in = 0;
+        b_id = 0;
         num_rs_avail = model_rs_open_entries();
         num_insts_avail = decoded_inst_buffer.size();
 
@@ -612,7 +613,7 @@ module RS_tb();
             t_in[i] = packet.t;
             t1_in[i] = packet.t1;
             t2_in[i] = packet.t2;
-            b_mask_in[i] = packet.b_mask;
+            b_id[i] = packet.b_mask;
 
             model_rs_insert(packet, i % 2);
 
@@ -751,5 +752,7 @@ module RS_tb();
             end
         end
     endfunction
+
+    
 
 endmodule

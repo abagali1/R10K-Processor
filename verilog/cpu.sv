@@ -10,7 +10,6 @@
 
 `include "sys_defs.svh"
 
-// comment comment blub blub hehe
 
 module cpu (
     input clock, // System clock
@@ -243,7 +242,7 @@ module cpu (
     
         .cdb_in(0),
     
-        .br_task(`NOTHING), // not defined here. in main sysdefs
+        .br_task(NOTHING), // not defined here. in main sysdefs
         .rem_b_id(0), // b_id to remove
     
         .assigned_b_id(assigned_b_id), // CHECK added

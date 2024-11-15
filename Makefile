@@ -12,7 +12,7 @@
 # reference table of all make targets:
 
 # make  <- runs the default target, set explicitly below as 'make no_hazard.out'
-.DEFAULT_GOAL = mult.pass
+.DEFAULT_GOAL = no_hazard.out
 # ^ this overrides using the first listed target as the default
 
 # ---- Module Testbenches ---- #

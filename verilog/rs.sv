@@ -406,13 +406,17 @@ module rs #(
     `ifdef DEBUG
         always @(posedge clock) begin
             $display("============== RESERVATION STATION ==============\n");
+            $display("  Inputs:");// TODO
+
             $display("  Entries:");
             $display("-------------------------------------");
-            $display("i | type |  t | t1 | t2 | valid  |");
+            $display(" i | type |  t | t1 | t2 | valid  |");
             for (int i = 0; i < DEPTH; i++) begin
                 $display("%02d |  %02d  | %02d | %02d | %02d |    %01d   |", i, entries[i].decoded_vals.fu_type, entries[i].t.reg_idx, entries[i].t1.reg_idx, entries[i].t2.reg_idx, entries[i].decoded_vals.valid);
             end
             $display("");
+
+            $display("Outputs:");// TODO
         end
     `endif
 endmodule
