@@ -19,15 +19,15 @@ module br_stack_tb();
     logic                                                       clock;
     logic                                                       reset;
     DECODED_PACKET                                              dis_inst; 
-    MAP_TABLE_PACKET        [`ARCH_REG_SZ:0]                    in_mt;
+    MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                    in_mt;
     logic                   [$clog2(`ROB_SZ+1)-1:0]             in_fl_head;
     logic                   [$clog2(`PHYS_REG_SZ_R10K)-1:0]     in_rob_tail;
 
     CDB_PACKET              [N-1:0]                             cdb_in;
     BR_TASK                                                     br_task;
-    BR_MASK                 [DEPTH-1:0]                         rem_b_id;
+    BR_MASK                                                     rem_b_id;
 
-    logic                   [DEPTH-1:0]                         assigned_b_id;
+    BR_MASK                                                     assigned_b_id;
     CHECKPOINT                                                  cp_out;
     logic                                                       full;
 
@@ -639,7 +639,7 @@ endfunction
 function void print_entries();
     $display("\nEntries\n");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("index: %0d, b_id: %b, b_mask: %b, rec_PC: %0d, fl_head: %0d, rob_tail: %0d", i, dut.entries[i].b_id, dut.entries[i].b_mask, dut.entries[i].rec_PC, dut.entries[i].fl_head, dut.entries[i].rob_tail);
+        $display("index: %0d, b_id: %b, b_mask: %b, fl_head: %0d, rob_tail: %0d", i, dut.entries[i].b_id, dut.entries[i].b_mask, dut.entries[i].fl_head, dut.entries[i].rob_tail);
     end
 endfunction
 

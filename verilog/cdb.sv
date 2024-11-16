@@ -1,5 +1,8 @@
 `include "sys_defs.svh"
+`ifndef _PSEL
+`define _PSEL
 `include "psel_gen.sv"
+`endif
 
 typedef struct packed {
     REG_IDX reg_idx;

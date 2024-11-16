@@ -239,14 +239,14 @@ module cpu (
         .out_tail(rob_tail)
     );
 
-    CDB tbd (
-        .clock(clock),
-        .reset(reset),
-        .fu_done(), 
-        .wr_data(), 
-        .entries(cdb_entries),
-        .stall_sig(cdb_stall_sig)
-    );
+    // CDB tbd (
+    //     .clock(clock),
+    //     .reset(reset),
+    //     .fu_done(), 
+    //     .wr_data(), 
+    //     .entries(cdb_entries),
+    //     .stall_sig(cdb_stall_sig)
+    // );
 
     br_stack pancake (
         .clock(clock),

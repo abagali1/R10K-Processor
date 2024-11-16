@@ -1,5 +1,8 @@
 `include "sys_defs.svh"
+`ifndef _PSEL
+`define _PSEL
 `include "psel_gen.sv"
+`endif
 `include "rs_psel.sv"
 
 module rs #(
