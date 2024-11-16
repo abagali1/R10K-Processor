@@ -12,17 +12,27 @@
 
 
 module cpu (
-    input clock, // System clock
-    input reset, // System reset
+    input                                                                   clock, // System clock
+    input                                                                   reset, // System reset
     
-    input INST_PACKET [7:0] in_insts,
-    input logic [3:0] num_input,
+    input INST_PACKET                   [7:0]                               in_insts,
+    input logic                         [3:0]                               num_input,
 
     // Note: these are assigned at the very bottom of the module
-    output COMMIT_PACKET [`N-1:0] committed_insts,
+    output COMMIT_PACKET                [`N-1:0]                            committed_insts,
 
-    output logic         [3:0] ib_open,
-    output ADDR                PC
+    output logic                        [3:0]                               ib_open,
+    output ADDR                                                             PC
+
+    `ifdef DEBUG
+    ,   output INST_PACKET              [`INST_BUFF_DEPTH-1:0]              debug_inst_buff_entries,
+        output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_head,
+        output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_tail,
+
+        output FREE_LIST_PACKET         [`ROB_SZ-1:0]                       debug_fl_entries;
+        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_head;
+        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_tail;
+    `endif
 );
 
     //////////////////////////////////////////////////
@@ -86,7 +96,6 @@ module cpu (
 //     FREE_LIST_PACKET [`N-1:0]                 fl_reg; // displayed available reg idxs, these are always output, and only updated based on rd_num
 //     logic            [$clog2(`ROB_SZ+1)-1:0]  fl_head_ptr;
 
-<<<<<<< Updated upstream
     // output of cdb
     CDB_PACKET [`N-1:0] cdb_entries;
     logic [`NUM_FUS-1:0] cdb_stall_sig;
@@ -138,6 +147,12 @@ module cpu (
 
         .dispatched_insts(ib_insts),
         .open_entries(ib_open)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_inst_buff_entries),
+            .debug_head(debug_inst_buff_head),
+            .debug_tail(debug_inst_buff_tail)
+        `endif
     );
 
     dispatch disbitch (
@@ -164,6 +179,12 @@ module cpu (
 
         .rd_reg(fl_reg),
         .head_ptr(fl_head_ptr)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_fl_entries),
+            .debug_head(debug_fl_head),
+            .debug_tail(debug_fl_tail)
+        `endif
     );
 
 
@@ -237,12 +258,6 @@ module cpu (
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
         .br_tail(cp_out.rob_tail),
         .br_en(br_en & ~br_fu_out.pred_correct),
-=======
-//         .complete_t(0), // comes from the CDB
-//         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
-//         .br_tail(cp_out.rob_tail),
-//         .br_en(br_en & ~br_fu_out.pred_correct),
->>>>>>> Stashed changes
 
 //         .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
 //         .open_entries(rob_open), // number of open entires AFTER retirement
