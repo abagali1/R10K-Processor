@@ -188,7 +188,7 @@ module cpu (
         .t2_in(r2_p_reg),
         .b_id(assigned_b_id),
 
-        .cdb_in(0),
+        .cdb_in(cdb_entries),
 
         // ebr logic
         .rem_b_id(br_fu_out.decoded_vals.b_id),
