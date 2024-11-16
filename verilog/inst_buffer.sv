@@ -1,22 +1,24 @@
+`include "sys_defs.svh"
+
 module inst_buffer #(
-    parameter DEPTH = 8,
+    parameter DEPTH = `INST_BUFF_DEPTH,
     parameter N = `N
 )
 (
-    input                                       clock,
-    input                                       reset,
+    input                                           clock,
+    input                                           reset,
 
-    input INST_PACKET   [DEPTH-1:0]             in_insts,                 
-    input logic         [$clog2(N+1)-1:0]       num_dispatch,
-    input logic         [$clog2(DEPTH+1)-1:0]   num_accept,
+    input INST_PACKET    [DEPTH-1:0]                in_insts,
+    input logic          [$clog2(N+1)-1:0]          num_dispatch,
+    input logic          [$clog2(DEPTH+1)-1:0]      num_accept,
     
-    output INST_PACKET  [N-1:0]                 dispatched_insts,
-    output              [$clog2(DEPTH+1)-1:0]   open_entries
+    output INST_PACKET   [N-1:0]                    dispatched_insts,
+    output               [$clog2(DEPTH+1)-1:0]      open_entries
 
     `ifdef DEBUG
-    ,    INST_PACKET [DEPTH-1:0]     debug_entries,
-        logic            [$clog2(DEPTH)-1:0] debug_head,
-        logic            [$clog2(DEPTH)-1:0] debug_tail
+    ,   INST_PACKET      [DEPTH-1:0]                debug_entries,
+        logic            [$clog2(DEPTH)-1:0]        debug_head,
+        logic            [$clog2(DEPTH)-1:0]        debug_tail
     `endif
 
 );

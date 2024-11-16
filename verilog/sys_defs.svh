@@ -41,6 +41,7 @@
 // worry about these later
 `define BRANCH_PRED_SZ 4
 `define LSQ_SZ xx
+`define INST_BUFF_DEPTH 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 4
