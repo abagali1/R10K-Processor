@@ -31,7 +31,7 @@ module RS_tb();
     FREE_LIST_PACKET            [N-1:0]                                              t_in;
     MAP_TABLE_PACKET            [N-1:0]                                              t1_in;
     MAP_TABLE_PACKET            [N-1:0]                                              t2_in;
-    BR_MASK                     [N-1:0]                                              b_id;
+    BR_MASK                                                                          b_id;
 
     CDB_PACKET                  [N-1:0]                                              cdb_in;
     logic                       [$clog2(N+1)-1:0]                                    num_accept;

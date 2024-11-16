@@ -42,8 +42,8 @@ module cpu (
     always @(posedge clock) begin
         if (reset) begin
             NPC <= 0;
-        end (!br_fu_out.pred_correct) begin
-            NPC <= br_fu_out.target;
+        // end else if (!br_fu_out.pred_correct) begin
+            // NPC <= br_fu_out.target;
         end else begin
             NPC <= PC + num_input * 4;
         end
@@ -75,20 +75,20 @@ module cpu (
     PHYS_REG_IDX             [`N-1:0]             t_old_data;
     MAP_TABLE_PACKET         [`N-1:0]             r1_p_reg;
     MAP_TABLE_PACKET         [`N-1:0]             r2_p_reg;
-    MAP_TABLE_PACKET         [`ARCH_REG_SZ:0]     out_mt; // CHECK: this size does not match up to branch stack in_mt
+    MAP_TABLE_PACKET         [`ARCH_REG_SZ-1:0]     out_mt; // CHECK: this size does not match up to branch stack in_mt
 
     // output of freelist
     FREE_LIST_PACKET [`N-1:0]                 fl_reg; // displayed available reg idxs, these are always output, and only updated based on rd_num
     logic            [$clog2(`ROB_SZ+1)-1:0]  fl_head_ptr;
 
     // output of cdb
-    CDB_PACKET [N-1:0] cdb_entries;
-    logic [NUM_FU-1:0] cdb_stall_sig;
+    CDB_PACKET [`N-1:0] cdb_entries;
+    logic [`NUM_FUS-1:0] cdb_stall_sig;
 
     // helper variables for output of cdb
-    REG_IDX [N-1:0] cdb_reg_idx;
-    PHYS_REG_IDX [N-1:0] cdb_p_reg_idx;
-    logic [N-1:0] cdb_valid;
+    REG_IDX [`N-1:0] cdb_reg_idx;
+    PHYS_REG_IDX [`N-1:0] cdb_p_reg_idx;
+    logic [`N-1:0] cdb_valid;
 
     // output of br stack
     CHECKPOINT  cp_out;
@@ -99,7 +99,7 @@ module cpu (
     // output of branch fu
     FU_PACKET br_fu_out;
     BR_TASK br_task;
-    logic br_en
+    logic br_en;
 
     // hardcoded values
 
@@ -114,6 +114,13 @@ module cpu (
     assign fu_ld_busy    = '1;
     assign fu_store_busy = '1;
     assign fu_br_busy    = '1;
+
+
+    REG_IDX      [`N-1:0] dis_r1_idx;
+    REG_IDX      [`N-1:0] dis_r2_idx;       
+    REG_IDX      [`N-1:0] dis_dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
+    PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
+    logic        [`N-1:0] dis_incoming_valid;
 
 
     inst_buffer buffet (
@@ -260,30 +267,24 @@ module cpu (
         .full(br_full)
     );
 
-    regfile(
-        .clock(clock), // system clock
+    // regfile(
+    //     .clock(clock), // system clock
 
-        .read_idx_1(),
-        .read_idx_2(), 
-        .write_idx(),
-        .write_en(),
-        .write_data(),
+    //     .read_idx_1(),
+    //     .read_idx_2(), 
+    //     .write_idx(),
+    //     .write_en(),
+    //     .write_data(),
 
-        .read_out_1(), 
-        .read_out_2()
-    );
+    //     .read_out_1(), 
+    //     .read_out_2()
+    // );
 
     //////////////////////////////////////////////////
     //                                              //
     //                   dispatch                   //
     //                                              //
     //////////////////////////////////////////////////
-
-    REG_IDX      [`N-1:0] dis_r1_idx;
-    REG_IDX      [`N-1:0] dis_r2_idx;       
-    REG_IDX      [`N-1:0] dis_dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
-    PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
-    logic        [`N-1:0] dis_incoming_valid;
 
     always_comb begin
         for (int i = 0; i < `N; i++) begin
@@ -309,16 +310,16 @@ module cpu (
     //                                              //
     //////////////////////////////////////////////////
 
-    branch_fu what_the_duck (
-        .clock(clock), 
-        .reset(reset),
-        .is_pack(),
-        .rd_en(),
+    // branch_fu what_the_duck (
+    //     .clock(clock), 
+    //     .reset(reset),
+    //     .is_pack(),
+    //     .rd_en(),
 
-        .fu_pack(),
-        .br_task(),
-        .data_ready()
-    );
+    //     .fu_pack(),
+    //     .br_task(),
+    //     .data_ready()
+    // );
 
     // name for mult: what the fuck
     // name for alu: what the
@@ -333,7 +334,7 @@ module cpu (
         cdb_reg_idx = '0;
         cdb_p_reg_idx = '0;
         cdb_valid = '0;
-        for (int i = 0; i < N; i++) begin
+        for (int i = 0; i < `N; i++) begin
             cdb_reg_idx[i] = cdb_entries[i].reg_idx;
             cdb_p_reg_idx[i] = cdb_entries[i].p_reg_idx;
             cdb_valid[i] = cdb_entries[i].valid;

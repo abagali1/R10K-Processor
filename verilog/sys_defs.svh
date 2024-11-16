@@ -48,6 +48,7 @@
 `define NUM_FU_LD 2
 `define NUM_FU_STORE 2
 `define NUM_FU_BR 1
+`define NUM_FUS `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE + `NUM_FU_BR
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4
