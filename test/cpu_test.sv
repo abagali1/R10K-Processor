@@ -56,6 +56,16 @@ module testbench;
     EXCEPTION_CODE error_status = NO_ERROR;
     logic [63:0] unified_memory [`MEM_64BIT_LINES-1:0];
 
+    `ifdef DEBUG
+        INST_PACKET             [`INST_BUFF_DEPTH-1:0]                      debug_inst_buff_entries;
+        logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]              debug_inst_buff_head;
+        logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]              debug_inst_buff_tail;
+
+        FREE_LIST_PACKET        [`ROB_SZ-1:0]                               debug_fl_entries;
+        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_fl_head;
+        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_fl_tail;
+    `endif
+
 
     // Instantiate the Pipeline
     cpu verisimpleV (

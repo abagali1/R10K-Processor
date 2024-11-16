@@ -58,7 +58,7 @@ module alu (
         endcase
     end
 
-    assign next_out = '{alu_result: result, decoded_vals: is_pack.decoded_vals, take_conditional: 0};
+    assign next_out = '{result: result, decoded_vals: is_pack.decoded_vals, pred_correct: 0};
 
     always_ff @(posedge clock) begin
         if (reset) begin

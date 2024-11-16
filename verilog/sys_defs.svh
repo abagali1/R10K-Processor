@@ -41,6 +41,7 @@
 // worry about these later
 `define BRANCH_PRED_SZ 4
 `define LSQ_SZ xx
+`define INST_BUFF_DEPTH 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 4
@@ -48,6 +49,7 @@
 `define NUM_FU_LD 2
 `define NUM_FU_STORE 2
 `define NUM_FU_BR 1
+`define NUM_FUS `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE + `NUM_FU_BR
 
 // number of mult stages (2, 4) (you likely don't need 8)
 `define MULT_STAGES 4

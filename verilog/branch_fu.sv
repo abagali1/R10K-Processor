@@ -1,5 +1,6 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
+`include "addr_calc.sv"
 
 // Conditional branch module: compute whether to take conditional branches
 module branch_fu (
@@ -11,6 +12,10 @@ module branch_fu (
     output FU_PACKET    fu_pack, // print out all outputs
     output BR_TASK      br_task,
     output logic        data_ready
+
+    `ifdef DEBUG
+        , ADDR branch_target
+    `endif 
 );
     FU_PACKET out;
     ADDR target, branch_target;
@@ -39,6 +44,10 @@ module branch_fu (
         .result(branch_target)
     );
 
+    `ifdef DEBUG
+        assign debug_branch_target = branch_target;
+    `endif
+
     always_ff @(posedge clock) begin
         if (reset) begin
             out         <= '0;
@@ -57,10 +66,10 @@ module branch_fu (
 
     `ifdef DEBUG
         always @(posedge clock) begin
-            $display("============== BRANCH FU ==============\n");
-            $display("  Issue Packet:");
-            $display("  b_id: %0d, b_mask: %0d, rs_1value: %0d, rs2_value: %0d", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs_1value, is_pack.rs2_value);
-            $display("  FU Packet Out:");
+            // $display("============== BRANCH FU ==============\n");
+            // $display("  Issue Packet:");
+            // $display("  b_id: %0d, b_mask: %0d, rs_1value: %0d, rs2_value: %0d", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs_1value, is_pack.rs2_value);
+            // $display("  FU Packet Out:");
             // gonna let you finish this anup
         end
     `endif

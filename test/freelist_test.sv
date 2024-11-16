@@ -16,23 +16,23 @@ module freelist_tb();
     parameter N = 2;
     localparam LOG_DEPTH = $clog2(DEPTH);
 
-    logic                                           clock;
-    logic                                           reset;
-    logic                   [$clog2(N+1)-1:0]       rd_num;  // number of regs to take off of the free list
-    logic                   [$clog2(N+1)-1:0]       wr_num;  // number of regs to add back to the free list
-    FREE_LIST_PACKET        [N-1:0]                 wr_reg;  // reg idxs to add to free list
-    logic                                           br_en;  // enable signal for EBR
-    logic                   [$clog2(DEPTH+1)-1:0]   head_ptr_in;
+    logic                                               clock;
+    logic                                               reset;
+    logic                       [$clog2(N+1)-1:0]       rd_num;  // number of regs to take off of the free list
+    logic                       [$clog2(N+1)-1:0]       wr_num;  // number of regs to add back to the free list
+    FREE_LIST_PACKET            [N-1:0]                 wr_reg;  // reg idxs to add to free list
+    logic                                               br_en;  // enable signal for EBR
+    logic                       [$clog2(DEPTH+1)-1:0]   head_ptr_in;
 
 
-    FREE_LIST_PACKET        [N-1:0]                 rd_reg;   // displayed available reg idxs, these are always output, and only updated based on rd_num
-    FREE_LIST_PACKET        [DEPTH-1:0]             out_fl;   // free list to output
+    FREE_LIST_PACKET            [N-1:0]                 rd_reg;   // displayed available reg idxs, these are always output, and only updated based on rd_num
     //logic                   [$clog2(DEPTH+1)-1:0]   num_avail; // broadcasting number of regs available
-    logic                   [$clog2(DEPTH+1)-1:0]   head_ptr;
+    logic                       [$clog2(DEPTH+1)-1:0]   head_ptr;
 
     `ifdef DEBUG
-      logic          [LOG_DEPTH-1:0]         debug_head;
-      logic          [LOG_DEPTH-1:0]         debug_tail;
+        FREE_LIST_PACKET        [DEPTH-1:0]             debug_entries;   // free list to output
+        logic                   [LOG_DEPTH-1:0]         debug_head;
+        logic                   [LOG_DEPTH-1:0]         debug_tail;
     `endif 
 
     // queue declaration for free_list model
@@ -59,12 +59,12 @@ module freelist_tb();
         .head_ptr_in(head_ptr_in),  
 
         .rd_reg(rd_reg),   
-        .out_fl(out_fl),   
         //.num_avail(num_avail),
         .head_ptr(head_ptr)
 
         `ifdef DEBUG
-        ,   .debug_head(debug_head),
+        ,   .debug_entries(debug_entries),   
+            .debug_head(debug_head),
             .debug_tail(debug_tail)
         `endif
     );
@@ -213,6 +213,26 @@ module freelist_tb();
         // tail 0
         $display("PASSED TEST 6");
 
+        // ------------------------------ Test 7 ------------------------------ //
+        $display("\nTest 7: Add zero reg to FL");
+
+        reset_free_list();
+        clear_inputs();
+        reset = 1;
+        @(negedge clock);
+        reset = 0;
+
+        pop_n_from_free_list(1);
+        pr_list[0] = {reg_idx:0, valid: 1};
+        add_prs_to_free_list(pr_list, 1);
+
+        @(negedge clock);
+
+        clear_inputs();
+        @(negedge clock);
+    
+        $display("PASSED TEST 7");
+
         $finish;
 
     end
@@ -244,7 +264,9 @@ module freelist_tb();
         wr_reg = pr;
         wr_num = num_write;
         for (int i = 0; i < num_write; i++) begin
-            free_list_model.push_back(pr[i]);
+            if(pr[i].reg_idx != 0) begin
+                free_list_model.push_back(pr[i]);
+            end
         end
     endfunction
 
@@ -265,11 +287,12 @@ module freelist_tb();
                 break;
             end
 
-            if (free_list_model[i].reg_idx != out_fl[k].reg_idx) begin
-                $error("@@@ FAILED @@@");
-                $error("Check entry error: expected %0d, but got %0d", free_list_model[i].reg_idx, out_fl[k].reg_idx);
-                $finish;
-            end
+            `ifdef DEBUG
+                if (free_list_model[i].reg_idx != debug_entries[k].reg_idx) begin
+                    $error("Check entry error: expected %0d, but got %0d", free_list_model[i].reg_idx, debug_entries[k].reg_idx);
+                    $finish;
+                end
+            `endif
 
             k = (k + 1) % DEPTH;
         end  
@@ -283,13 +306,15 @@ module freelist_tb();
     endfunction
 
     function void print_free_list();
+    `ifdef DEBUG
         $display("\nActual Free List");
         for (int i = 0; i < DEPTH; i++) begin
-            $display("free_list[%0d]: %0d", i, out_fl[i].reg_idx);
+            $display("free_list[%0d]: %0d", i, debug_entries[i].reg_idx);
         end
         $display("\nhead %0d", debug_head);
         $display("tail %0d", debug_tail);
         $display("reset %0d", reset);
+    `endif
     endfunction
 
     function void clear_inputs();
