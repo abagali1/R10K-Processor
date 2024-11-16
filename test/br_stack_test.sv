@@ -19,13 +19,13 @@ module br_stack_tb();
     logic                                                       clock;
     logic                                                       reset;
     DECODED_PACKET                                              dis_inst; 
-    MAP_TABLE_PACKET        [`ARCH_REG_SZ:0]                  in_mt;
+    MAP_TABLE_PACKET        [`ARCH_REG_SZ:0]                    in_mt;
     logic                   [$clog2(`ROB_SZ+1)-1:0]             in_fl_head;
     logic                   [$clog2(`PHYS_REG_SZ_R10K)-1:0]     in_rob_tail;
 
     CDB_PACKET              [N-1:0]                             cdb_in;
     BR_TASK                                                     br_task;
-    logic                   [DEPTH-1:0]                         rem_b_id;
+    BR_MASK                 [DEPTH-1:0]                         rem_b_id;
 
     logic                   [DEPTH-1:0]                         assigned_b_id;
     CHECKPOINT                                                  cp_out;
