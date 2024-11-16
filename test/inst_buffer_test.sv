@@ -32,7 +32,7 @@ module inst_buffer_tb();
         logic            [LOG_DEPTH-1:0] debug_tail;
     `endif
     
-    INST_PACKET [$:(DEPTH)] inst_buffer_model;
+    INST_PACKET inst_buffer_model[$:DEPTH];
     int instruction = 4'b1000;
     int pc = 8'b00001000; 
     int npc = 8'b00001001; 

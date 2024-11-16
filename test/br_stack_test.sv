@@ -563,6 +563,7 @@ module br_stack_tb();
         end
 
 
+        $display("@@@ PASSED ALL TESTS @@@");
         $finish;
     end
 
