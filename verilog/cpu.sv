@@ -1,43 +1,43 @@
-// /////////////////////////////////////////////////////////////////////////
-// //                                                                     //
-// //   Modulename :  cpu.sv                                              //
-// //                                                                     //
-// //  Description :  Top-level module of the verisimple processor;       //
-// //                 This instantiates and connects the 5 stages of the  //
-// //                 Verisimple pipeline together.                       //
-// //                                                                     //
-// /////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
+//                                                                     //
+//   Modulename :  cpu.sv                                              //
+//                                                                     //
+//  Description :  Top-level module of the verisimple processor;       //
+//                 This instantiates and connects the 5 stages of the  //
+//                 Verisimple pipeline together.                       //
+//                                                                     //
+/////////////////////////////////////////////////////////////////////////
 
-// `include "sys_defs.svh"
+`include "sys_defs.svh"
 
 
-// module cpu (
-//     input clock, // System clock
-//     input reset, // System reset
+module cpu (
+    input clock, // System clock
+    input reset, // System reset
     
-//     input INST_PACKET [7:0] in_insts,
-//     input logic [3:0] num_input,
+    input INST_PACKET [7:0] in_insts,
+    input logic [3:0] num_input,
 
-//     // Note: these are assigned at the very bottom of the module
-//     output COMMIT_PACKET [`N-1:0] committed_insts,
+    // Note: these are assigned at the very bottom of the module
+    output COMMIT_PACKET [`N-1:0] committed_insts,
 
-//     output logic         [3:0] ib_open,
-//     output ADDR                PC
-// );
+    output logic         [3:0] ib_open,
+    output ADDR                PC
+);
 
-//     //////////////////////////////////////////////////
-//     //                                              //
-//     //               amrita trying                  //
-//     //                                              //
-//     //////////////////////////////////////////////////
+    //////////////////////////////////////////////////
+    //                                              //
+    //               amrita trying                  //
+    //                                              //
+    //////////////////////////////////////////////////
 
-//     // the start of amrita ducking around
+    // the start of amrita ducking around
 
-//     // fake fetch
+    // fake fetch
 
-//     ADDR NPC;
+    ADDR NPC;
 
-//     assign PC = NPC;
+    assign PC = NPC;
 
     always @(posedge clock) begin
         if (reset) begin
@@ -49,27 +49,27 @@
         end
     end
 
-//     //////////////////////////////////////////////////
-//     //                                              //
-//     //               pipeline wires                 //
-//     //                                              //
-//     //////////////////////////////////////////////////
+    //////////////////////////////////////////////////
+    //                                              //
+    //               pipeline wires                 //
+    //                                              //
+    //////////////////////////////////////////////////
 
 
-//     // output of ib
-//     INST_PACKET [`N-1:0] ib_insts;
+    // output of ib
+    INST_PACKET [`N-1:0] ib_insts;
 
-//     // output of dispatch
-//     DECODED_PACKET [`N-1:0] dis_insts;
-//     logic [$clog2(`N+1)-1:0] num_dis;
+    // output of dispatch
+    DECODED_PACKET [`N-1:0] dis_insts;
+    logic [$clog2(`N+1)-1:0] num_dis;
 
-//     // output of RS
-//     logic [$clog2(`N+1)-1:0] rs_open;
+    // output of RS
+    logic [$clog2(`N+1)-1:0] rs_open;
 
-//     // output of ROB
-//     logic [$clog2(`N+1)-1:0] rob_open, num_retired; 
-//     ROB_PACKET [`N-1:0] retiring_data; // rob entry packet, but want register vals to update architectural map table + free list
-//     logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] rob_tail;
+    // output of ROB
+    logic [$clog2(`N+1)-1:0] rob_open, num_retired; 
+    ROB_PACKET [`N-1:0] retiring_data; // rob entry packet, but want register vals to update architectural map table + free list
+    logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] rob_tail;
 
     // output of MT
     PHYS_REG_IDX             [`N-1:0]             t_old_data;
@@ -110,11 +110,11 @@
     logic [`NUM_FU_STORE-1:0]  fu_store_busy;
     logic [`NUM_FU_BR-1:0]     fu_br_busy;
 
-//     assign fu_alu_busy   = '1;
-//     assign fu_mult_busy  = '1;
-//     assign fu_ld_busy    = '1;
-//     assign fu_store_busy = '1;
-//     assign fu_br_busy    = '1;
+    assign fu_alu_busy   = '1;
+    assign fu_mult_busy  = '1;
+    assign fu_ld_busy    = '1;
+    assign fu_store_busy = '1;
+    assign fu_br_busy    = '1;
 
 
     REG_IDX      [`N-1:0] dis_r1_idx;
@@ -128,119 +128,108 @@
         .clock(clock),
         .reset(reset),
 
-//         .in_insts(in_insts),
-//         .num_dispatch(num_dis),
-//         .num_accept(num_input),
+        .in_insts(in_insts),
+        .num_dispatch(num_dis),
+        .num_accept(num_input),
 
-//         .dispatched_insts(ib_insts),
-//         .open_entries(ib_open)
-//     );
+        .dispatched_insts(ib_insts),
+        .open_entries(ib_open)
+    );
 
-//     dispatch disbitch (
-//         .clock(clock),
-//         .reset(reset),
-//         .rob_open(rob_open),
-//         .rs_open(rs_open),
-//         .insts(ib_insts),
-//         .bs_full(br_full),
+    dispatch disbitch (
+        .clock(clock),
+        .reset(reset),
+        .rob_open(rob_open),
+        .rs_open(rs_open),
+        .insts(ib_insts),
+        .bs_full(br_full),
 
-//         .num_dispatch(num_dis), 
-//         .out_insts(dis_insts)
-//     );
+        .num_dispatch(num_dis), 
+        .out_insts(dis_insts)
+    );
 
-//     free_list flo_from_progressive (
-//         .clock(clock),
-//         .reset(reset),
+    free_list flo_from_progressive (
+        .clock(clock),
+        .reset(reset),
 
-//         .rd_num(num_dis),  // number of regs to take off of the free list
-//         .wr_num(num_retired),  // number of regs to add back to the free list
-//         .wr_reg(0),//{retiring_data.t_old, retiring_data.valid}),  // reg idxs to add to free list
-//         .br_en(br_en & ~br_fu_out.pred_correct),  // enable signal for EBR
-//         .head_ptr_in(cp_out.fl_head),  // free list copy for EBR
+        .rd_num(num_dis),  // number of regs to take off of the free list
+        .wr_num(num_retired),  // number of regs to add back to the free list
+        .wr_reg(0),//{retiring_data.t_old, retiring_data.valid}),  // reg idxs to add to free list
+        .br_en(br_en & ~br_fu_out.pred_correct),  // enable signal for EBR
+        .head_ptr_in(cp_out.fl_head),  // free list copy for EBR
 
-//         .rd_reg(fl_reg),
-//         .head_ptr(fl_head_ptr)
-//     );
+        .rd_reg(fl_reg),
+        .head_ptr(fl_head_ptr)
+    );
 
 
-//     map_table im_the_map (
-//         .clock(clock),
-//         .reset(reset), 
+    map_table im_the_map (
+        .clock(clock),
+        .reset(reset), 
 
-//         .r1_idx(dis_r1_idx),
-//         .r2_idx(dis_r2_idx),
-//         .dest_reg_idx(dis_dest_reg_idx), // dest_regs that are getting mapped to a new phys_reg from free_list
-//         .free_reg(dis_free_reg),  // comes from the free list
-//         .incoming_valid(dis_incoming_valid), // inputs to expect
+        .r1_idx(dis_r1_idx),
+        .r2_idx(dis_r2_idx),
+        .dest_reg_idx(dis_dest_reg_idx), // dest_regs that are getting mapped to a new phys_reg from free_list
+        .free_reg(dis_free_reg),  // comes from the free list
+        .incoming_valid(dis_incoming_valid), // inputs to expect
 
-<<<<<<< Updated upstream
-        .ready_reg_idx(cdb_reg_idx), // readys from CDB - arch reg
-        .ready_phys_idx(cdb_p_reg_idx), // corresponding phys reg
-        .ready_valid(cdb_valid), // one hot encoded inputs to expect
-=======
-//         .ready_reg_idx(0), // readys from CDB - arch reg
-//         .ready_phys_idx(0), // corresponding phys reg
-//         .ready_valid(0), // one hot encoded inputs to expect
->>>>>>> Stashed changes
+        .ready_reg_idx(0), // readys from CDB - arch reg
+        .ready_phys_idx(0), // corresponding phys reg
+        .ready_valid(0), // one hot encoded inputs to expect
 
-//         .in_mt_en(br_en & ~br_fu_out.pred_correct),
-//         .in_mt(cp_out.rec_mt),//cp.rec_mt),
+        .in_mt_en(br_en & ~br_fu_out.pred_correct),
+        .in_mt(cp_out.rec_mt),//cp.rec_mt),
 
-//         .t_old_data(t_old_data), //?
-//         .r1_p_reg(r1_p_reg),
-//         .r2_p_reg(r2_p_reg),
-//         .out_mt(out_mt)
-//     );
+        .t_old_data(t_old_data), //?
+        .r1_p_reg(r1_p_reg),
+        .r2_p_reg(r2_p_reg),
+        .out_mt(out_mt)
+    );
 
-//     rs rasam (
-//         .clock(clock),
-//         .reset(reset),
+    rs rasam (
+        .clock(clock),
+        .reset(reset),
 
-//         .rs_in(dis_insts),
-//         .t_in(fl_reg),
-//         .t1_in(r1_p_reg),
-//         .t2_in(r2_p_reg),
-//         .b_id(assigned_b_id),
+        .rs_in(dis_insts),
+        .t_in(fl_reg),
+        .t1_in(r1_p_reg),
+        .t2_in(r2_p_reg),
+        .b_id(assigned_b_id),
 
-<<<<<<< Updated upstream
-        .cdb_in(cdb_entries),
-=======
-//         .cdb_in(0),
->>>>>>> Stashed changes
+        .cdb_in(0),
 
-//         // ebr logic
-//         .rem_b_id(br_fu_out.decoded_vals.b_id),
-//         .br_task(br_task),
+        // ebr logic
+        .rem_b_id(br_fu_out.decoded_vals.b_id),
+        .br_task(br_task),
 
-//         // busy bits from FUs to mark when available to issue
-//         .fu_alu_busy(fu_alu_busy),
-//         .fu_mult_busy(fu_mult_busy),
-//         .fu_ld_busy(fu_ld_busy),
-//         .fu_store_busy(fu_store_busy),
-//         .fu_br_busy(fu_br_busy), 
+        // busy bits from FUs to mark when available to issue
+        .fu_alu_busy(fu_alu_busy),
+        .fu_mult_busy(fu_mult_busy),
+        .fu_ld_busy(fu_ld_busy),
+        .fu_store_busy(fu_store_busy),
+        .fu_br_busy(fu_br_busy), 
 
-//         .num_accept(num_dis),
+        .num_accept(num_dis),
 
-//         // output packets directly to FUs (they all are pipelined)
-//         .issued_alu(0), 
-//         .issued_mult(0),
-//         .issued_ld(0),
-//         .issued_store(0),
-//         .issued_br(0),
+        // output packets directly to FUs (they all are pipelined)
+        .issued_alu(0), 
+        .issued_mult(0),
+        .issued_ld(0),
+        .issued_store(0),
+        .issued_br(0),
 
-//         .open_entries(rs_open)
-//     );
+        .open_entries(rs_open)
+    );
 
-//     rob robert (
-//         .clock(clock), 
-//         .reset(reset),
+    rob robert (
+        .clock(clock), 
+        .reset(reset),
 
-//         .wr_data(dis_insts),
-//         .t(dis_free_reg),
-//         .t_old(t_old_data),
+        .wr_data(dis_insts),
+        .t(dis_free_reg),
+        .t_old(t_old_data),
 
-<<<<<<< Updated upstream
-        .complete_t(cdb_p_reg_idx), // comes from the CDB
+        .complete_t(0), // comes from the CDB
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
         .br_tail(cp_out.rob_tail),
         .br_en(br_en & ~br_fu_out.pred_correct),
@@ -269,30 +258,21 @@
     br_stack pancake (
         .clock(clock),
         .reset(reset),
-=======
-//     br_stack pancake (
-//         .clock(clock),
-//         .reset(reset),
->>>>>>> Stashed changes
 
-//         .dis_inst(dis_insts[0]),
-//         .in_mt(out_mt),
-//         .in_fl_head(fl_head_ptr),
-//         .in_rob_tail(rob_tail), // CHECK size don't match up
+        .dis_inst(dis_insts[0]),
+        .in_mt(out_mt),
+        .in_fl_head(fl_head_ptr),
+        .in_rob_tail(rob_tail), // CHECK size don't match up
     
-<<<<<<< Updated upstream
-        .cdb_in(cdb_entries),
-=======
-//         .cdb_in(0),
->>>>>>> Stashed changes
+        .cdb_in(0),
     
-//         .br_task(br_task), // not defined here. in main sysdefs
-//         .rem_b_id(br_fu_out.decoded_vals.b_id), // b_id to remove
+        .br_task(br_task), // not defined here. in main sysdefs
+        .rem_b_id(br_fu_out.decoded_vals.b_id), // b_id to remove
     
-//         .assigned_b_id(assigned_b_id), // CHECK added
-//         .cp_out(cp_out),
-//         .full(br_full)
-//     );
+        .assigned_b_id(assigned_b_id), // CHECK added
+        .cp_out(cp_out),
+        .full(br_full)
+    );
 
     // regfile(
     //     .clock(clock), // system clock
@@ -354,9 +334,15 @@
 <<<<<<< Updated upstream
     //////////////////////////////////////////////////
     //                                              //
-    //                  cdb logic                   //
+    //                   dispatch                   //
     //                                              //
     //////////////////////////////////////////////////
+
+    REG_IDX      [`N-1:0] dis_r1_idx;
+    REG_IDX      [`N-1:0] dis_r2_idx;       
+    REG_IDX      [`N-1:0] dis_dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
+    PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
+    logic        [`N-1:0] dis_incoming_valid;
 
     // always_comb begin
     //     cdb_reg_idx = '0;
@@ -374,26 +360,19 @@
     //               pipeline outputs               //
     //                                              //
     //////////////////////////////////////////////////
-=======
-//     //////////////////////////////////////////////////
-//     //                                              //
-//     //               pipeline outputs               //
-//     //                                              //
-//     //////////////////////////////////////////////////
->>>>>>> Stashed changes
 
-//     // Output the committed instruction to the testbench for counting
-//     // assign committed_insts[0] = wb_packet;
+    // Output the committed instruction to the testbench for counting
+    // assign committed_insts[0] = wb_packet;
 
-//     // DEBUG OUTPUTS
-//     `ifdef DEBUG
-//         int cycle = 0;
-//         always @(posedge clock) begin
-//             $display("====================== CPU ======================");
-//             $display("@@@ Cycle %0d @@@", cycle);
-//             $display("Time: %0t", $time);
-//             cycle++;
-//         end
-//     `endif
+    // DEBUG OUTPUTS
+    `ifdef DEBUG
+        int cycle = 0;
+        always @(posedge clock) begin
+            $display("====================== CPU ======================");
+            $display("@@@ Cycle %0d @@@", cycle);
+            $display("Time: %0t", $time);
+            cycle++;
+        end
+    `endif
 
-// endmodule // pipeline
+endmodule // pipeline
