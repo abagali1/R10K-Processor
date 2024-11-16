@@ -85,6 +85,11 @@ module cpu (
     CDB_PACKET [N-1:0] cdb_entries;
     logic [NUM_FU-1:0] cdb_stall_sig;
 
+    // helper variables for output of cdb
+    REG_IDX [N-1:0] cdb_reg_idx;
+    PHYS_REG_IDX [N-1:0] cdb_p_reg_idx;
+    logic [N-1:0] cdb_valid;
+
     // output of br stack
     CHECKPOINT  cp_out;
     logic br_full;
@@ -160,9 +165,9 @@ module cpu (
         .free_reg(dis_free_reg),  // comes from the free list
         .incoming_valid(dis_incoming_valid), // inputs to expect
 
-        .ready_reg_idx(0), // readys from CDB - arch reg
-        .ready_phys_idx(0), // corresponding phys reg
-        .ready_valid(0), // one hot encoded inputs to expect
+        .ready_reg_idx(cdb_reg_idx), // readys from CDB - arch reg
+        .ready_phys_idx(cdb_p_reg_idx), // corresponding phys reg
+        .ready_valid(cdb_valid), // one hot encoded inputs to expect
 
         .in_mt_en(br_en & ~br_fu_out.pred_correct),
         .in_mt(cp_out.rec_mt),//cp.rec_mt),
@@ -317,6 +322,25 @@ module cpu (
 
     // name for mult: what the fuck
     // name for alu: what the
+
+    //////////////////////////////////////////////////
+    //                                              //
+    //                  cdb logic                   //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    always_comb begin
+        cdb_reg_idx = '0;
+        cdb_p_reg_idx = '0;
+        cdb_valid = '0;
+        for (int i = 0; i < N; i++) begin
+            cdb_reg_idx[i] = cdb_entries[i].reg_idx;
+            cdb_p_reg_idx[i] = cdb_entries[i].p_reg_idx;
+            cdb_valid[i] = cdb_entries[i].valid;
+        end
+    end
+
+
 
     //////////////////////////////////////////////////
     //                                              //
