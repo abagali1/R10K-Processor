@@ -9,7 +9,7 @@ module map_table #(
     input                                               reset, 
 
     input REG_IDX                   [N-1:0]             r1_idx,
-    input REG_IDX                   [N-1:0]             r2_idx,       
+    input REG_IDX                   [N-1:0]             r2_idx,
     input REG_IDX                   [N-1:0]             dest_reg_idx, // dest_regs that are getting mapped to a new phys_reg from free_list
     input PHYS_REG_IDX              [N-1:0]             free_reg,  // comes from the free list
     input logic                     [N-1:0]             incoming_valid, // inputs to expect                       
@@ -19,18 +19,18 @@ module map_table #(
     input logic                     [N-1:0]             ready_valid, // one hot encoded inputs to expect
 
     input logic                                         in_mt_en,
-    input MAP_TABLE_PACKET          [DEPTH:0]           in_mt,
+    input MAP_TABLE_PACKET          [DEPTH-1:0]           in_mt,
 
 
     output PHYS_REG_IDX             [N-1:0]             t_old_data, //?
     output MAP_TABLE_PACKET         [N-1:0]             r1_p_reg,
     output MAP_TABLE_PACKET         [N-1:0]             r2_p_reg,
     
-    output MAP_TABLE_PACKET         [DEPTH:0]           out_mt // output map table for architectural mt
+    output MAP_TABLE_PACKET         [DEPTH-1:0]           out_mt // output map table for architectural mt
 );
 
     // Leave 0th entry empty, reduces (-1/+1) logic throughout
-    MAP_TABLE_PACKET [DEPTH:0] entries, next_entries;
+    MAP_TABLE_PACKET [DEPTH-1:0] entries, next_entries;
 
     always_comb begin
         next_entries = (in_mt_en) ? in_mt : entries;
@@ -54,8 +54,10 @@ module map_table #(
                 r2_p_reg[i] = next_entries[r2_idx[i]];
 
                 // write registers back as we read them
-                next_entries[dest_reg_idx[i]].reg_idx = free_reg[i];
-                next_entries[dest_reg_idx[i]].ready = 0;
+                if(dest_reg_idx[i] != 0) begin
+                    next_entries[dest_reg_idx[i]].reg_idx = free_reg[i];
+                    next_entries[dest_reg_idx[i]].ready = 0;
+                end
             end
         end
 
@@ -64,7 +66,7 @@ module map_table #(
 
     always @(posedge clock) begin
         if (reset) begin
-            for (int i = 1; i <= DEPTH; i++) begin
+            for (int i = 0; i < DEPTH; i++) begin
                 entries[i].reg_idx <= i;
                 entries[i].valid <= 1;
                 entries[i].ready <= 1;  
@@ -81,7 +83,7 @@ module map_table #(
             $display("  ---------------------------------------------");
             $display("  |   Index  |  Reg_idx |   Ready  |   Valid  |");
             $display("  ---------------------------------------------");
-            for (int i = 1; i <= DEPTH; i++) begin
+            for (int i = 0; i < DEPTH; i++) begin
                 $display("  |    %2d    |    %2d    |    %2d    |    %2d    |", i, entries[i].reg_idx, entries[i].ready, entries[i].valid);
                 //$display("  ---------------------------------------------");
             end

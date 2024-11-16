@@ -1,24 +1,27 @@
 `include "sys_defs.svh"
+`ifndef _PSEL
+`define _PSEL
 `include "psel_gen.sv"
+`endif
 
-typedef struct packed {
-    REG_IDX reg_idx;
-    PHYS_REG_IDX p_reg_idx;
-    DATA reg_val;
-    logic valid;
-} CDB_PACKET;
+// typedef struct packed {
+//     REG_IDX reg_idx;
+//     PHYS_REG_IDX p_reg_idx;
+//     DATA reg_val;
+//     logic valid;
+// } CDB_PACKET;
 
-typedef struct packed {
-    REG_IDX reg_idx;
-    PHYS_REG_IDX p_reg_idx;
-    DATA reg_val;
-    logic valid;
-} FU_PACKET;
+// typedef struct packed {
+//     REG_IDX reg_idx;    decoded_packet.dest_reg_idx
+//     PHYS_REG_IDX p_reg_idx; rs_packet.t.reg_idx
+//     DATA reg_val; result
+//     logic valid; decoded_packet.valid
+// } FU_PACKET;
 
 
-module CDB #(
+module cdb #(
     parameter N = `N,
-    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE
+    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE
 )
 (
     input logic                      clock,
@@ -64,9 +67,9 @@ module CDB #(
 
     always_comb begin
         for (int i = 0; i < N; i++) begin
-            entries[i].reg_idx = selected_packets[i].reg_idx;
-            entries[i].p_reg_idx = selected_packets[i].p_reg_idx;
-            entries[i].reg_val = selected_packets[i].reg_val;
+            entries[i].reg_idx = selected_packets[i].decoded_vals.decoded_vals.dest_reg_idx;
+            entries[i].p_reg_idx = selected_packets[i].decoded_vals.t.reg_idx;
+            entries[i].reg_val = selected_packets[i].result;
             entries[i].valid = (selected_packets[i]) ? 1 : 0;
         end
 

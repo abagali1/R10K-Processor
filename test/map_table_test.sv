@@ -309,7 +309,7 @@ module map_table_tb();
     endfunction
 
     function void init_model();
-        for (int i = 0; i <= DEPTH; i++) begin
+        for (int i = 0; i < DEPTH; i++) begin
             mt_model[i].reg_idx = i;
             mt_model[i].valid = 1;
             mt_model[i].ready = 1;
@@ -326,7 +326,7 @@ module map_table_tb();
         i = 1;
         while (free_list_model.size() < DEPTH) begin
             taken = 0;
-            for (int j = 1; j <= DEPTH; j++) begin
+            for (int j = 0; j < DEPTH; j++) begin
                 if (out_mt[j].reg_idx == i) begin
                     taken = 1;
                     break;
@@ -382,7 +382,7 @@ module map_table_tb();
     endfunction
 
     function void check_mt();
-        for (int i = 1; i <= DEPTH; i++) begin
+        for (int i = 0; i < DEPTH; i++) begin
             if (out_mt[i].valid !== mt_model[i].valid) begin
                 $error("@@@ FAILED @@@");
                 $error("Test Error: Model valid mismatch in row i=[%0d], expected v=[%0d] but got v=[%0d]", i, mt_model[i].valid, out_mt[i].valid);
@@ -433,7 +433,7 @@ module map_table_tb();
         $display("   in_mt_en=%0d", in_mt_en);
         if (in_mt_en) begin
             $display("   MT IN:");
-            for (int i = 1; i <= DEPTH; i++) begin
+            for (int i = 0; i < DEPTH; i++) begin
                 $display("      entries[%0d]: reg_idx=%0d, ready=%0d, valid=%0d", i, in_mt[i].reg_idx, in_mt[i].ready, in_mt[i].valid);
             end
         end
@@ -460,7 +460,7 @@ module map_table_tb();
         $display("");
 
         $display("   Map Table Data");
-        for (int i = 1; i <= DEPTH; i++) begin
+        for (int i = 0; i < DEPTH; i++) begin
             $display("      entries[%0d]: reg_idx=%0d, ready=%0d, valid=%0d", i, out_mt[i].reg_idx, out_mt[i].ready, out_mt[i].valid);
         end
         $display("");

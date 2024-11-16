@@ -15,7 +15,7 @@ module addr_calc (
 
     basic_adder result_calc (
         .is_pack(is_pack),
-        .result(next_out_packet.alu_result)
+        .result(next_out_packet.result)
     );
 
     always_ff @(posedge clock) begin

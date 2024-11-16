@@ -84,7 +84,8 @@ module alu_tb();
             t: '{reg_idx: 1, valid: 1},
             t1: '{reg_idx: 2, ready: 0, valid: 1},
             t2: '{reg_idx: 2, ready: 0, valid: 1},
-            b_mask: '0
+            b_mask: '0,
+            b_id: '0
         };
         is_pack.decoded_vals = rs_pack;
 
@@ -216,7 +217,7 @@ module alu_tb();
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
         $display("expected: %d", expected);
-        $display("result: %d\n", fu_pack.alu_result);
+        $display("result: %d\n", fu_pack.result);
         $display("rd_in: %b, rs1: %d   rs2: %d\n", rd_in, is_pack.rs1_value, is_pack.rs2_value);
         check_expected();
         $display("@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
@@ -224,9 +225,9 @@ module alu_tb();
     end
 
     function void check_expected();
-        if (expected != fu_pack.alu_result) begin
+        if (expected != fu_pack.result) begin
             $error("@@@ FAILED @@@");
-            $error("Check entry error: expected %0d, but got %0d", expected, fu_pack.alu_result);
+            $error("Check entry error: expected %0d, but got %0d", expected, fu_pack.result);
             $finish;
         end
 
