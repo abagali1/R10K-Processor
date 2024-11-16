@@ -13,7 +13,7 @@ module branch_fu (
     output logic        data_ready
 );
     FU_PACKET out;
-    DATA target, branch_target;
+    ADDR target, branch_target;
     logic taken, correct;
 
     assign fu_pack = out;
