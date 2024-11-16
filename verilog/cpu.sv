@@ -221,7 +221,7 @@ module cpu (
         .t(dis_free_reg),
         .t_old(t_old_data),
 
-        .complete_t(0), // comes from the CDB
+        .complete_t(cdb_p_reg_idx), // comes from the CDB
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
         .br_tail(cp_out.rob_tail),
         .br_en(br_en & ~br_fu_out.pred_correct),
