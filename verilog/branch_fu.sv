@@ -61,11 +61,7 @@ module branch_fu (
             $display("  Issue Packet:");
             $display("  b_id: %0d, b_mask: %0d, rs_1value: %0d, rs2_value: %0d", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs_1value, is_pack.rs2_value);
             $display("  FU Packet Out:");
-            $display("i | b_id |  b_mask | rec_PC | fl_head | rob_tail  |");
-            for (int i = 0; i < DEPTH; i++) begin
-                $display("%02d|  %02d  |   %02d   |   %02d   |  %02d  |   %01d   |", i, entries[i].b_id, entries[i].b_mask, entries[i].rec_PC, entries[i].fl_head, entries[i].rob_tail);
-            end
-            $display("");
+            // gonna let you finish this anup
         end
     `endif
 
