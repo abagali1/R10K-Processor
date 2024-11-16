@@ -79,7 +79,8 @@ module cdb_tb ();
         $display("\nTest 1: Broadcast One FU Value\n");
 
         update_FU_done(1, 1);
-        model_entries[0].reg_val = wr_data[1].decoded_vals.decoded_vals.dest_reg_idx;
+        model_entries[0].reg_val = wr_data[1].result;
+        $display("hey girl: %0d", wr_data[1].result);
         
         @(negedge clock);
         update_FU_done(1, 0);
@@ -91,8 +92,8 @@ module cdb_tb ();
 
         update_FU_done(5, 1);
         update_FU_done(11, 1);
-        model_entries[0].reg_val = wr_data[11].decoded_vals.decoded_vals.dest_reg_idx;
-        model_entries[1].reg_val = wr_data[5].decoded_vals.decoded_vals.dest_reg_idx;
+        model_entries[0].reg_val = wr_data[11].result;
+        model_entries[1].reg_val = wr_data[5].result;
         @(negedge clock);
 
         update_FU_done(5, 0);
@@ -108,10 +109,10 @@ module cdb_tb ();
         update_FU_done(2, 1);
         update_FU_done(9, 1); // this one shouldn't get picked when N = 4
         update_FU_done(10, 1);
-        model_entries[0].reg_val = wr_data[11].decoded_vals.decoded_vals.dest_reg_idx;
-        model_entries[1].reg_val = wr_data[2].decoded_vals.decoded_vals.dest_reg_idx;
-        model_entries[2].reg_val = wr_data[10].decoded_vals.decoded_vals.dest_reg_idx;
-        model_entries[3].reg_val = wr_data[5].decoded_vals.decoded_vals.dest_reg_idx;
+        model_entries[0].reg_val = wr_data[11].result;
+        model_entries[1].reg_val = wr_data[2].result;
+        model_entries[2].reg_val = wr_data[10].result;
+        model_entries[3].reg_val = wr_data[5].result;
         @(negedge clock);
 
         update_FU_done(5, 0);
@@ -120,7 +121,7 @@ module cdb_tb ();
         update_FU_done(9, 0);
         update_FU_done(10, 0);
 
-        $display("PASSED TEST 3 \n");
+        $display("PASSED TEST 2 \n");
 
         $finish;
 
@@ -177,8 +178,12 @@ module cdb_tb ();
             disp_pack.dest_reg_idx = regidx;
             disp_pack.valid = 0;
             rs_pack.decoded_vals = disp_pack;
-            wr_data[i].decoded_vals = rs_pack;
-            wr_data[i].result = regvalue;
+            rs_pack.t.reg_idx = pregidx;
+            wr_data_in[i].decoded_vals = rs_pack;
+            wr_data_in[i].result = regvalue;
+            
+            $display("regvalue: %d", regvalue);
+            $display("wr_data result: %d\n", wr_data[i].result);
             // wr_data_in[i] = '{decoded_vals.decoded_vals.dest_reg_idx: regidx, decoded_vals.t.reg_idx: pregidx, result: regvalue, decoded_vals.decoded_vals.valid: 0};
             regidx++;
             pregidx++;
