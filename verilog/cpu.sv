@@ -250,7 +250,7 @@ module cpu (
         .in_fl_head(fl_head_ptr),
         .in_rob_tail(rob_tail), // CHECK size don't match up
     
-        .cdb_in(0),
+        .cdb_in(cdb_entries),
     
         .br_task(br_task), // not defined here. in main sysdefs
         .rem_b_id(br_fu_out.decoded_vals.b_id), // b_id to remove
