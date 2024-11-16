@@ -33,6 +33,8 @@ module cdb_tb ();
     CDB_PACKET [N-1:0] model_entries;
     logic [NUM_FU-1:0] fu_input;
     FU_PACKET [NUM_FU-1:0] wr_data_in;
+    DECODED_PACKET disp_pack;
+    RS_PACKET rs_pack;
 
     cdb #(
         .N(N),
@@ -134,12 +136,50 @@ module cdb_tb ();
     end
 
     function void setup_fu_done();
+    
         int regidx = 1;
         int pregidx = 14;
         int regvalue = 0;
 
+        disp_pack = '{
+            inst: '0,
+            PC: '0,
+            NPC: 1,
+            opa_select: OPA_IS_RS1,
+            opb_select: OPB_IS_RS2,
+            dest_reg_idx: regidx,
+            alu_func: ALU_ADD,
+            mult: '0,
+            rd_mem: '0,
+            wr_mem: '0,
+            cond_branch: '0,
+            uncond_branch: '0,
+            halt: '0,
+            illegal: '0,
+            csr_op: '0,
+            fu_type: '0,
+            pred_taken: '0,
+            valid: 1,
+            reg1: 1,
+            reg2: 1
+        };
+
+        rs_pack = '{
+            decoded_vals: disp_pack,
+            t: '{reg_idx: pregidx, valid: 1},
+            t1: '{reg_idx: 2, ready: 0, valid: 1},
+            t2: '{reg_idx: 2, ready: 0, valid: 1},
+            b_mask: '0,
+            b_id: '0
+        };
+
         for (int i = 0; i < NUM_FU; i++) begin
-            wr_data_in[i] = '{decoded_vals.decoded_vals.dest_reg_idx: regidx, decoded_vals.t: pregidx, result: regvalue, decoded_vals.decoded_vals.valid: 0};
+            disp_pack.dest_reg_idx = regidx;
+            disp_pack.valid = 0;
+            rs_pack.decoded_vals = disp_pack;
+            wr_data[i].decoded_vals = rs_pack;
+            wr_data[i].result = regvalue;
+            // wr_data_in[i] = '{decoded_vals.decoded_vals.dest_reg_idx: regidx, decoded_vals.t.reg_idx: pregidx, result: regvalue, decoded_vals.decoded_vals.valid: 0};
             regidx++;
             pregidx++;
             regvalue += 5;
@@ -162,15 +202,15 @@ module cdb_tb ();
         end
         $write("\npreg:  ");
         for (int i = 0; i < NUM_FU; i++) begin
-            $write("%0d   ", wr_data[i].decoded_vals.decoded_vals.dest_reg_idx);
+            $write("%0d   ", wr_data[i].decoded_vals.t.reg_idx);
         end
         $write("\nval:   ");
         for (int i = 0; i < NUM_FU; i++) begin
             if (i < 2) begin
-                $write("%0d    ", wr_data[i].decoded_vals.decoded_vals.dest_reg_idx);
+                $write("%0d    ", wr_data[i].result);
             end
             else begin 
-                $write("%0d   ", wr_data[i].decoded_vals.decoded_vals.dest_reg_idx);
+                $write("%0d   ", wr_data[i].result);
             end
         end
         $write("\n");

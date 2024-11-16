@@ -13,7 +13,7 @@
 
 // typedef struct packed {
 //     REG_IDX reg_idx;    decoded_packet.dest_reg_idx
-//     PHYS_REG_IDX p_reg_idx; rs_packet.t
+//     PHYS_REG_IDX p_reg_idx; rs_packet.t.reg_idx
 //     DATA reg_val; result
 //     logic valid; decoded_packet.valid
 // } FU_PACKET;
@@ -67,9 +67,9 @@ module cdb #(
 
     always_comb begin
         for (int i = 0; i < N; i++) begin
-            entries[i].reg_idx = selected_packets[i].reg_idx;
-            entries[i].p_reg_idx = selected_packets[i].p_reg_idx;
-            entries[i].reg_val = selected_packets[i].reg_val;
+            entries[i].reg_idx = selected_packets[i].decoded_vals.decoded_vals.dest_reg_idx;
+            entries[i].p_reg_idx = selected_packets[i].decoded_vals.t.reg_idx;
+            entries[i].reg_val = selected_packets[i].result;
             entries[i].valid = (selected_packets[i]) ? 1 : 0;
         end
 
