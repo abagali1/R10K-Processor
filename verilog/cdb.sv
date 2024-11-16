@@ -19,7 +19,7 @@ typedef struct packed {
 } FU_PACKET;
 
 
-module CDB #(
+module cdb #(
     parameter N = `N,
     parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE
 )

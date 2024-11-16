@@ -239,7 +239,7 @@ module cpu (
         .out_tail(rob_tail)
     );
 
-    // CDB tbd (
+    // cdb cbd (
     //     .clock(clock),
     //     .reset(reset),
     //     .fu_done(), 
@@ -330,18 +330,16 @@ module cpu (
     //                                              //
     //////////////////////////////////////////////////
 
-    always_comb begin
-        cdb_reg_idx = '0;
-        cdb_p_reg_idx = '0;
-        cdb_valid = '0;
-        for (int i = 0; i < `N; i++) begin
-            cdb_reg_idx[i] = cdb_entries[i].reg_idx;
-            cdb_p_reg_idx[i] = cdb_entries[i].p_reg_idx;
-            cdb_valid[i] = cdb_entries[i].valid;
-        end
-    end
-
-
+    // always_comb begin
+    //     cdb_reg_idx = '0;
+    //     cdb_p_reg_idx = '0;
+    //     cdb_valid = '0;
+    //     for (int i = 0; i < `N; i++) begin
+    //         cdb_reg_idx[i] = cdb_entries[i].reg_idx;
+    //         cdb_p_reg_idx[i] = cdb_entries[i].p_reg_idx;
+    //         cdb_valid[i] = cdb_entries[i].valid;
+    //     end
+    // end
 
     //////////////////////////////////////////////////
     //                                              //

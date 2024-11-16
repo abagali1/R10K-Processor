@@ -34,7 +34,7 @@ module cdb_tb ();
     logic [NUM_FU-1:0] fu_input;
     FU_PACKET [NUM_FU-1:0] wr_data_in;
 
-    CDB #(
+    cdb #(
         .N(N),
         .NUM_FU(NUM_FU)
     )
