@@ -1,32 +1,26 @@
 /////////////////////////////////////////////////////////////////////////
 //                                                                     //
-//   Modulename :  branch_fu_test.sv                                    //
+//   Modulename :  branch_fu_test.sv                                   //
 //                                                                     //
-//  Description :  Testbench module for the branch_fu                   //
+//  Description :  Testbench module for the branch_fu                  //
 //                                                                     //
 /////////////////////////////////////////////////////////////////////////
 
-include "sys_defs.svh"
-include "ISA.svh"
+`include "sys_defs.svh"
+`include "ISA.svh"
 
 module branch_fu_tb();
 
-    // Define parameters for the test
-    parameter N = 3; // Number of entries, for example
-    
-    // Declare signals
     logic clock;
     logic reset;
-    ISSUE_PACKET is_pack;     // Instruction packet input
-    logic rd_en;              // Read enable to trigger the branch FU
-    FU_PACKET fu_pack;        // Output packet from the FU
-    BR_TASK br_task;          // Branch task (CLEAR/SQUASH/NOTHING)
-    logic data_ready;         // Indicates if data is ready
+    ISSUE_PACKET is_pack;     
+    logic rd_en;   
 
-    // Instantiate the branch_fu module
-    branch_fu #(
-        .N(N)
-    ) dut (
+    FU_PACKET fu_pack;        
+    BR_TASK br_task;          
+    logic data_ready;         
+
+    branch_fu dut (
         .clock(clock),
         .reset(reset),
         .is_pack(is_pack),
@@ -38,7 +32,7 @@ module branch_fu_tb();
 
     // Clock generation
     always begin
-        #(CLOCK_PERIOD / 2.0);
+        #(`CLOCK_PERIOD / 2.0);
         clock = ~clock;
     end
 
@@ -51,52 +45,100 @@ module branch_fu_tb();
         rd_en = 0;
         clear_inputs();
 
-        // Reset DUT
         @(negedge clock);
-        @(negedge clock);
+
         reset = 0;
 
         // ------------------------------ Test 1 ------------------------------ //
-        $display("\nTest 1: Conditional Branch (BEQ)");
+        $display("\nTest 1: Branch Predicted Correctly, Check Clear and Result");
 
-        // Prepare a BEQ instruction packet
         is_pack = '0;
-        is_pack.decoded_vals.inst.b.funct3 = 3'b000;  // BEQ
+        is_pack.decoded_vals.decoded_vals.inst.b.funct3 = 3'b000;
         is_pack.rs1_value = 10;
         is_pack.rs2_value = 10;
-        is_pack.valid = 1;
 
-        rd_en = 1;  // Enable reading to trigger FU logic
+        rd_en = 1; 
+
+        is_pack.decoded_vals.decoded_vals.pred_taken = 1;
 
         @(negedge clock);
-        rd_en = 0;  // Disable reading after the first cycle
 
-        // Check that the branch was taken (BEQ)
-        assert(fu_pack.result == is_pack.decoded_vals.NPC);
+        rd_en = 0;       
+
+        assert(fu_pack.result == dut.branch_target);
         assert(br_task == CLEAR);
 
-        $display("PASSED TEST 1: BEQ Branch Taken");
+        $display("PASSED TEST 1");
 
         // ------------------------------ Test 2 ------------------------------ //
-        $display("\nTest 2: Conditional Branch (BNE)");
+        $display("\nTest 2: Branch Predicted Taken Incorrectly, Check Squash and Result");
+
+        reset = 1;
+        clear_inputs();
+
+        @(negedge clock);
+
+        reset = 0;
+
+        is_pack = '0;
+        is_pack.decoded_vals.decoded_vals.inst.b.funct3 = 3'b000;
+        is_pack.rs1_value = 15;
+        is_pack.rs2_value = 10;
+
+        rd_en = 1; 
+
+        is_pack.decoded_vals.decoded_vals.pred_taken = 1;
+
+        @(negedge clock);
+
+        rd_en = 0;       
+
+        assert(fu_pack.result == dut.is_pack.decoded_vals.decoded_vals.NPC);
+        assert(br_task == SQUASH);
+
+        $display("PASSED TEST 2");
+
+         // ------------------------------ Test 3 ------------------------------ //
+        $display("\nTest 3: Branch Predicted Not Taken Incorrectly, Check Squash and Result");
+
+        reset = 1;
+        clear_inputs();
+
+        @(negedge clock);
+
+        reset = 0;
+
+        is_pack = '0;
+        is_pack.decoded_vals.decoded_vals.inst.b.funct3 = 3'b000;
+        is_pack.rs1_value = 10;
+        is_pack.rs2_value = 10;
+
+        rd_en = 1; 
+
+        is_pack.decoded_vals.decoded_vals.pred_taken = 0;
+
+        @(negedge clock);
+
+        rd_en = 0;       
+
+        assert(fu_pack.result == dut.branch_target);
+        assert(br_task == SQUASH);
+
+        $display("PASSED TEST 3");
 
         $finish;
     end
 
     // Function to clear inputs before each test
-    task clear_inputs();
+    function void clear_inputs();
         is_pack = '0;
         rd_en = 0;
-        fu_pack = '0;
-        br_task = NOTHING;
-        data_ready = 0;
-    endtask
+    endfunction
 
-    // Debugging output (optional)
-    ifdef DEBUG
-        always @(posedge clock) begin
-            
-        end
-    endif
 
 endmodule
+
+// if it's predicted correctly it should send out a clear
+// if it's predicted incorrectly, it should be a squash 
+    // -> if we say it's taken, it would be nontaken to NPC
+    // -> if we say it's not taken, it would be taken to branch target
