@@ -79,6 +79,10 @@ module cpu (
     FREE_LIST_PACKET [`N-1:0]                 fl_reg; // displayed available reg idxs, these are always output, and only updated based on rd_num
     logic            [$clog2(`ROB_SZ+1)-1:0]  fl_head_ptr;
 
+    // output of cdb
+    CDB_PACKET [N-1:0] cdb_entries;
+    logic [NUM_FU-1:0] cdb_stall_sig;
+
     // output of br stack
     CHECKPOINT  cp_out;
     logic br_full;
@@ -229,6 +233,15 @@ module cpu (
         .open_entries(rob_open), // number of open entires AFTER retirement
         .num_retired(num_retired),
         .out_tail(rob_tail)
+    );
+
+    CDB tbd (
+        .clock(clock),
+        .reset(reset),
+        .fu_done(), 
+        .wr_data(), 
+        .entries(cdb_entries),
+        .stall_sig(cdb_stall_sig)
     );
 
     br_stack pancake (
