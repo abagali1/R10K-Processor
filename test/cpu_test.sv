@@ -64,22 +64,23 @@ module testbench;
         FREE_LIST_PACKET        [`ROB_SZ-1:0]                               debug_fl_entries;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_fl_head;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_fl_tail;
+
+        MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                          debug_mt_entries;
+
+        RS_PACKET               [`RS_SZ-1:0]                                debug_rs_entries;
+        logic                   [`RS_SZ-1:0]                                debug_rs_open_spots;
+        logic                   [`RS_SZ-1:0]                                debug_rs_other_sig;
+        logic                   [$clog2(`RS_SZ+1)-1:0]                      debug_rs_open_entries;
+        logic                   [`RS_SZ-1:0]                                debug_rs_all_issued_insts;
+
+        ROB_PACKET              [`ROB_SZ-1:0]                               debug_rob_entries;
+        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_head;
+        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_tail;
     `endif
 
 
     // Instantiate the Pipeline
-    cpu verisimpleV (
-        .clock(clock), // System clock
-        .reset(reset), // System reset
-    
-        .in_insts(in_insts),
-        .num_input(num_input),
-
-        .committed_insts(),
-
-        .ib_open(ib_open),
-        .PC(PC)
-    );
+    cpu verisimpleV (.*);
 
     // Generate System Clock
     always begin
