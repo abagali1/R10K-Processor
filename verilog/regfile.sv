@@ -8,12 +8,14 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
+`include "memDP.sv"
 
 module regfile #(
     parameter DEPTH = `PHYS_REG_SZ_R10K,
     parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_STORE + `NUM_FU_LD + `NUM_FU_BR
 )(
     input         clock, // system clock
+    input         reset,
     // note: no system reset, register values must be written before they can be read
     input  PHYS_REG_IDX     [NUM_FU-1:0]     read_idx_1, read_idx_2, write_idx,
     input                   [NUM_FU-1:0]     write_en,
@@ -36,10 +38,10 @@ module regfile #(
         .DEPTH      (DEPTH),
         .READ_PORTS (2*NUM_FU), // 2 read ports
         .WRITE_PORTS(NUM_FU),
-        .BYPASS_EN  (1)) // Allow internal forwarding
+        .BYPASS_EN  (0)) // don't need internal forwarding
     regfile_mem (
         .clock(clock),
-        .reset(1'b0),   // must be written before read
+        .reset(reset),   // must be written before read
         .re   ({re2,        re1}),
         .raddr({read_idx_2, read_idx_1}),
         .rdata({rdata2,     rdata1}),
@@ -50,7 +52,7 @@ module regfile #(
 
     // Read port 1
     always_comb begin
-        for (int i = 0; i < 2*NUM_FU; i++) begin
+        for (int i = 0; i < NUM_FU; i++) begin
             if (read_idx_1[i] == `ZERO_REG) begin
                 re1[i]        = 1'b0;
                 read_out_1[i] = '0;
@@ -63,7 +65,7 @@ module regfile #(
 
     // Read port 2
     always_comb begin
-        for (int i = 0; i < 2*NUM_FU; i++) begin
+        for (int i = 0; i < NUM_FU; i++) begin
             if (read_idx_2[i] == `ZERO_REG) begin
                 re2[i]        = 1'b0;
                 read_out_2[i] = '0;
@@ -81,5 +83,57 @@ module regfile #(
             we[i] = write_en[i] & (write_idx[i] != `ZERO_REG);
         end
     end
+
+    `ifdef DEBUG
+        always @(posedge clock) begin
+            $display("--------------- REGFILE ---------------");
+
+            $display("Inputs:");
+
+            $display("read_idx_1:");
+            for (int i = 0; i < NUM_FU; i++) begin
+                $write("| %2d", read_idx_1[i]);
+            end
+            $display("");
+
+            $display("read_idx_2:");
+            for (int i = 0; i < NUM_FU; i++) begin
+                $write("| %2d", read_idx_2[i]);
+            end
+            $display("");
+
+            $display("write_en:");
+            for (int i = 0; i < NUM_FU; i++) begin
+                $write("| %2d", write_en[i]);
+            end
+            $display("");
+
+            $display("write_idx:");
+            for (int i = 0; i < NUM_FU; i++) begin
+                $write("| %2d", write_idx[i]);
+            end
+            $display("");
+
+            $display("write_data:");
+            for (int i = 0; i < NUM_FU; i++) begin
+                $write("| %2d", write_data[i]);
+            end
+            $display("\n");
+
+            $display("Outputs:");
+
+            $display("read_out_1:");
+            for (int i = 0; i < NUM_FU; i++) begin
+                $write("| %2d", read_out_1[i]);
+            end
+            $display("");
+
+            $display("read_out_2:");
+            for (int i = 0; i < NUM_FU; i++) begin
+                $write("| %2d", read_out_2[i]);
+            end
+            $display("\n");
+        end
+    `endif 
 
 endmodule // regfile

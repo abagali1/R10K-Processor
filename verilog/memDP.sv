@@ -8,7 +8,7 @@
 
 module memDP
   #(parameter WIDTH      = 32,
-    parameter DEPTH      = 32,
+    parameter DEPTH      = `PHYS_REG_SZ_R10K,
     parameter READ_PORTS = 1,
     parameter WRITE_PORTS = 1,
     parameter BYPASS_EN  = 0   // 0: Read data will update at positive edge
@@ -24,19 +24,19 @@ module memDP
     // ------------------------------------------------------------ //
     //                      Read interface                          //
     // ------------------------------------------------------------ //
-    input         [READ_PORTS-1:0]                     re,     // Read enable
-    input         [READ_PORTS-1:0][$clog2(DEPTH)-1:0]  raddr,  // Read address
-    output logic  [READ_PORTS-1:0][WIDTH        -1:0]  rdata,  // Read data
+    input               [READ_PORTS-1:0]                     re,     // Read enable
+    input  PHYS_REG_IDX [READ_PORTS-1:0]                     raddr,  // Read address
+    output DATA         [READ_PORTS-1:0]                     rdata,  // Read data
 
     // ------------------------------------------------------------ //
     //                      Write interface                         //
     // ------------------------------------------------------------ //
-    input         [WRITE_PORTS-1:0]                    we,     // Write enable
-    input         [WRITE_PORTS-1:0][$clog2(DEPTH)-1:0] waddr,  // Write address
-    input         [WRITE_PORTS-1:0][WIDTH        -1:0] wdata   // Write data
+    input                   [WRITE_PORTS-1:0]                    we,     // Write enable
+    input PHYS_REG_IDX      [WRITE_PORTS-1:0]                    waddr,  // Write address
+    input DATA              [WRITE_PORTS-1:0]                    wdata   // Write data
    );
 
-logic [DEPTH-1:0][WIDTH-1:0]  memData;
+DATA [DEPTH-1:0]  memData;
 logic found_bypass;
 
 ///////////////////////////////////////////////////////////////////
