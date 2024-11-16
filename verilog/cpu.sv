@@ -65,6 +65,11 @@ module cpu (
 
     // output of RS
     logic [$clog2(`N+1)-1:0] rs_open;
+    output RS_PACKET                [`NUM_FU_ALU-1:0]                                   issued_alu, 
+    output RS_PACKET                [`NUM_FU_MULT-1:0]                                  issued_mult,
+    output RS_PACKET                [`NUM_FU_LD-1:0]                                    issued_ld,
+    output RS_PACKET                [`NUM_FU_STORE-1:0]                                 issued_store,
+    output RS_PACKET                [`NUM_FU_BR-1:0]                                    issued_br,
 
     // output of ROB
     logic [$clog2(`N+1)-1:0] rob_open, num_retired; 
@@ -95,7 +100,6 @@ module cpu (
     CHECKPOINT  cp_out;
     logic br_full;
     logic [`BRANCH_PRED_SZ-1:0] assigned_b_id;
-
 
     // output of branch fu
     FU_PACKET br_fu_out;
