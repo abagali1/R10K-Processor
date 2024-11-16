@@ -1,4 +1,5 @@
 `include "sys_defs.svh"
+//`include "psel_gen.sv"
 
 module br_stack #(
     parameter DEPTH = `BRANCH_PRED_SZ,
@@ -91,7 +92,7 @@ module br_stack #(
                 if (stack_gnt[k]) begin
                     next_entries[k].valid = 1;
                     next_entries[k].b_id = stack_gnt;
-                    next_entries[k].rec_PC = dis_inst.PC;
+                    //next_entries[k].rec_PC = dis_inst.PC;
                     next_entries[k].rec_mt = in_mt;
                     next_entries[k].fl_head = in_fl_head;
                     next_entries[k].rob_tail = in_rob_tail;
@@ -131,9 +132,9 @@ module br_stack #(
             $display("============== BRANCH STACK ==============\n");
             $display("  Entries:");
             $display("-------------------------------------");
-            $display("i | b_id |  b_mask | rec_PC | fl_head | rob_tail  |");
+            $display("i | b_id |  b_mask | fl_head | rob_tail  |");
             for (int i = 0; i < DEPTH; i++) begin
-                $display("%02d|  %02d  |   %02d   |   %02d   |  %02d  |   %01d   |", i, entries[i].b_id, entries[i].b_mask, entries[i].rec_PC, entries[i].fl_head, entries[i].rob_tail);
+                $display("%02d|  %02d  |  %02d  |  %02d  |   %01d   |", i, entries[i].b_id, entries[i].b_mask, entries[i].fl_head, entries[i].rob_tail);
             end
             $display("");
         end

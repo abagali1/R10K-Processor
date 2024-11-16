@@ -42,6 +42,8 @@ module cpu (
     always @(posedge clock) begin
         if (reset) begin
             NPC <= 0;
+        end (!br_fu_out.pred_correct) begin
+            NPC <= br_fu_out.target;
         end else begin
             NPC <= PC + num_input * 4;
         end
@@ -88,6 +90,12 @@ module cpu (
     logic br_full;
     logic [`BRANCH_PRED_SZ-1:0] assigned_b_id;
 
+
+    // output of branch fu
+    FU_PACKET br_fu_out;
+    BR_TASK br_task;
+    logic br_en
+
     // hardcoded values
 
     logic [`NUM_FU_ALU-1:0]    fu_alu_busy;
@@ -127,22 +135,6 @@ module cpu (
         .out_insts(dis_insts)
     );
 
-    REG_IDX      [`N-1:0] dis_r1_idx;
-    REG_IDX      [`N-1:0] dis_r2_idx;       
-    REG_IDX      [`N-1:0] dis_dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
-    PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
-    logic        [`N-1:0] dis_incoming_valid;
-
-    always_comb begin
-        for (int i = 0; i < `N; i++) begin
-            dis_r1_idx[i] = dis_insts[i].reg1;
-            dis_r2_idx[i] = dis_insts[i].reg2;       
-            dis_dest_reg_idx[i] = dis_insts[i].dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
-            dis_free_reg[i] = fl_reg[i].reg_idx;  // comes from the free list
-            dis_incoming_valid[i] = dis_insts[i].valid;
-        end
-    end
-
     free_list flo_from_progressive (
         .clock(clock),
         .reset(reset),
@@ -150,8 +142,8 @@ module cpu (
         .rd_num(num_dis),  // number of regs to take off of the free list
         .wr_num(num_retired),  // number of regs to add back to the free list
         .wr_reg(0),//{retiring_data.t_old, retiring_data.valid}),  // reg idxs to add to free list
-        .br_en(0),  // enable signal for EBR
-        .head_ptr_in(0),//cp_out.fl_head),  // free list copy for EBR
+        .br_en(br_en & ~br_fu_out.pred_correct),  // enable signal for EBR
+        .head_ptr_in(cp_out.fl_head),  // free list copy for EBR
 
         .rd_reg(fl_reg),
         .head_ptr(fl_head_ptr)
@@ -172,8 +164,8 @@ module cpu (
         .ready_phys_idx(0), // corresponding phys reg
         .ready_valid(0), // one hot encoded inputs to expect
 
-        .in_mt_en(0),
-        .in_mt(0),//cp.rec_mt),
+        .in_mt_en(br_en & ~br_fu_out.pred_correct),
+        .in_mt(cp_out.rec_mt),//cp.rec_mt),
 
         .t_old_data(t_old_data), //?
         .r1_p_reg(r1_p_reg),
@@ -189,13 +181,13 @@ module cpu (
         .t_in(fl_reg),
         .t1_in(r1_p_reg),
         .t2_in(r2_p_reg),
-        .b_id(0),
+        .b_id(assigned_b_id),
 
         .cdb_in(0),
 
         // ebr logic
-        .rem_b_id(assigned_b_id),
-        .br_task(0),
+        .rem_b_id(br_fu_out.decoded_vals.b_id),
+        .br_task(br_task),
 
         // busy bits from FUs to mark when available to issue
         .fu_alu_busy(fu_alu_busy),
@@ -226,8 +218,8 @@ module cpu (
 
         .complete_t(0), // comes from the CDB
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
-        .br_tail(0),
-        .br_en(0),
+        .br_tail(cp_out.rob_tail),
+        .br_en(br_en & ~br_fu_out.pred_correct),
 
         .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
         .open_entries(rob_open), // number of open entires AFTER retirement
@@ -255,17 +247,80 @@ module cpu (
     
         .cdb_in(0),
     
-        .br_task(NOTHING), // not defined here. in main sysdefs
-        .rem_b_id(0), // b_id to remove
+        .br_task(br_task), // not defined here. in main sysdefs
+        .rem_b_id(br_fu_out.decoded_vals.b_id), // b_id to remove
     
         .assigned_b_id(assigned_b_id), // CHECK added
         .cp_out(cp_out),
         .full(br_full)
     );
 
+    regfile(
+        .clock(clock), // system clock
+
+        .read_idx_1(),
+        .read_idx_2(), 
+        .write_idx(),
+        .write_en(),
+        .write_data(),
+
+        .read_out_1(), 
+        .read_out_2()
+    );
+
     //////////////////////////////////////////////////
     //                                              //
-    //               Pipeline Outputs               //
+    //                   dispatch                   //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    REG_IDX      [`N-1:0] dis_r1_idx;
+    REG_IDX      [`N-1:0] dis_r2_idx;       
+    REG_IDX      [`N-1:0] dis_dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
+    PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
+    logic        [`N-1:0] dis_incoming_valid;
+
+    always_comb begin
+        for (int i = 0; i < `N; i++) begin
+            dis_r1_idx[i] = dis_insts[i].reg1;
+            dis_r2_idx[i] = dis_insts[i].reg2;       
+            dis_dest_reg_idx[i] = dis_insts[i].dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
+            dis_free_reg[i] = fl_reg[i].reg_idx;  // comes from the free list
+            dis_incoming_valid[i] = dis_insts[i].valid;
+        end
+    end
+
+    //////////////////////////////////////////////////
+    //                                              //
+    //                    issue                     //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    
+
+    //////////////////////////////////////////////////
+    //                                              //
+    //                  execution                   //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    branch_fu what_the_duck (
+        .clock(clock), 
+        .reset(reset),
+        .is_pack(),
+        .rd_en(),
+
+        .fu_pack(),
+        .br_task(),
+        .data_ready()
+    );
+
+    // name for mult: what the fuck
+    // name for alu: what the
+
+    //////////////////////////////////////////////////
+    //                                              //
+    //               pipeline outputs               //
     //                                              //
     //////////////////////////////////////////////////
 

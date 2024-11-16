@@ -1,8 +1,8 @@
 /////////////////////////////////////////////////////////////////////////
 //                                                                     //
-//   Modulename :  freelist_test.sv                                    //
+//   Modulename :  alu_test.sv                                         //
 //                                                                     //
-//  Description :  Testbench module for the free list                  //
+//  Description :  Testbench module for the alu FU                     //
 //                                                                     //
 //                                                                     //
 /////////////////////////////////////////////////////////////////////////
