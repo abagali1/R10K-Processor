@@ -15,11 +15,11 @@ module regfile #(
 )(
     input         clock, // system clock
     // note: no system reset, register values must be written before they can be read
-    input  REG_IDX  [NUM_FU-1:0]     read_idx_1, read_idx_2, write_idx,
-    input           [NUM_FU-1:0]     write_en,
-    input  DATA     [NUM_FU-1:0]     write_data,
+    input  PHYS_REG_IDX     [NUM_FU-1:0]     read_idx_1, read_idx_2, write_idx,
+    input                   [NUM_FU-1:0]     write_en,
+    input  DATA             [NUM_FU-1:0]     write_data,
 
-    output DATA     [NUM_FU-1:0]     read_out_1, read_out_2
+    output DATA             [NUM_FU-1:0]     read_out_1, read_out_2
 );
 
     // Intermediate data before accounting for register 0

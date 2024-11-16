@@ -16,7 +16,7 @@ module br_stack #(
     input CDB_PACKET                [N-1:0]                             cdb_in,
     
     input BR_TASK                                                       br_task, // not defined here. in main sysdefs
-    input logic                     [DEPTH-1:0]                         rem_b_id, // b_id to remove
+    input BR_MASK                     [DEPTH-1:0]                       rem_b_id, // b_id to remove
     
     output logic                    [DEPTH-1:0]                         assigned_b_id, // b_id given to a dispatched branch instruction
     output CHECKPOINT                                                   cp_out,
