@@ -4,24 +4,24 @@
 `include "psel_gen.sv"
 `endif
 
-typedef struct packed {
-    REG_IDX reg_idx;
-    PHYS_REG_IDX p_reg_idx;
-    DATA reg_val;
-    logic valid;
-} CDB_PACKET;
+// typedef struct packed {
+//     REG_IDX reg_idx;
+//     PHYS_REG_IDX p_reg_idx;
+//     DATA reg_val;
+//     logic valid;
+// } CDB_PACKET;
 
-typedef struct packed {
-    REG_IDX reg_idx;
-    PHYS_REG_IDX p_reg_idx;
-    DATA reg_val;
-    logic valid;
-} FU_PACKET;
+// typedef struct packed {
+//     REG_IDX reg_idx;    decoded_packet.dest_reg_idx
+//     PHYS_REG_IDX p_reg_idx; rs_packet.t
+//     DATA reg_val; result
+//     logic valid; decoded_packet.valid
+// } FU_PACKET;
 
 
 module cdb #(
     parameter N = `N,
-    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE
+    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE
 )
 (
     input logic                      clock,

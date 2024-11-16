@@ -13,7 +13,7 @@
 module cdb_tb ();
 
     parameter N = 4;
-    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LOAD + `NUM_FU_STORE;
+    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE;
 
     logic                       clock;
     logic                       reset;
@@ -77,7 +77,7 @@ module cdb_tb ();
         $display("\nTest 1: Broadcast One FU Value\n");
 
         update_FU_done(1, 1);
-        model_entries[0].reg_val = wr_data[1].reg_val;
+        model_entries[0].reg_val = wr_data[1].decoded_vals.decoded_vals.dest_reg_idx;
         
         @(negedge clock);
         update_FU_done(1, 0);
@@ -89,8 +89,8 @@ module cdb_tb ();
 
         update_FU_done(5, 1);
         update_FU_done(11, 1);
-        model_entries[0].reg_val = wr_data[11].reg_val;
-        model_entries[1].reg_val = wr_data[5].reg_val;
+        model_entries[0].reg_val = wr_data[11].decoded_vals.decoded_vals.dest_reg_idx;
+        model_entries[1].reg_val = wr_data[5].decoded_vals.decoded_vals.dest_reg_idx;
         @(negedge clock);
 
         update_FU_done(5, 0);
@@ -106,10 +106,10 @@ module cdb_tb ();
         update_FU_done(2, 1);
         update_FU_done(9, 1); // this one shouldn't get picked when N = 4
         update_FU_done(10, 1);
-        model_entries[0].reg_val = wr_data[11].reg_val;
-        model_entries[1].reg_val = wr_data[2].reg_val;
-        model_entries[2].reg_val = wr_data[10].reg_val;
-        model_entries[3].reg_val = wr_data[5].reg_val;
+        model_entries[0].reg_val = wr_data[11].decoded_vals.decoded_vals.dest_reg_idx;
+        model_entries[1].reg_val = wr_data[2].decoded_vals.decoded_vals.dest_reg_idx;
+        model_entries[2].reg_val = wr_data[10].decoded_vals.decoded_vals.dest_reg_idx;
+        model_entries[3].reg_val = wr_data[5].decoded_vals.decoded_vals.dest_reg_idx;
         @(negedge clock);
 
         update_FU_done(5, 0);
@@ -139,7 +139,7 @@ module cdb_tb ();
         int regvalue = 0;
 
         for (int i = 0; i < NUM_FU; i++) begin
-            wr_data_in[i] = '{reg_idx: regidx, p_reg_idx: pregidx, reg_val: regvalue, valid: 0};
+            wr_data_in[i] = '{decoded_vals.decoded_vals.dest_reg_idx: regidx, decoded_vals.t: pregidx, result: regvalue, decoded_vals.decoded_vals.valid: 0};
             regidx++;
             pregidx++;
             regvalue += 5;
@@ -158,19 +158,19 @@ module cdb_tb ();
         end
         $write("\nreg:   ");
         for (int i = 0; i < NUM_FU; i++) begin
-            $write("%0d    ", wr_data[i].reg_idx);
+            $write("%0d    ", wr_data[i].decoded_vals.decoded_vals.dest_reg_idx);
         end
         $write("\npreg:  ");
         for (int i = 0; i < NUM_FU; i++) begin
-            $write("%0d   ", wr_data[i].p_reg_idx);
+            $write("%0d   ", wr_data[i].decoded_vals.decoded_vals.dest_reg_idx);
         end
         $write("\nval:   ");
         for (int i = 0; i < NUM_FU; i++) begin
             if (i < 2) begin
-                $write("%0d    ", wr_data[i].reg_val);
+                $write("%0d    ", wr_data[i].decoded_vals.decoded_vals.dest_reg_idx);
             end
             else begin 
-                $write("%0d   ", wr_data[i].reg_val);
+                $write("%0d   ", wr_data[i].decoded_vals.decoded_vals.dest_reg_idx);
             end
         end
         $write("\n");
