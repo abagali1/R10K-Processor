@@ -5,15 +5,15 @@
 module branch_fu (
     input               clock, 
     input               reset,
-    input ISSUE_PACKET  is_pack,
+    input ISSUE_PACKET  is_pack, // print this
     input logic         rd_en,
 
-    output FU_PACKET    fu_pack,
+    output FU_PACKET    fu_pack, // print out all outputs
     output BR_TASK      br_task,
     output logic        data_ready
 );
     FU_PACKET out;
-    DATA target, branch_target;
+    ADDR target, branch_target;
     logic taken, correct;
 
     assign fu_pack = out;
@@ -54,5 +54,19 @@ module branch_fu (
             br_task     <= NOTHING;
         end
     end
+
+    `ifdef DEBUG
+        always @(posedge clock) begin
+            $display("============== BRANCH FU ==============\n");
+            $display("  Issue Packet:");
+            $display("  b_id: %0d, b_mask: %0d, rs_1value: %0d, rs2_value: %0d", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs_1value, is_pack.rs2_value);
+            $display("  FU Packet Out:");
+            $display("i | b_id |  b_mask | rec_PC | fl_head | rob_tail  |");
+            for (int i = 0; i < DEPTH; i++) begin
+                $display("%02d|  %02d  |   %02d   |   %02d   |  %02d  |   %01d   |", i, entries[i].b_id, entries[i].b_mask, entries[i].rec_PC, entries[i].fl_head, entries[i].rob_tail);
+            end
+            $display("");
+        end
+    `endif
 
 endmodule

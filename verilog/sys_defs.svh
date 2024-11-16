@@ -339,7 +339,7 @@ typedef struct packed {
     logic valid;
     logic [`BRANCH_PRED_SZ-1:0] b_id;
     logic [`BRANCH_PRED_SZ-1:0] b_mask;
-    ADDR rec_PC;
+    // ADDR rec_PC;
     MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] rec_mt;
     logic [$clog2(`ROB_SZ+1)-1:0] fl_head;
     logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] rob_tail;
