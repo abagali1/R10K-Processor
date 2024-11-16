@@ -18,7 +18,12 @@ module branch_fu_tb();
 
     FU_PACKET fu_pack;        
     BR_TASK br_task;          
-    logic data_ready;         
+    logic data_ready;  
+
+    
+    `ifdef DEBUG
+        ADDR branch_target;
+    `endif      
 
     branch_fu dut (
         .clock(clock),
@@ -28,6 +33,10 @@ module branch_fu_tb();
         .fu_pack(fu_pack),
         .br_task(br_task),
         .data_ready(data_ready)
+
+        `ifdef DEBUG
+        , .branch_target(branch_target)
+        `endif 
     );
 
     // Clock generation
@@ -65,7 +74,7 @@ module branch_fu_tb();
 
         rd_en = 0;       
 
-        assert(fu_pack.result == dut.branch_target);
+        assert(fu_pack.result == branch_target);
         assert(br_task == CLEAR);
 
         $display("PASSED TEST 1");
@@ -82,6 +91,7 @@ module branch_fu_tb();
 
         is_pack = '0;
         is_pack.decoded_vals.decoded_vals.inst.b.funct3 = 3'b000;
+        is_pack.decoded_vals.decoded_vals.NPC = 4;
         is_pack.rs1_value = 15;
         is_pack.rs2_value = 10;
 
@@ -93,7 +103,7 @@ module branch_fu_tb();
 
         rd_en = 0;       
 
-        assert(fu_pack.result == dut.is_pack.decoded_vals.decoded_vals.NPC);
+        assert(fu_pack.result == is_pack.decoded_vals.decoded_vals.NPC);
         assert(br_task == SQUASH);
 
         $display("PASSED TEST 2");
@@ -121,7 +131,7 @@ module branch_fu_tb();
 
         rd_en = 0;       
 
-        assert(fu_pack.result == dut.branch_target);
+        assert(fu_pack.result == branch_target);
         assert(br_task == SQUASH);
 
         $display("PASSED TEST 3");

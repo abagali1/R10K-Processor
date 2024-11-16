@@ -308,7 +308,7 @@ module dispatch_tb();
         $display("\nrob_open: %0d", rob_open);
         $display("rs_open: %0d", rs_open);
         $display("bs_full: %0d", bs_full);
-        $display("valid_inst: %0d\n", dut.num_valid_inst);
+        $display("valid_inst: %0d\n", debug_num_valid_inst);
     endfunction
 
 endmodule
