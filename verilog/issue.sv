@@ -15,6 +15,8 @@ module issue #(
     input RS_PACKET       [`NUM_FU_STORE-1:0]      issued_st,
     input RS_PACKET       [`NUM_FU_BR-1:0]         issued_br,
 
+    input logic           [NUM_FU-`NUM_FU_BR:0]    stall_sig,
+
     output logic          [`NUM_FU_ALU-1:0]        alu_rd_en, 
     output logic          [`NUM_FU_MULT-1:0]       mult_rd_en,
     output logic          [`NUM_FU_LD-1:0]         ld_rd_en,
@@ -52,7 +54,7 @@ module issue #(
     always_comb begin    
         alu_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_STORE; i++) begin
-            alu_rd_en_vals[i] = issued_alu[i].decoded_vals.valid;
+            alu_rd_en_vals[i] = issued_alu[i].decoded_vals.valid & ~stall_sig[i];
             alu_reg_1[i] = issued_alu[i].t1.reg_idx;
             alu_reg_2[i] = issued_alu[i].t2.reg_idx;
         end
@@ -72,7 +74,7 @@ module issue #(
     always_comb begin    
         mult_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_STORE; i++) begin
-            mult_rd_en_vals[i] = issued_mult[i].decoded_vals.valid;
+            mult_rd_en_vals[i] = issued_mult[i].decoded_vals.valid & ~stall_sig[i];
             mult_reg_1[i] = issued_mult[i].t1.reg_idx;
             mult_reg_2[i] = issued_mult[i].t2.reg_idx;
         end
@@ -92,7 +94,7 @@ module issue #(
     always_comb begin    
         ld_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_STORE; i++) begin
-            ld_rd_en_vals[i] = issued_ld[i].decoded_vals.valid;
+            ld_rd_en_vals[i] = issued_ld[i].decoded_vals.valid & ~stall_sig[i];
             ld_reg_1[i] = issued_ld[i].t1.reg_idx;
             ld_reg_2[i] = issued_ld[i].t2.reg_idx;
         end
@@ -112,7 +114,7 @@ module issue #(
     always_comb begin    
         st_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_STORE; i++) begin
-            st_rd_en_vals[i] = issued_st[i].decoded_vals.valid;
+            st_rd_en_vals[i] = issued_st[i].decoded_vals.valid & ~stall_sig[i];
             st_reg_1[i] = issued_st[i].t1.reg_idx;
             st_reg_2[i] = issued_st[i].t2.reg_idx;
         end
