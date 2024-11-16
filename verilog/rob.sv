@@ -5,7 +5,7 @@
 `include "sys_defs.svh"
 
 module rob #(
-    parameter DEPTH = `PHYS_REG_SZ_R10K,
+    parameter DEPTH = `ROB_SZ,
     parameter N = `N
 )
 (
@@ -78,8 +78,12 @@ module rob #(
         next_tail = (br_en) ? (br_tail + num_accept) % DEPTH : (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
         // needed for loop to squash valid bits
         if (br_en) begin
-            for (int i = br_tail; i != tail; i = (i + 1) % DEPTH) begin
-                next_entries[i] = '0;
+            for (int i = 0; i < DEPTH; i++) begin
+                if ((tail < br_tail) & (i > tail | i <= br_tail)) begin
+                    next_entries[i] = '0;
+                end else if ((tail > br_tail) & (i < tail | i >= br_tail)) begin
+                    next_entries[i] = '0;
+                end
             end
         end
         // TODO: verify that commenting this out is ok, and just iterating through next entries is ok to count num_entries
