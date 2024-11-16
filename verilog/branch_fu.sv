@@ -12,6 +12,10 @@ module branch_fu (
     output FU_PACKET    fu_pack, // print out all outputs
     output BR_TASK      br_task,
     output logic        data_ready
+
+    `ifdef DEBUG
+        , ADDR branch_target
+    `endif 
 );
     FU_PACKET out;
     ADDR target, branch_target;
@@ -39,6 +43,10 @@ module branch_fu (
         .is_pack(is_pack),
         .result(branch_target)
     );
+
+    `ifdef DEBUG
+        assign debug_branch_target = branch_target;
+    `endif
 
     always_ff @(posedge clock) begin
         if (reset) begin

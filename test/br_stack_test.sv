@@ -533,7 +533,7 @@ module br_stack_tb();
 
         $display("map table");
         for (int i = 1; i < 4; i++) begin
-            $display("i: %0d, reg_idx: %0d, valid: %0d, ready: %0d", i, dut.entries[3].rec_mt[i].reg_idx, dut.entries[3].rec_mt[i].valid, dut.entries[3].rec_mt[i].ready);
+            $display("i: %0d, reg_idx: %0d, valid: %0d, ready: %0d", i, debug_entries[3].rec_mt[i].reg_idx, debug_entries[3].rec_mt[i].valid, debug_entries[3].rec_mt[i].ready);
         end
 
         print_cdb();
@@ -559,7 +559,7 @@ module br_stack_tb();
 
         $display("map table again");
         for (int i = 1; i < 4; i++) begin
-            $display("i: %0d, reg_idx: %0d, valid: %0d, ready: %0d", i, dut.entries[3].rec_mt[i].reg_idx, dut.entries[3].rec_mt[i].valid, dut.entries[3].rec_mt[i].ready);
+            $display("i: %0d, reg_idx: %0d, valid: %0d, ready: %0d", i, debug_entries[3].rec_mt[i].reg_idx, debug_entries[3].rec_mt[i].valid, debug_entries[3].rec_mt[i].ready);
         end
 
 
@@ -640,14 +640,14 @@ endfunction
 function void print_entries();
     $display("\nEntries\n");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("index: %0d, b_id: %b, b_mask: %b, fl_head: %0d, rob_tail: %0d", i, dut.entries[i].b_id, dut.entries[i].b_mask, dut.entries[i].fl_head, dut.entries[i].rob_tail);
+        $display("index: %0d, b_id: %b, b_mask: %b, fl_head: %0d, rob_tail: %0d", i, debug_entries[i].b_id, debug_entries[i].b_mask, debug_entries[i].fl_head, debug_entries[i].rob_tail);
     end
 endfunction
 
 function void print_cdb();
     $display("\nCDB In");
     for (int i = 0; i < N; i++) begin
-        $display("index: %0d, reg_idx: %b, p_reg_idx: %b, reg_val: %0d, valid: %0d", i, dut.cdb_in[i].reg_idx, dut.cdb_in[i].p_reg_idx, dut.cdb_in[i].reg_val, dut.cdb_in[i].valid);
+        $display("index: %0d, reg_idx: %b, p_reg_idx: %b, reg_val: %0d, valid: %0d", i, cdb_in[i].reg_idx, cdb_in[i].p_reg_idx, cdb_in[i].reg_val, cdb_in[i].valid);
     end
 endfunction
 
