@@ -19,7 +19,7 @@ typedef struct packed {
 
 module ROB_tb();
 
-    parameter DEPTH = 8;
+    parameter DEPTH = `ROB_SZ;
     parameter WIDTH = 32;
     parameter N = 3;
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -30,6 +30,7 @@ module ROB_tb();
     PHYS_REG_IDX                                [N-1:0]                             t;
     PHYS_REG_IDX                                [N-1:0]                             t_old;
     PHYS_REG_IDX                                [N-1:0]                             complete_t;
+    PHYS_REG_IDX                                                                    br_complete_t;
     logic                                       [$clog2(N+1)-1:0]                   num_accept;
     logic                                       [$clog2(DEPTH)-1:0]                 br_tail;
     logic                                                                           br_en;
@@ -59,6 +60,7 @@ module ROB_tb();
         .t(t),
         .t_old(t_old),
         .complete_t(complete_t),
+        .br_complete_t(br_complete_t),
         .num_accept(num_accept),
         .br_tail(br_tail),
         .br_en(br_en),
@@ -87,6 +89,7 @@ module ROB_tb();
     initial begin
         $display("\nStart Testbench");
 
+        br_complete_t = 0;
         clock = 0;
         reset = 1;
         auto_test = 1;
