@@ -29,9 +29,25 @@ module cpu (
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_head,
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_tail,
 
-        output FREE_LIST_PACKET         [`ROB_SZ-1:0]                       debug_fl_entries;
-        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_head;
-        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_tail;
+        output FREE_LIST_PACKET         [`ROB_SZ-1:0]                       debug_fl_entries,
+        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_head,
+        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_tail,
+
+        output MAP_TABLE_PACKET         [`ARCH_REG_SZ-1:0]                  debug_mt_entries,
+
+        output RS_PACKET                [`RS_SZ-1:0]                        debug_rs_entries,
+        output logic                    [`RS_SZ-1:0]                        debug_rs_open_spots,
+        output logic                    [`RS_SZ-1:0]                        debug_rs_other_sig,
+        output logic                    [$clog2(`RS_SZ+1)-1:0]              debug_rs_open_entries,
+        output logic                    [`RS_SZ-1:0]                        debug_rs_all_issued_insts,
+
+        output ROB_PACKET               [`ROB_SZ-1:0]                       debug_rob_entries,
+        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_head,
+        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_tail,
+
+        output CHECKPOINT               [`BRANCH_PRED_SZ-1:0]               debug_bs_entries,
+        logic                           [`BRANCH_PRED_SZ-1:0]               debug_bs_free_entries,
+        logic                           [`BRANCH_PRED_SZ-1:0]               debug_bs_stack_gnt
     `endif
 );
 
@@ -75,11 +91,11 @@ module cpu (
 
     // output of RS
     logic [$clog2(`N+1)-1:0] rs_open;
-    output RS_PACKET                [`NUM_FU_ALU-1:0]                                   issued_alu, 
-    output RS_PACKET                [`NUM_FU_MULT-1:0]                                  issued_mult,
-    output RS_PACKET                [`NUM_FU_LD-1:0]                                    issued_ld,
-    output RS_PACKET                [`NUM_FU_STORE-1:0]                                 issued_store,
-    output RS_PACKET                [`NUM_FU_BR-1:0]                                    issued_br,
+    // output RS_PACKET                [`NUM_FU_ALU-1:0]                                   issued_alu, 
+    // output RS_PACKET                [`NUM_FU_MULT-1:0]                                  issued_mult,
+    // output RS_PACKET                [`NUM_FU_LD-1:0]                                    issued_ld,
+    // output RS_PACKET                [`NUM_FU_STORE-1:0]                                 issued_store,
+    // output RS_PACKET                [`NUM_FU_BR-1:0]                                    issued_br,
 
     // output of ROB
     logic [$clog2(`N+1)-1:0] rob_open, num_retired; 
@@ -209,6 +225,10 @@ module cpu (
         .r1_p_reg(r1_p_reg),
         .r2_p_reg(r2_p_reg),
         .out_mt(out_mt)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_mt_entries)
+        `endif
     );
 
     rs rasam (
@@ -244,6 +264,14 @@ module cpu (
         .issued_br(0),
 
         .open_entries(rs_open)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_rs_entries),
+            .debug_open_spots(debug_rs_open_spots),
+            .debug_other_sig(debug_rs_other_sig),
+            .debug_open_entries(debug_rs_open_entries),
+            .debug_all_issued_insts(debug_rs_all_issued_insts)
+        `endif
     );
 
     rob robert (
@@ -259,11 +287,17 @@ module cpu (
         .br_tail(cp_out.rob_tail),
         .br_en(br_en & ~br_fu_out.pred_correct),
 
-//         .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
-//         .open_entries(rob_open), // number of open entires AFTER retirement
-//         .num_retired(num_retired),
-//         .out_tail(rob_tail)
-//     );
+        .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
+        .open_entries(rob_open), // number of open entires AFTER retirement
+        .num_retired(num_retired),
+        .out_tail(rob_tail)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_rob_entries),
+            .debug_head(debug_rob_head),
+            .debug_tail(debug_rob_tail)
+        `endif
+    );
 
     // cdb cbd (
     //     .clock(clock),
@@ -291,6 +325,12 @@ module cpu (
         .assigned_b_id(assigned_b_id), // CHECK added
         .cp_out(cp_out),
         .full(br_full)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_bs_entries),
+            .debug_free_entries(debug_bs_free_entries),
+            .debug_stack_gnt(debug_bs_stack_gnt)
+        `endif
     );
 
     // regfile(
@@ -350,18 +390,11 @@ module cpu (
 //     // name for mult: what the fuck
 //     // name for alu: what the
 
-<<<<<<< Updated upstream
     //////////////////////////////////////////////////
     //                                              //
     //                   dispatch                   //
     //                                              //
     //////////////////////////////////////////////////
-
-    REG_IDX      [`N-1:0] dis_r1_idx;
-    REG_IDX      [`N-1:0] dis_r2_idx;       
-    REG_IDX      [`N-1:0] dis_dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
-    PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
-    logic        [`N-1:0] dis_incoming_valid;
 
     // always_comb begin
     //     cdb_reg_idx = '0;
