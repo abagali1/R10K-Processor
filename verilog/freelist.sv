@@ -1,7 +1,7 @@
 `include "sys_defs.svh"
 
 
-module free_list #(
+module freelist #(
     parameter DEPTH = `ROB_SZ,
     parameter N = `N
 )
