@@ -31,20 +31,25 @@ module issue #(
     output PHYS_REG_IDX   [NUM_FU-1:0]             reg_idx_2
 );
 
-    logic [`NUM_FU_ALU-1:0] alu_rd_en_vals;
-    PHYS_REG_IDX [`NUM_FU_ALU-1:0] alu_reg_1, alu_reg_2;
+    logic        [`NUM_FU_ALU-1:0]      alu_rd_en_vals;
+    PHYS_REG_IDX [`NUM_FU_ALU-1:0]      alu_reg_1, alu_reg_2;
+    ISSUE_PACKET [`NUM_FU_ALU-1:0]      issued_alu_pack_temp;
 
-    logic [`NUM_FU_MULT-1:0] mult_rd_en_vals;
-    PHYS_REG_IDX [`NUM_FU_MULT-1:0] mult_reg_1, mult_reg_2;
+    logic        [`NUM_FU_MULT-1:0]     mult_rd_en_vals;
+    PHYS_REG_IDX [`NUM_FU_MULT-1:0]     mult_reg_1, mult_reg_2;
+    ISSUE_PACKET [`NUM_FU_MULT-1:0]     issued_mult_pack_temp;
 
-    logic [`NUM_FU_LD-1:0] ld_rd_en_vals;
-    PHYS_REG_IDX [`NUM_FU_LD-1:0] ld_reg_1, ld_reg_2;
+    logic        [`NUM_FU_LD-1:0]       ld_rd_en_vals;
+    PHYS_REG_IDX [`NUM_FU_LD-1:0]       ld_reg_1, ld_reg_2;
+    ISSUE_PACKET [`NUM_FU_LD-1:0]       issued_ld_pack_temp;
 
-    logic [`NUM_FU_STORE-1:0] st_rd_en_vals;
-    PHYS_REG_IDX [`NUM_FU_STORE-1:0] st_reg_1, st_reg_2;
+    logic        [`NUM_FU_STORE-1:0]    st_rd_en_vals;
+    PHYS_REG_IDX [`NUM_FU_STORE-1:0]    st_reg_1, st_reg_2;
+    ISSUE_PACKET [`NUM_FU_STORE-1:0]    issued_st_pack_temp;
 
-    logic br_rd_en_vals;
-    PHYS_REG_IDX br_reg_1, br_reg_2;
+    logic                               br_rd_en_vals;
+    PHYS_REG_IDX                        br_reg_1, br_reg_2;
+    ISSUE_PACKET                        issued_br_pack_temp;
 
     // ----- ALU -----
 
@@ -60,9 +65,11 @@ module issue #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            alu_rd_en <= 0;
+            alu_rd_en       <= 0;
+            issued_alu_pack <= 0;
         end else begin
-            alu_rd_en <= alu_rd_en_vals;
+            alu_rd_en       <= alu_rd_en_vals;
+            issued_alu_pack <= issued_alu_pack_temp;
         end 
     end
     
@@ -80,9 +87,11 @@ module issue #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            mult_rd_en <= 0;
+            mult_rd_en          <= 0;
+            issued_mult_pack    <= 0;
         end else begin
-            mult_rd_en <= mult_rd_en_vals;
+            mult_rd_en          <= mult_rd_en_vals;
+            issued_mult_pack    <= issued_mult_pack_temp;
         end 
     end
     
@@ -100,9 +109,11 @@ module issue #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            ld_rd_en <= 0;
+            ld_rd_en        <= 0;
+            issued_ld_pack  <= 0;
         end else begin
-            ld_rd_en <= ld_rd_en_vals;
+            ld_rd_en        <= ld_rd_en_vals;
+            issued_ld_pack  <= issued_ld_pack_temp;
         end 
     end
     
@@ -120,9 +131,11 @@ module issue #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            st_rd_en <= 0;
+            st_rd_en        <= 0;
+            issued_st_pack  <= 0;
         end else begin
-            st_rd_en <= st_rd_en_vals;
+            st_rd_en        <= st_rd_en_vals;
+            issued_st_pack  <= issued_st_pack_temp;
         end 
     end
 
@@ -137,9 +150,11 @@ module issue #(
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            br_rd_en <= 0;
+            br_rd_en        <= 0;
+            issued_br_pack  <= 0;
         end else begin
-            br_rd_en <= br_rd_en_vals;
+            br_rd_en        <= br_rd_en_vals;
+            issued_br_pack  <= issued_br_pack_temp;
         end 
     end
 
@@ -184,38 +199,44 @@ module issue #(
     // ---- ISSUE PACKET ----
 
     always_comb begin
+        issued_alu_pack_temp  = 0;
+        issued_mult_pack_temp = 0;
+        issued_ld_pack_temp   = 0;
+        issued_st_pack_temp   = 0;
+        issued_br_pack_temp   = 0;
+
         // ALU
         for (int a = 0; a < `NUM_FU_ALU; a++) begin
-            issued_alu_pack[a].decoded_vals = issued_alu;
-            issued_alu_pack[a].rs1_value = reg_data_1[a];
-            issued_alu_pack[a].rs2_value = reg_data_2[a];
+            issued_alu_pack_temp[a].decoded_vals = issued_alu;
+            issued_alu_pack_temp[a].rs1_value = reg_data_1[a];
+            issued_alu_pack_temp[a].rs2_value = reg_data_2[a];
         end
 
         // MULT
         for (int m = 0; m < `NUM_FU_MULT; m++) begin
-            issued_mult_pack[m].decoded_vals = issued_mult[m];
-            issued_mult_pack[m].rs1_value = reg_data_1[(`NUM_FU_ALU) + m]; 
-            issued_mult_pack[m].rs2_value = reg_data_2[(`NUM_FU_ALU) + m]; 
+            issued_mult_pack_temp[m].decoded_vals = issued_mult[m];
+            issued_mult_pack_temp[m].rs1_value = reg_data_1[(`NUM_FU_ALU) + m]; 
+            issued_mult_pack_temp[m].rs2_value = reg_data_2[(`NUM_FU_ALU) + m]; 
         end
 
         // LD
         for (int l = 0; l < `NUM_FU_LD; l++) begin
-            issued_ld_pack[l].decoded_vals = issued_ld[l];
-            issued_ld_pack[l].rs1_value = reg_data_1[(`NUM_FU_ALU + `NUM_FU_MULT) + l];
-            issued_ld_pack[l].rs2_value = reg_data_2[(`NUM_FU_ALU + `NUM_FU_MULT) + l];
+            issued_ld_pack_temp[l].decoded_vals = issued_ld[l];
+            issued_ld_pack_temp[l].rs1_value = reg_data_1[(`NUM_FU_ALU + `NUM_FU_MULT) + l];
+            issued_ld_pack_temp[l].rs2_value = reg_data_2[(`NUM_FU_ALU + `NUM_FU_MULT) + l];
         end
 
         // STORE
         for (int s = 0; s < `NUM_FU_STORE; s++) begin
-            issued_st_pack[s].decoded_vals = issued_st[s];
-            issued_st_pack[s].rs1_value = reg_data_1[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s];
-            issued_st_pack[s].rs2_value = reg_data_2[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s];
+            issued_st_pack_temp[s].decoded_vals = issued_st[s];
+            issued_st_pack_temp[s].rs1_value = reg_data_1[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s];
+            issued_st_pack_temp[s].rs2_value = reg_data_2[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s];
         end
 
         // BR
-        issued_br_pack.decoded_vals = issued_br;
-        issued_br_pack = reg_data_1[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
-        issued_br_pack = reg_data_2[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
+        issued_br_pack_temp.decoded_vals = issued_br;
+        issued_br_pack_temp = reg_data_1[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
+        issued_br_pack_temp = reg_data_2[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
     end
 
 
