@@ -343,7 +343,7 @@ module ROB_tb();
 
     // Retired Entries Validation
     function void check_retired_entries();
-        ROB_PACKET inst;
+        TEST_ROB_PACKET inst;
         for (int i = 0; i < num_retired; i++) begin
             inst = rob_model.pop_front();
             if (inst.t !== retiring_data[i].t) begin
