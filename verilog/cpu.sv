@@ -22,7 +22,7 @@ module cpu (
     output COMMIT_PACKET                [`N-1:0]                            committed_insts,
 
     output logic                        [3:0]                               ib_open,
-    output ADDR                                                             PC
+    output ADDR                                                             NPC
 
     `ifdef DEBUG
     ,   output INST_PACKET              [`INST_BUFF_DEPTH-1:0]              debug_inst_buff_entries,
@@ -61,17 +61,17 @@ module cpu (
 
     // fake fetch
 
-    ADDR NPC;
+    ADDR PC;
 
-    assign PC = NPC;
+    assign NPC = PC;
 
     always @(posedge clock) begin
         if (reset) begin
-            NPC <= 0;
-        // end else if (!br_fu_out.pred_correct) begin
-            // NPC <= br_fu_out.target;
+            PC <= 0;
+        end else if (!br_fu_out.pred_correct) begin
+            PC <= br_fu_out.result;
         end else begin
-            NPC <= PC + num_input * 4;
+            PC <= NPC + num_input * 4;
         end
     end
 

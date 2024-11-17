@@ -21,8 +21,8 @@
 
 module RS_tb();
 
-    parameter DEPTH = `RS_SZ;
-    parameter N = `N;
+    parameter DEPTH = 8;
+    parameter N = 3;
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     logic                                                                            clock;
@@ -149,6 +149,7 @@ module RS_tb();
         clear_signals();
         @(negedge clock);
         reset = 0;
+
 
         // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Basic Dispatch/Issue N ALU Instructions");
