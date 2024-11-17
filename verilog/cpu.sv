@@ -19,7 +19,7 @@ module cpu (
     input logic                         [3:0]                               num_input,
 
     // Note: these are assigned at the very bottom of the module
-    output ROB_PACKET                [`N-1:0]                               retired_insts,
+    output COMMIT_PACKET                [`N-1:0]                            committed_insts,
 
     output logic                        [3:0]                               ib_open,
     output ADDR                                                             PC
@@ -333,7 +333,8 @@ module cpu (
         .out_tail(rob_tail)
 
         `ifdef DEBUG
-        ,   .debug_entries(debug_rob_entries),
+        ,   .debug_data(cdb_wr_data),
+            .debug_entries(debug_rob_entries),
             .debug_head(debug_rob_head),
             .debug_tail(debug_rob_tail)
         `endif
@@ -522,9 +523,14 @@ module cpu (
 
     // Output the committed instruction to the testbench for counting
     always_comb begin
-        retired_insts = '0;
-        for (int i = 0; i < N; i++) begin
-            retired_insts[i] = retiring_data;
+        committed_insts = '0;
+        for (int i = 0; i < `N; i++) begin
+            committed_insts[i].NPC = retiring_data[i].PC; // TODO
+            committed_insts[i].data = retiring_data[i].data;
+            committed_insts[i].reg_idx = retiring_data[i].dest_reg_idx;
+            committed_insts[i].halt = retiring_data[i].halt;
+            committed_insts[i].illegal = '0; //TODO
+            committed_insts[i].valid = retiring_data[i].valid;
         end
     end
 
