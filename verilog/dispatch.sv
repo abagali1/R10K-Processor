@@ -80,16 +80,16 @@ module dispatch #(
         end
     end
 
-    `ifdef DEBUG
-        always_ff @(posedge clock) begin
-            $display("      DISPATCH      ");
-            $display("---------------------");
-            $display(" valid  |\tinst ");
-            for (int i = 0; i < num_dispatch; i++) begin
-                $display("\t%0d\t|\t%0h\t", out_insts[i].valid, out_insts[i].inst);
-            end
-            $display("num_dispatch: %0d", num_dispatch);
-        end
-    `endif
+    // `ifdef DEBUG
+    //     always_ff @(posedge clock) begin
+    //         $display("      DISPATCH      ");
+    //         $display("---------------------");
+    //         $display(" valid  |\tinst ");
+    //         for (int i = 0; i < num_dispatch; i++) begin
+    //             $display("\t%0d\t|\t%0h\t", out_insts[i].valid, out_insts[i].inst);
+    //         end
+    //         $display("num_dispatch: %0d", num_dispatch);
+    //     end
+    // `endif
 
 endmodule

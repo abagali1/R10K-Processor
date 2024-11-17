@@ -86,56 +86,56 @@ module regfile #(
         end
     end
 
-    `ifdef DEBUG
-        always @(posedge clock) begin
-            $display("--------------- REGFILE ---------------");
+    // `ifdef DEBUG
+    //     always @(posedge clock) begin
+    //         $display("--------------- REGFILE ---------------");
 
-            $display("Inputs:");
+    //         $display("Inputs:");
 
-            $display("read_idx_1:");
-            for (int i = 0; i < NUM_FU; i++) begin
-                $write("| %2d", read_idx_1[i]);
-            end
-            $display("");
+    //         $display("read_idx_1:");
+    //         for (int i = 0; i < NUM_FU; i++) begin
+    //             $write("| %2d", read_idx_1[i]);
+    //         end
+    //         $display("");
 
-            $display("read_idx_2:");
-            for (int i = 0; i < NUM_FU; i++) begin
-                $write("| %2d", read_idx_2[i]);
-            end
-            $display("");
+    //         $display("read_idx_2:");
+    //         for (int i = 0; i < NUM_FU; i++) begin
+    //             $write("| %2d", read_idx_2[i]);
+    //         end
+    //         $display("");
 
-            $display("write_en:");
-            for (int i = 0; i < N; i++) begin
-                $write("| %2d", write_en[i]);
-            end
-            $display("");
+    //         $display("write_en:");
+    //         for (int i = 0; i < N; i++) begin
+    //             $write("| %2d", write_en[i]);
+    //         end
+    //         $display("");
 
-            $display("write_idx:");
-            for (int i = 0; i < N; i++) begin
-                $write("| %2d", write_idx[i]);
-            end
-            $display("");
+    //         $display("write_idx:");
+    //         for (int i = 0; i < N; i++) begin
+    //             $write("| %2d", write_idx[i]);
+    //         end
+    //         $display("");
 
-            $display("write_data:");
-            for (int i = 0; i < N; i++) begin
-                $write("| %2d", write_data[i]);
-            end
-            $display("\n");
+    //         $display("write_data:");
+    //         for (int i = 0; i < N; i++) begin
+    //             $write("| %2d", write_data[i]);
+    //         end
+    //         $display("\n");
 
-            $display("Outputs:");
+    //         $display("Outputs:");
 
-            $display("read_out_1:");
-            for (int i = 0; i < NUM_FU; i++) begin
-                $write("| %2d", read_out_1[i]);
-            end
-            $display("");
+    //         $display("read_out_1:");
+    //         for (int i = 0; i < NUM_FU; i++) begin
+    //             $write("| %2d", read_out_1[i]);
+    //         end
+    //         $display("");
 
-            $display("read_out_2:");
-            for (int i = 0; i < NUM_FU; i++) begin
-                $write("| %2d", read_out_2[i]);
-            end
-            $display("\n");
-        end
-    `endif 
+    //         $display("read_out_2:");
+    //         for (int i = 0; i < NUM_FU; i++) begin
+    //             $write("| %2d", read_out_2[i]);
+    //         end
+    //         $display("\n");
+    //     end
+    // `endif 
 
 endmodule // regfile

@@ -84,27 +84,27 @@ module freelist #(
         end
     end
 
-    `ifdef DEBUG
-        always @(posedge clock) begin
-            // $display("=================== FREE LIST ===================\n");
-            // $display("  Entries:");
-            // $display("  ---------------------------");
-            // $display("  |  i |  reg_idx |  valid  |");
-            // $display("  ---------------------------");
-            // for (int i = 0; i < DEPTH; i++) begin
-            //     $display("  | %2d |    %2d    |    %0d    |", i, entries[i].reg_idx, entries[i].valid);
-            // end
-            // $display("");
+    // `ifdef DEBUG
+    //     always @(posedge clock) begin
+    //         // $display("=================== FREE LIST ===================\n");
+    //         // $display("  Entries:");
+    //         // $display("  ---------------------------");
+    //         // $display("  |  i |  reg_idx |  valid  |");
+    //         // $display("  ---------------------------");
+    //         // for (int i = 0; i < DEPTH; i++) begin
+    //         //     $display("  | %2d |    %2d    |    %0d    |", i, entries[i].reg_idx, entries[i].valid);
+    //         // end
+    //         // $display("");
 
-            $display("   FREELIST   ");
-            $display("--------------");
-            $display(rd_num);
-            for (int i = 0; i < rd_num; i++) begin
-                if (rd_reg[i].valid) begin
-                    $display("\t%0d\t", rd_reg[i].reg_idx);
-                end
-            end
-        end
-    `endif
+    //         $display("   FREELIST   ");
+    //         $display("--------------");
+    //         $display(rd_num);
+    //         for (int i = 0; i < rd_num; i++) begin
+    //             if (rd_reg[i].valid) begin
+    //                 $display("\t%0d\t", rd_reg[i].reg_idx);
+    //             end
+    //         end
+    //     end
+    // `endif
 
 endmodule

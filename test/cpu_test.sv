@@ -51,12 +51,17 @@ module testbench;
     logic         [3:0] ib_open;
     ADDR                 NPC;
 
+    COMMIT_PACKET [`N-1:0] committed_insts;
+
     ROB_PACKET [`N-1:0] retired_insts;
 
     EXCEPTION_CODE error_status = NO_ERROR;
     logic [63:0] unified_memory [`MEM_64BIT_LINES-1:0];
 
     `ifdef DEBUG
+        logic                   [$clog2(`N+1)-1:0]                          debug_num_dispatched;
+        logic                   [$clog2(`N+1)-1:0]                          debug_num_retired;
+
         INST_PACKET             [`INST_BUFF_DEPTH-1:0]                      debug_inst_buff_entries;
         logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]              debug_inst_buff_head;
         logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]              debug_inst_buff_tail;
@@ -157,6 +162,7 @@ module testbench;
             if (clock_count % 10000 == 0) begin
                 $display("  %16t : %d cycles", $realtime, clock_count);
             end
+            dump_state();
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count - 1);
@@ -187,7 +193,7 @@ module testbench;
                     in_insts[i].valid = 0;
                 end
 
-                $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
+                // $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
 
                 if (in_insts[i].inst == 32'h10500073) begin
                     $display("halting...");
@@ -316,6 +322,26 @@ module testbench;
 //         //    clock_count-1
 //         //);
 //     endtask
+
+    function void print_inst_buff();
+        $display("Instruction Buffer");
+        $display("#\t| valid |\t inst\t |    PC\t|\tNPC\t\t|\tpred |");
+        for(int i=0;i<`INST_BUFF_DEPTH;i++) begin
+            $write("%02d\t|  %d \t|  %x  |  %05d\t|\t%05d\t|\t%s\t |\n", i, debug_inst_buff_entries[i].valid, debug_inst_buff_entries[i].inst, debug_inst_buff_entries[i].PC, debug_inst_buff_entries[i].NPC, debug_inst_buff_entries[i].pred_taken ? "t" : "nt");
+        end
+    endfunction
+
+    function void dump_state();
+        $display("--------------");
+        $display("Clock #%02d, num_dispatched: %02d , num_issued: %02d, num_retired: %02d", clock_count, debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
+        $display("\n");
+
+        print_inst_buff();
+
+        if(clock_count > 250) begin
+            $finish;
+        end
+    endfunction
 
 
 endmodule // module testbench

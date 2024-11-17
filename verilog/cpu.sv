@@ -18,14 +18,17 @@ module cpu (
     input INST_PACKET                   [7:0]                               in_insts,
     input logic                         [3:0]                               num_input,
 
-    // Note: these are assigned at the very bottom of the module
+    // Note: these are assigned at the very bottom of the modulo
     output COMMIT_PACKET                [`N-1:0]                            committed_insts,
 
     output logic                        [3:0]                               ib_open,
     output ADDR                                                             NPC
 
     `ifdef DEBUG
-    ,   output INST_PACKET              [`INST_BUFF_DEPTH-1:0]              debug_inst_buff_entries,
+    ,   output  logic                   [$clog2(`N+1)-1:0]                  debug_num_dispatched,
+        output  logic                   [$clog2(`N+1)-1:0]                  debug_num_retired,
+    
+        output INST_PACKET              [`INST_BUFF_DEPTH-1:0]              debug_inst_buff_entries,
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_head,
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_tail,
 
@@ -191,6 +194,11 @@ module cpu (
 
     assign ld_done = '0;
     assign st_done = '0;
+
+    `ifdef DEBUG
+        assign debug_num_dispatched = num_dis;
+        assign debug_num_retired = num_retired;
+    `endif
 
 
     inst_buffer buffet (

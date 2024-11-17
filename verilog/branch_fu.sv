@@ -64,14 +64,14 @@ module branch_fu (
         end
     end
 
-    `ifdef DEBUG
-        always @(posedge clock) begin
-            // $display("============== BRANCH FU ==============\n");
-            // $display("  Issue Packet:");
-            // $display("  b_id: %0d, b_mask: %0d, rs_1value: %0d, rs2_value: %0d", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs_1value, is_pack.rs2_value);
-            // $display("  FU Packet Out:");
-            // gonna let you finish this anup
-        end
-    `endif
+    // `ifdef DEBUG
+    //     always @(posedge clock) begin
+    //         // $display("============== BRANCH FU ==============\n");
+    //         // $display("  Issue Packet:");
+    //         // $display("  b_id: %0d, b_mask: %0d, rs_1value: %0d, rs2_value: %0d", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs_1value, is_pack.rs2_value);
+    //         // $display("  FU Packet Out:");
+    //         // gonna let you finish this anup
+    //     end
+    // `endif
 
 endmodule
