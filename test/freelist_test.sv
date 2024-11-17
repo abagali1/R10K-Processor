@@ -45,7 +45,7 @@ module freelist_tb();
     FREE_LIST_PACKET  [2:0] pr_list;
     logic [$clog2(DEPTH)-1:0] k = 0;
 
-    free_list #(
+    freelist #(
         .DEPTH(DEPTH),
         .N(N)
     )
