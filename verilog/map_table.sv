@@ -80,19 +80,19 @@ module map_table #(
         end
     end
 
-    `ifdef DEBUG_MT
-        always @(posedge clock) begin
-            $display("=================== MAP TABLE ===================\n");
-            $display("  Entries:");
-            $display("  ---------------------------------------------");
-            $display("  |   Index  |  Reg_idx |   Ready  |   Valid  |");
-            $display("  ---------------------------------------------");
-            for (int i = 0; i < DEPTH; i++) begin
-                $display("  |    %2d    |    %2d    |    %2d    |    %2d    |", i, entries[i].reg_idx, entries[i].ready, entries[i].valid);
-                //$display("  ---------------------------------------------");
-            end
-            $display("");
-        end
-    `endif
+    // `ifdef DEBUG_MT
+    //     always @(posedge clock) begin
+    //         $display("=================== MAP TABLE ===================\n");
+    //         $display("  Entries:");
+    //         $display("  ---------------------------------------------");
+    //         $display("  |   Index  |  Reg_idx |   Ready  |   Valid  |");
+    //         $display("  ---------------------------------------------");
+    //         for (int i = 0; i < DEPTH; i++) begin
+    //             $display("  |    %2d    |    %2d    |    %2d    |    %2d    |", i, entries[i].reg_idx, entries[i].ready, entries[i].valid);
+    //             //$display("  ---------------------------------------------");
+    //         end
+    //         $display("");
+    //     end
+    // `endif
 
 endmodule
