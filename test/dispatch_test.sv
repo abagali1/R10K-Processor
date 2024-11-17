@@ -10,9 +10,12 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
 
-module dispatch_tb();
+// TODO: make this test more resilient: currently only works for N=5.
+// IF THIS TEST IF FAILING, DOUBLE CHECK THAT N=5 in this test, and in sys_defs. make clean and try again.
 
-    parameter N = 5; // Number of instructions per dispatch
+module dispatch_tb();
+    // N needs to be hard coded to 5 for this test. it is hard coded. make sure its the same in sys_defs for this test.
+    parameter N = `N; // Number of instructions per dispatch
 
     localparam LOG_N = $clog2(N+1);
 
