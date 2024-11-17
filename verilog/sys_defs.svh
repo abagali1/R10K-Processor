@@ -487,6 +487,9 @@ typedef struct packed {
     PHYS_REG_IDX    t_old; // look up t_old in arch map table to get arch reg and update to t on retire
     logic           complete;
     logic           valid;
+    `ifdef DEBUG
+    DATA            data;
+    `endif
 } ROB_PACKET;
 
 `endif // __SYS_DEFS_SVH__

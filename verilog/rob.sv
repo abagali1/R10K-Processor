@@ -29,7 +29,8 @@ module rob #(
 
 
     `ifdef DEBUG
-    ,   output ROB_PACKET                       [DEPTH-1:0]             debug_entries,
+    ,   input  DATA                             [N-1:0]                 debug_data,
+        output ROB_PACKET                       [DEPTH-1:0]             debug_entries,
         output logic                            [$clog2(DEPTH)-1:0]     debug_head,
         output logic                            [$clog2(DEPTH)-1:0]     debug_tail
     `endif
@@ -103,6 +104,9 @@ module rob #(
             for(int k=0; k < DEPTH; ++k) begin
                 if(entries[k].valid & (entries[k].t == complete_t[j] || entries[k].t == br_complete_t)) begin
                     next_entries[k].complete = 'b1;
+                    `ifdef DEBUG
+                        next_entries[k].data = debug_data[k];
+                    `endif
                 end
             end
         end
