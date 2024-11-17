@@ -21,8 +21,8 @@
 
 module RS_tb();
 
-    parameter DEPTH = 8;
-    parameter N = 3;
+    parameter DEPTH = `RS_SZ;
+    parameter N = `N;
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     logic                                                                            clock;

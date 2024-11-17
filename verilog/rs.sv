@@ -70,7 +70,7 @@ module rs #(
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     logic [DEPTH-1:0] open_spots, next_open_spots, other_sig;
-    wor [DEPTH-1:0] all_issued_insts = 0; // also keeps track of position of instructions being issued w.r.t RS entries
+    logic [DEPTH-1:0] all_issued_alu, all_issued_mult, all_issued_ld, all_issued_store, all_issued_br, all_issued_insts;
 
     RS_PACKET [DEPTH-1:0] entries, next_entries;
     logic [LOG_DEPTH:0] num_entries, next_num_entries;
@@ -126,7 +126,7 @@ module rs #(
         .fu_req(~fu_alu_busy),
         .num_issued(num_alu_issued),
         .fu_issued_insts(alu_issued_bus),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(all_issued_alu)
 
         `ifdef DEBUG
         ,   .debug_fu_gnt_bus(debug_alu_fu_gnt_bus),
@@ -143,7 +143,7 @@ module rs #(
         .fu_req(~fu_mult_busy),
         .num_issued(num_mult_issued),
         .fu_issued_insts(mult_issued_bus),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(all_issued_mult)
 
         `ifdef DEBUG
         ,   .debug_fu_gnt_bus(debug_mult_fu_gnt_bus),
@@ -160,7 +160,7 @@ module rs #(
         .fu_req(~fu_ld_busy),
         .num_issued(num_ld_issued),
         .fu_issued_insts(ld_issued_bus),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(all_issued_ld)
     );
 
     rs_psel #(
@@ -172,7 +172,7 @@ module rs #(
         .fu_req(~fu_store_busy),
         .num_issued(num_store_issued),
         .fu_issued_insts(store_issued_bus),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(all_issued_store)
     );
 
     rs_psel #(
@@ -184,13 +184,15 @@ module rs #(
         .fu_req(~fu_br_busy),
         .num_issued(num_br_issued),
         .fu_issued_insts(br_issued_bus),
-        .all_issued_insts(all_issued_insts)
+        .all_issued_insts(all_issued_br)
 
         `ifdef DEBUG
         ,   .debug_fu_gnt_bus(debug_br_fu_gnt_bus),
             .debug_inst_gnt_bus(debug_br_inst_gnt_bus)
         `endif
     );
+
+    assign all_issued_insts = all_issued_alu | all_issued_mult | all_issued_ld | all_issued_store | all_issued_br;
 
     always_comb begin
         issued_alu = 0;
