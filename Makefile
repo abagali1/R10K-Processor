@@ -252,7 +252,6 @@ CPU_TESTBENCH = test/pipeline_print.c \
 # verilog/cpu.sv is implicit
 CPU_SOURCES = verilog/cpu.sv \
 			  verilog/regfile.sv \
-              verilog/icache.sv \
               verilog/memDP.sv \
 			  verilog/mult.sv \
 			  verilog/inst_buffer.sv \
@@ -261,7 +260,12 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/freelist.sv \
 			  verilog/dispatch.sv \
 			  verilog/rob.sv \
-			  verilog/br_stack.sv
+			  verilog/br_stack.sv \
+			  verilog/cdb.sv \
+			  verilog/issue.sv \
+			  verilog/alu.sv \
+			  verilog/branch_fu.sv \
+			  verilog/mult.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
 # ---- Running ---- #

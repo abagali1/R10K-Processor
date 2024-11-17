@@ -76,6 +76,10 @@ module testbench;
         ROB_PACKET              [`ROB_SZ-1:0]                               debug_rob_entries;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_head;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_tail;
+
+        CHECKPOINT              [`BRANCH_PRED_SZ-1:0]                       debug_bs_entries;
+        logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_free_entries;
+        logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_stack_gnt;
     `endif
 
 

@@ -22,7 +22,7 @@ module branch_fu_tb();
 
     
     `ifdef DEBUG
-        ADDR branch_target;
+        ADDR debug_branch_target;
     `endif      
 
     branch_fu dut (
@@ -35,7 +35,7 @@ module branch_fu_tb();
         .data_ready(data_ready)
 
         `ifdef DEBUG
-        , .branch_target(branch_target)
+        , .debug_branch_target(debug_branch_target)
         `endif 
     );
 
@@ -74,7 +74,7 @@ module branch_fu_tb();
 
         rd_en = 0;       
 
-        assert(fu_pack.result == branch_target);
+        assert(fu_pack.result == debug_branch_target);
         assert(br_task == CLEAR);
 
         $display("PASSED TEST 1");
@@ -131,7 +131,7 @@ module branch_fu_tb();
 
         rd_en = 0;       
 
-        assert(fu_pack.result == branch_target);
+        assert(fu_pack.result == debug_branch_target);
         assert(br_task == SQUASH);
 
         $display("PASSED TEST 3");
