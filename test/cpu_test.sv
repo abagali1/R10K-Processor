@@ -49,7 +49,7 @@ module testbench;
     logic         [3:0] num_input;
 
     logic         [3:0] ib_open;
-    ADDR                 PC;
+    ADDR                 NPC;
 
     COMMIT_PACKET [`N-1:0] committed_insts;
 
@@ -172,7 +172,7 @@ module testbench;
 
             num_input = 0;
             for (int i = 0; i < ib_open; i++) begin
-                current = PC + i * 4;
+                current = NPC + i * 4;
 
                 block = unified_memory[current[31:3]];
                 in_insts[i].inst = block.word_level[current[2]];

@@ -6,8 +6,8 @@
 `include "rs_psel.sv"
 
 module rs #(
-    parameter DEPTH = `RS_SZ,
-    parameter N = `N
+    parameter DEPTH = 8,
+    parameter N = 3
 )
 (
     input                                                                               clock,
@@ -205,13 +205,13 @@ module rs #(
                     issued_alu[i] = entries[j];
                     if (br_task == CLEAR) begin
                         if (entries[j].b_id == rem_b_id) begin
-                            issued_alu[j] = 0;
+                            issued_alu[i] = 0;
                         end else begin
                             issued_alu[i].b_mask = issued_alu[i].b_mask & ~rem_b_id;
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_alu[j] = (issued_alu[i].b_mask & rem_b_id) ? 0 : entries[j];
+                        issued_alu[i] = (issued_alu[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -223,13 +223,13 @@ module rs #(
                     issued_mult[i] = entries[j];
                     if (br_task == CLEAR) begin
                         if (entries[j].b_id == rem_b_id) begin
-                            issued_mult[j] = 0;
+                            issued_mult[i] = 0;
                         end else begin
                             issued_mult[i].b_mask = issued_mult[i].b_mask & ~rem_b_id;
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_mult[j] = (issued_mult[i].b_mask & rem_b_id) ? 0 : entries[j];
+                        issued_mult[i] = (issued_mult[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -241,13 +241,13 @@ module rs #(
                     issued_ld[i] = entries[j];
                     if (br_task == CLEAR) begin
                         if (entries[j].b_id == rem_b_id) begin
-                            issued_ld[j] = 0;
+                            issued_ld[i] = 0;
                         end else begin
                             issued_ld[i].b_mask = issued_ld[i].b_mask & ~rem_b_id;
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_ld[j] = (issued_ld[i].b_mask & rem_b_id) ? 0 : entries[j];
+                        issued_ld[i] = (issued_ld[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -259,13 +259,13 @@ module rs #(
                     issued_store[i] = entries[j];
                     if (br_task == CLEAR) begin
                         if (entries[j].b_id == rem_b_id) begin
-                            issued_store[j] = 0;
+                            issued_store[i] = 0;
                         end else begin
                             issued_store[i].b_mask = issued_store[i].b_mask & ~rem_b_id;
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_store[j] = (issued_store[i].b_mask & rem_b_id) ? 0 : entries[j];
+                        issued_store[i] = (issued_store[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -277,13 +277,13 @@ module rs #(
                     issued_br[i] = entries[j];
                     if (br_task == CLEAR) begin
                         if (entries[j].b_id == rem_b_id) begin
-                            issued_br[j] = 0;
+                            issued_br[i] = 0;
                         end else begin
                             issued_br[i].b_mask = issued_br[i].b_mask & ~rem_b_id;
                         end
                     end
                     if (br_task == SQUASH) begin
-                        issued_br[j] = (issued_br[i].b_mask & rem_b_id) ? 0 : entries[j];
+                        issued_br[i] = (issued_br[i].b_mask & rem_b_id) ? 0 : entries[j];
                     end
                 end
             end
@@ -406,29 +406,29 @@ module rs #(
         end
     end
 
-    `ifdef DEBUG
-        always @(posedge clock) begin
-            $display("============== RESERVATION STATION ==============\n");
+    // `ifdef DEBUG
+    //     always @(posedge clock) begin
+    //         $display("============== RESERVATION STATION ==============\n");
             
-            $display("  Inputs:");
+    //         $display("  Inputs:");
 
-            $display("    rs_in:");
-            for (int i = 0; i < N; i++) begin
-                $display("      rs_in[%0d]: type=%0d dr=%0d, r1=%0d, r2=%0d", i, rs_in[i].fu_type, rs_in[i].dest_reg_idx, rs_in[i].reg1, rs_in[i].reg2);
-            end
-            $display("");
+    //         $display("    rs_in:");
+    //         for (int i = 0; i < N; i++) begin
+    //             $display("      rs_in[%0d]: type=%0d dr=%0d, r1=%0d, r2=%0d", i, rs_in[i].fu_type, rs_in[i].dest_reg_idx, rs_in[i].reg1, rs_in[i].reg2);
+    //         end
+    //         $display("");
 
-            $display("  State:");
+    //         $display("  State:");
 
-            $display("    Entries:");
-            $display("-------------------------------------");
-            $display("    | i | type |  t | t1 | t2 | valid  |");
-            for (int i = 0; i < DEPTH; i++) begin
-                $display("    %02d |  %02d  | %02d | %02d | %02d |    %01d   |", i, entries[i].decoded_vals.fu_type, entries[i].t.reg_idx, entries[i].t1.reg_idx, entries[i].t2.reg_idx, entries[i].decoded_vals.valid);
-            end
-            $display("");
+    //         $display("    Entries:");
+    //         $display("-------------------------------------");
+    //         $display("    | i | type |  t | t1 | t2 | valid  |");
+    //         for (int i = 0; i < DEPTH; i++) begin
+    //             $display("    %02d |  %02d  | %02d | %02d | %02d |    %01d   |", i, entries[i].decoded_vals.fu_type, entries[i].t.reg_idx, entries[i].t1.reg_idx, entries[i].t2.reg_idx, entries[i].decoded_vals.valid);
+    //         end
+    //         $display("");
 
-            $display("  Outputs:");// TODO
-        end
-    `endif
+    //         $display("  Outputs:");// TODO
+    //     end
+    // `endif
 endmodule
