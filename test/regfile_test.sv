@@ -20,9 +20,11 @@ module regfile_tb();
 
     logic                             clock;
     logic                             reset;
-    PHYS_REG_IDX     [NUM_FU-1:0]     read_idx_1, read_idx_2, write_idx;
-    logic            [NUM_FU-1:0]     write_en;
-    DATA             [NUM_FU-1:0]     write_data;
+    PHYS_REG_IDX     [NUM_FU-1:0]     read_idx_1, read_idx_2;
+
+    PHYS_REG_IDX     [N-1:0]     write_idx;
+    logic            [N-1:0]     write_en;
+    DATA             [N-1:0]     write_data;
 
     DATA             [NUM_FU-1:0]     read_out_1, read_out_2;
 
@@ -30,7 +32,8 @@ module regfile_tb();
 
     regfile #(
         .DEPTH(DEPTH),
-        .NUM_FU(NUM_FU)
+        .NUM_FU(NUM_FU),
+        .N(N)
     ) dut (
         .clock(clock),
         .reset(reset),
@@ -96,15 +99,15 @@ module regfile_tb();
         $display("PASSED TEST 2");
 
         // ------------------------------ Test 3 ------------------------------ //
-        $display("Test 3: Write and read NUM_FU values from reg");
+        $display("Test 3: Write and read N values from reg");
         @(negedge clock);
 
-        for (int i = 1; i < NUM_FU; i++) begin
+        for (int i = 1; i < N; i++) begin
             write(i, i*2);
         end
 
         @(negedge clock);
-        for (int i = 1; i < NUM_FU; i++) begin
+        for (int i = 1; i < N; i++) begin
             read_idx_1[i] = i;
             read_idx_2[i] = i;
         end
@@ -117,7 +120,7 @@ module regfile_tb();
         $display("Test 4: Read same values stored in last test");
 
         @(negedge clock);
-        for (int i = 1; i < NUM_FU; i++) begin
+        for (int i = 1; i < N; i++) begin
             read_idx_1[i] = i;
             read_idx_2[i] = i;
         end
@@ -133,7 +136,7 @@ module regfile_tb();
         $display("Test 5: Read and Write values in same cycles");
 
         @(negedge clock);
-        for (int i = 1; i < NUM_FU; i++) begin
+        for (int i = 1; i < N; i++) begin
             read_idx_1[i] = i;
             read_idx_2[i] = i-1;
             write(i, 50-i);
@@ -141,7 +144,7 @@ module regfile_tb();
 
         @(negedge clock);
 
-        for (int i = 1; i < NUM_FU; i++) begin
+        for (int i = 1; i < N; i++) begin
             read_idx_1[i] = i;
         end
 
@@ -156,7 +159,7 @@ module regfile_tb();
 
 
     function void write(int idx, int data);
-        for (int i = 0; i < NUM_FU; i++) begin
+        for (int i = 0; i < N; i++) begin
             if (write_en[i] === 0) begin
                 write_en[i] = 1;
                 write_idx[i] = idx;
