@@ -6,7 +6,7 @@
 `include "rs_psel.sv"
 
 module rs #(
-    parameter DEPTH = 8,
+    parameter DEPTH = `RS_SZ,
     parameter N = 3
 )
 (

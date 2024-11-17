@@ -51,7 +51,7 @@ module testbench;
     logic         [3:0] ib_open;
     ADDR                 NPC;
 
-    COMMIT_PACKET [`N-1:0] committed_insts;
+    ROB_PACKET [`N-1:0] retired_insts;
 
     EXCEPTION_CODE error_status = NO_ERROR;
     logic [63:0] unified_memory [`MEM_64BIT_LINES-1:0];
