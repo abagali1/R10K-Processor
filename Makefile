@@ -206,15 +206,23 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack alu conditional_branch addr_calc regfile memDP issue branch_fu decoder
+MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack alu addr_calc regfile memDP issue branch_fu decoder
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
 
 # TODO: add extra source file dependencies below
-BR_FILES = verilog/sys_defs.svh verilog/addr_calc.sv
-build/conditional_branch.simv: $(BR_FILES)
-build/conditional_branch.cov: $(BR_FILES)
-synth/conditional_branch.vg: $(BR_FILES)
+REG_FILES = verilog/sys_defs.svh verilog/memDP.sv
+build/regfile.simv: $(REG_FILES)
+build/regfile.cov: $(REG_FILES)
+synth/regfile.vg: $(REG_FILES)
+
+BR_FILES = verilog/sys_defs.svh verilog/basic_adder.sv
+build/branch_fu.simv: $(BR_FILES)
+build/branch_fu.cov: $(BR_FILES)
+synth/branch_fu.vg: $(BR_FILES)
+build/addr_calc.simv: $(BR_FILES)
+build/addr_calc.cov: $(BR_FILES)
+synth/addr_calc.vg: $(BR_FILES)
 
 MULT_FILES = verilog/sys_defs.svh
 build/mult.simv: $(MULT_FILES)
