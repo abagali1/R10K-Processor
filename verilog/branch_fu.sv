@@ -14,7 +14,7 @@ module branch_fu (
     output logic        data_ready
 
     `ifdef DEBUG
-        , ADDR branch_target
+        , ADDR debug_branch_target
     `endif 
 );
     FU_PACKET out;

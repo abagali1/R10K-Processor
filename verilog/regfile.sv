@@ -8,23 +8,22 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
-`include "memDP.sv"
+//`include "memDP.sv"
 
 module regfile #(
     parameter DEPTH = `PHYS_REG_SZ_R10K,
-    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_STORE + `NUM_FU_LD + `NUM_FU_BR,
+    parameter NUM_FU = `NUM_FUS,
     parameter N = `N
 )(
     input         clock, // system clock
     input         reset,
     // note: no system reset, register values must be written before they can be read
-    input  PHYS_REG_IDX     [NUM_FU-1:0]     read_idx_1, read_idx_2,
+    input  PHYS_REG_IDX     [NUM_FU-1:0]        read_idx_1, read_idx_2, 
+    input  PHYS_REG_IDX     [N-1:0]            write_idx,
+    input                   [N-1:0]            write_en,
+    input  DATA             [N-1:0]            write_data,
 
-    input PHYS_REG_IDX      [N-1:0]     write_idx,
-    input                   [N-1:0]     write_en,
-    input  DATA             [N-1:0]     write_data,
-
-    output DATA             [NUM_FU-1:0]     read_out_1, read_out_2
+    output DATA             [NUM_FU-1:0]        read_out_1, read_out_2
 );
 
     // Intermediate data before accounting for register 0

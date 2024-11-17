@@ -21,7 +21,7 @@ module br_stack_tb();
     DECODED_PACKET                                              dis_inst; 
     MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                    in_mt;
     logic                   [$clog2(`ROB_SZ+1)-1:0]             in_fl_head;
-    logic                   [$clog2(`PHYS_REG_SZ_R10K)-1:0]     in_rob_tail;
+    logic                   [$clog2(`ROB_SZ)-1:0]     in_rob_tail;
 
     CDB_PACKET              [N-1:0]                             cdb_in;
     BR_TASK                                                     br_task;
