@@ -19,7 +19,7 @@ module cpu (
     input logic                         [3:0]                               num_input,
 
     // Note: these are assigned at the very bottom of the module
-    output COMMIT_PACKET                [`N-1:0]                            committed_insts,
+    output ROB_PACKET                [`N-1:0]                               retired_insts,
 
     output logic                        [3:0]                               ib_open,
     output ADDR                                                             PC
@@ -521,7 +521,12 @@ module cpu (
     //////////////////////////////////////////////////
 
     // Output the committed instruction to the testbench for counting
-    // assign committed_insts[0] = wb_packet;
+    always_comb begin
+        retired_insts = '0;
+        for (int i = 0; i < N; i++) begin
+            retired_insts[i] = retiring_data;
+        end
+    end
 
     // DEBUG OUTPUTS
     `ifdef DEBUG
