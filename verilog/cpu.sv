@@ -52,7 +52,9 @@ module cpu (
 
         output CHECKPOINT               [`BRANCH_PRED_SZ-1:0]               debug_bs_entries,
         output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_free_entries,
-        output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_stack_gnt
+        output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_stack_gnt,
+
+        output CDB_PACKET               [`N-1:0]                             debug_cdb_entries
         
     `endif
 );
@@ -202,6 +204,7 @@ module cpu (
         assign debug_dis_insts = dis_insts;
         assign debug_num_dispatched = num_dis;
         assign debug_num_retired = num_retired;
+        assign debug_cdb_entries = cdb_entries;
     `endif
 
 
