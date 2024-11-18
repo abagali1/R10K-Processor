@@ -284,6 +284,8 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/decoder.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
+build/cpu.cov: $(CPU_SOURCES) $(CPU_HEADERS)
+synth/cpu.vg: $(CPU_SOURCES) $(CPU_HEADERS)
 # ---- Running ---- #
 #####################
 
