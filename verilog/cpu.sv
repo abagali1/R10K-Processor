@@ -32,6 +32,8 @@ module cpu (
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_head,
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_tail,
 
+        output DECODED_PACKET           [`N-1:0]                            debug_dis_insts,
+
         output FREE_LIST_PACKET         [`ROB_SZ-1:0]                       debug_fl_entries,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_head,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_tail,
@@ -51,6 +53,7 @@ module cpu (
         output CHECKPOINT               [`BRANCH_PRED_SZ-1:0]               debug_bs_entries,
         output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_free_entries,
         output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_stack_gnt
+        
     `endif
 );
 
@@ -196,6 +199,7 @@ module cpu (
     assign st_done = '0;
 
     `ifdef DEBUG
+        assign debug_dis_insts = dis_insts;
         assign debug_num_dispatched = num_dis;
         assign debug_num_retired = num_retired;
     `endif
