@@ -136,6 +136,9 @@ module issue_tb();
         issued_br.t2 = '{reg_idx: '0, ready: 1'b0, valid: 1'b0};
         issued_br.b_mask = '0;
         issued_br.b_id = '0;
+
+        issued_st = '0;
+        issued_ld = '0;
     endtask
 
     // Test sequence
@@ -205,8 +208,8 @@ module issue_tb();
             issued_alu[i].decoded_vals = base_decoded_packet;
             issued_alu[i].decoded_vals.valid = (i % 2 == 0); // Alternate valid/invalid
             issued_alu[i].decoded_vals.fu_type = ALU_INST;
-            issued_alu[i].t1.reg_idx = i * 2;
-            issued_alu[i].t2.reg_idx = i * 2 + 1;
+            issued_alu[i].t1.reg_idx = i;
+            issued_alu[i].t2.reg_idx = i + 1;
             expected_alu_rd_en[i] = (i % 2 == 0);
         end
 
@@ -231,16 +234,16 @@ module issue_tb();
                 $display("issued_alu[%d].t2.reg_idx: %d\n\n", i,  issued_alu[i].t2.reg_idx);
                 $display("expected alu reg 2: %d\n", expected_alu_reg_idx_2[i]);
                 // TODO: figure out why these (reg_idx_1 and 2) are equal to X
-                $display("reg 1 idx: %d", reg_idx_1);
-                $display("reg 2 idx: %d", reg_idx_2);
-                if (reg_idx_1[i] !== expected_alu_reg_idx_1[i]) begin
-                    $error("ALU reg_idx_1 mismatch at index %0d. Expected: %0d, Got: %0d",
-                           i, expected_alu_reg_idx_1[i], reg_idx_1[i]);
+                $display("reg 1 idx: %b", reg_idx_1);
+                $display("reg 2 idx: %b", reg_idx_2);
+                if (reg_idx_1[(`NUM_FUS-`NUM_FU_ALU)+i] !== expected_alu_reg_idx_1[i]) begin
+                    $error("ALU reg_idx_1 mismatch at index %0d, %d. Expected: %0d, Got: %0d",
+                           i, (`NUM_FUS-`NUM_FU_ALU)+i, expected_alu_reg_idx_1[i], reg_idx_1[(`NUM_FUS-`NUM_FU_ALU)+i]);
                     $finish;
                 end
-                if (reg_idx_2[i] !== expected_alu_reg_idx_2[i]) begin
-                    $error("ALU reg_idx_2 mismatch at index %0d. Expected: %0d, Got: %0d",
-                           i, expected_alu_reg_idx_2[i], reg_idx_2[i]);
+                if (reg_idx_2[(`NUM_FUS-`NUM_FU_ALU)+i] !== expected_alu_reg_idx_2[i]) begin
+                    $error("ALU reg_idx_2 mismatch at index %0d, %d. Expected: %0d, Got: %0d",
+                           i, (`NUM_FUS-`NUM_FU_ALU)+i, expected_alu_reg_idx_2[i], reg_idx_2[(`NUM_FUS-`NUM_FU_ALU)+i]);
                     $finish;
                 end
             end
