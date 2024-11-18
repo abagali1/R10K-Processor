@@ -279,7 +279,9 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/alu.sv \
 			  verilog/branch_fu.sv \
 			  verilog/basic_adder.sv \
-			  verilog/mult.sv
+			  verilog/mult.sv \
+			  verilog/decode.sv \
+			  verilog/decoder.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
 # ---- Running ---- #

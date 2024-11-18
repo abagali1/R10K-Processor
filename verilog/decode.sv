@@ -10,7 +10,6 @@
 
 `include "sys_defs.svh"
 `include "ISA.svh"
-`include "decoder.sv"
 
 module decode #(
     parameter N = `N
