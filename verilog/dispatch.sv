@@ -1,4 +1,4 @@
-`include "decode.sv"
+`include "sys_defs.svh"
 
 // if you have instructions that don't include a branch, choose rob, rs, valid instruction min
 // if you have a branch, that is the first one list of instructions, go up until min of next branch, rob, rs, or valid
