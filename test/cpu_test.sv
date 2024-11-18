@@ -88,6 +88,8 @@ module testbench;
         CHECKPOINT              [`BRANCH_PRED_SZ-1:0]                       debug_bs_entries;
         logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_free_entries;
         logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_stack_gnt;
+
+        CDB_PACKET              [`N-1:0]                                     debug_cdb_entries;
     `endif
 
 
@@ -331,7 +333,7 @@ module testbench;
     // inst buff
     function void print_inst_buff();
         $display("Instruction Buffer");
-        $display("#\t| valid |   inst     |   PC  |   NPC   | pred   |");
+        $display("#\t| valid |   inst     |   PC   |  NPC   | pred   |");
         for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin
             $display("%02d\t|   %d   | %x\t|  %05d |  %05d |   %s   |", 
                 i, 
@@ -388,10 +390,9 @@ module testbench;
     endfunction
 
     // rs
-    // TODO valid bits for t, t1, t2??
     function void print_rs();
-        $display("\nReservation Station (RS)");
-        $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1    |  t2    |  b_id   |   b_mask   |");
+        $display("\nReservation Station");
+        $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   |");
         for (int i = 0; i < `RS_SZ; i++) begin
             string t1_plus = "";
             string t2_plus = "";
@@ -416,6 +417,7 @@ module testbench;
     endfunction
 
     // map table
+    // TODO: need to add debug_mt_entries to the map table test
     function void print_map_table();
         $display("\nMap Table");
         $display("#\t| reg_idx | ready |valid |");
@@ -450,8 +452,10 @@ module testbench;
         end
     endfunction
 
-
     // issue
+    // TODO: need to modify the issue module to give us debug outputs of all its normal outputs
+    // TODO: need to add these debug outputs to the 'if debug' in cpu_test
+    // TODO: probably also need to update issue test with these so the test doesn't break
     function void print_issue();
         $display("\Issue");
         $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1    |  t2    |  b_id   |   b_mask   |");
@@ -479,8 +483,43 @@ module testbench;
     endfunction
 
     // fus
+    
+
     // branch stack
+    function void print_br_stack();
+        $display("\nBranch Stack");
+        $display("#  | valid |  b_id  | b_mask | fl_head|rob_tail|");
+
+        // Print the state of each entry in the branch stack
+        for (int i = 0; i < `BRANCH_PRED_SZ; i++) begin
+            $display("%02d |   %d   |   %02d   |   %02d   |   %02d   |   %02d   |", 
+                i, 
+                debug_bs_entries[i].valid, 
+                debug_bs_entries[i].b_id, 
+                debug_bs_entries[i].b_mask, 
+                debug_bs_entries[i].fl_head, 
+                debug_bs_entries[i].rob_tail
+            );
+        end
+    endfunction
+
     // cdb
+    // TODO uhh idk if this is pulling data correctly tbh
+    function void print_cdb();
+        $display("\nCDB");
+        $display("#  | valid | reg_idx | p_reg_idx | reg_val   |");
+
+        for (int i = 0; i < `N; i++) begin
+            $display("%02d |   %d   |  %02d    |   %02d    |  %08x   |", 
+                i, 
+                debug_cdb_entries[i].valid, 
+                debug_cdb_entries[i].reg_idx, 
+                debug_cdb_entries[i].p_reg_idx, 
+                debug_cdb_entries[i].reg_val
+            );
+        end
+    endfunction
+
     // regfile
 
     function void dump_state();
@@ -494,6 +533,9 @@ module testbench;
         print_rs();
         print_map_table();
         print_freelist();
+        print_br_stack();
+        print_cdb();
+        $display("\n");
 
         if(clock_count > 250) begin
             $finish;
