@@ -198,16 +198,16 @@ module testbench;
 
                 // $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
 
-                if (in_insts[i].inst == 32'h10500073) begin
-                    $display("halting...");
-                    error_status = NO_ERROR;
-                    #200 $finish;
-                end
+                // if (in_insts[i].inst == 32'h10500073) begin
+                //     $display("halting...");
+                //     error_status = NO_ERROR;
+                //     #200 $finish;
+                // end
             end
 
             //print_custom_data();
 
-            //output_reg_writeback_and_maybe_halt();
+            output_reg_writeback_and_maybe_halt();
 
             // stop the processor
             if (error_status != NO_ERROR || clock_count > `TB_MAX_CYCLES) begin
@@ -232,40 +232,40 @@ module testbench;
 
 
     // Task to output register writeback data and potentially halt the processor.
-    // task output_reg_writeback_and_maybe_halt;
-    //     ADDR pc;
-    //     DATA inst;
-    //     MEM_BLOCK block;
-    //     for (int n = 0; n < `N; ++n) begin
-    //         if (committed_insts[n].valid) begin
-    //             // update the count for every committed instruction
-    //             instr_count = instr_count + 1;
+    task output_reg_writeback_and_maybe_halt;
+        ADDR pc;
+        DATA inst;
+        MEM_BLOCK block;
+        for (int n = 0; n < `N; ++n) begin
+            if (committed_insts[n].valid) begin
+                // update the count for every committed instruction
+                instr_count = instr_count + 1;
 
-    //             pc = committed_insts[n].NPC - 4;
-    //             block = unified_memory[pc[31:3]];
-    //             inst = block.word_level[pc[2]];
-    //             // print the committed instructions to the writeback output file
-    //             if (committed_insts[n].reg_idx == `ZERO_REG) begin
-    //                 $fdisplay(wb_fileno, "PC %4x:%-8s| ---", pc, decode_inst(inst));
-    //             end else begin
-    //                 $fdisplay(wb_fileno, "PC %4x:%-8s| r%02d=%-8x",
-    //                           pc,
-    //                           decode_inst(inst),
-    //                           committed_insts[n].reg_idx,
-    //                           committed_insts[n].data);
-    //             end
+                pc = committed_insts[n].NPC - 4;
+                block = unified_memory[pc[31:3]];
+                inst = block.word_level[pc[2]];
+                // print the committed instructions to the writeback output file
+                if (committed_insts[n].reg_idx == `ZERO_REG) begin
+                    $fdisplay(wb_fileno, "PC %4x:%-8s| ---", pc, decode_inst(inst));
+                end else begin
+                    $fdisplay(wb_fileno, "PC %4x:%-8s| r%02d=%-8x",
+                              pc,
+                              decode_inst(inst),
+                              committed_insts[n].reg_idx,
+                              committed_insts[n].data);
+                end
 
-    //             // exit if we have an illegal instruction or a halt
-    //             if (committed_insts[n].illegal) begin
-    //                 error_status = ILLEGAL_INST;
-    //                 break;
-    //             end else if(committed_insts[n].halt) begin
-    //                 error_status = HALTED_ON_WFI;
-    //                 break;
-    //             end
-    //         end // if valid
-    //     end
-    // endtask // task output_reg_writeback_and_maybe_halt
+                // exit if we have an illegal instruction or a halt
+                if (committed_insts[n].illegal) begin
+                    error_status = ILLEGAL_INST;
+                    break;
+                end else if(committed_insts[n].halt) begin
+                    error_status = HALTED_ON_WFI;
+                    break;
+                end
+            end // if valid
+        end
+    endtask // task output_reg_writeback_and_maybe_halt
 
 
 //     // Task to output the final CPI and # of elapsed clock edges
