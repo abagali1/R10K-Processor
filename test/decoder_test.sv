@@ -9,41 +9,40 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
 
-
 module decoder_tb();
-    INST              inst;
-    logic            valid;
+    INST_PACKET         inst;
     
-    ALU_OPA_SELECT   opa_select;
-    ALU_OPB_SELECT   opb_select;
-    logic            has_dest;
-    ALU_FUNC         alu_func;
-    logic            mult;
-    logic            rd_mem;
-    logic            wr_mem;
-    logic            cond_branch;
-    logic            uncond_branch;
-    logic            csr_op;
-    logic            halt;
-    logic            illegal;
+    FU_TYPE            fu_type;
+    ALU_OPA_SELECT     opa_select;
+    ALU_OPB_SELECT     opb_select;
+    logic              has_dest;
+    ALU_FUNC           alu_func;
+    logic              mult;
+    logic              rd_mem;
+    logic              wr_mem;
+    logic              cond_branch;
+    logic              uncond_branch;
+    logic              csr_op;
+    logic              halt;
+    logic              illegal;
 
-    ALU_OPA_SELECT   expected_opa_select;
-    ALU_OPB_SELECT   expected_opb_select;
-    logic            expected_has_dest;
-    ALU_FUNC         expected_alu_func;
-    logic            expected_mult;
-    logic            expected_rd_mem;
-    logic            expected_wr_mem;
-    logic            expected_cond_branch;
-    logic            expected_uncond_branch;
-    logic            expected_csr_op;
-    logic            expected_halt;
-    logic            expected_illegal;
-
+    FU_TYPE            expected_fu_type;
+    ALU_OPA_SELECT     expected_opa_select;
+    ALU_OPB_SELECT     expected_opb_select;
+    logic              expected_has_dest;
+    ALU_FUNC           expected_alu_func;
+    logic              expected_mult;
+    logic              expected_rd_mem;
+    logic              expected_wr_mem;
+    logic              expected_cond_branch;
+    logic              expected_uncond_branch;
+    logic              expected_csr_op;
+    logic              expected_halt;
+    logic              expected_illegal;
 
     decoder dut (
         .inst(inst),
-        .valid(valid),
+        .fu_type(fu_type),
         .opa_select(opa_select),
         .opb_select(opb_select),
         .has_dest(has_dest),
@@ -63,15 +62,14 @@ module decoder_tb();
         $display("\nStart Testbench");
 
         inst = '0;
-        valid = 1'b0;
         set_expected_defaults();
 
         // ------------------------------ Test 1 ------------------------------ //
         $display("\nTest 1: Check invalid instruction (valid = 0)");
         
         // nop
-        valid = 1'b0;
-        inst = `RV32_ADD;  
+        inst.valid = 1'b0;
+        inst.inst = `RV32_ADD;  
         #1 check_expected();
 
         $display("@@@ PASSED TEST 1");
@@ -79,19 +77,20 @@ module decoder_tb();
         // ------------------------------ Test 2 ------------------------------ //
         $display("\nTest 2: Check basic arithmetic instructions");
         
-        valid = 1'b1;
+        inst.valid = 1'b1;
         
         // test ADD, SUB, ADDI
-        inst = `RV32_ADD;
+        inst.inst = `RV32_ADD;
         expected_has_dest = `TRUE;
         expected_alu_func = ALU_ADD;
+        expected_fu_type = ALU_INST;
         #1 check_expected();
 
-        inst = `RV32_SUB;
+        inst.inst = `RV32_SUB;
         expected_alu_func = ALU_SUB;
         #1 check_expected();
 
-        inst = `RV32_ADDI;
+        inst.inst = `RV32_ADDI;
         expected_alu_func = ALU_ADD;
         expected_opb_select = OPB_IS_I_IMM;
         #1 check_expected();
@@ -101,17 +100,19 @@ module decoder_tb();
         // ------------------------------ Test 3 ------------------------------ //
         $display("\nTest 3: Check memory operations");
 
-        inst = `RV32_LW;
+        inst.inst = `RV32_LW;
         expected_has_dest = `TRUE;
         expected_opb_select = OPB_IS_I_IMM;
         expected_rd_mem = `TRUE;
+        expected_fu_type = LD_INST;
         #1 check_expected();
 
-        inst = `RV32_SW;
+        inst.inst = `RV32_SW;
         expected_has_dest = `FALSE;
         expected_rd_mem = `FALSE;
         expected_wr_mem = `TRUE;
         expected_opb_select = OPB_IS_S_IMM;
+        expected_fu_type = STORE_INST;
         #1 check_expected();
 
         $display("@@@ PASSED TEST 3");
@@ -119,19 +120,21 @@ module decoder_tb();
         // ------------------------------ Test 4 ------------------------------ //
         $display("\nTest 4: Check branch instructions");
 
-        inst = `RV32_BEQ;
+        inst.inst = `RV32_BEQ;
         expected_wr_mem = `FALSE;
         expected_opa_select = OPA_IS_PC;
         expected_opb_select = OPB_IS_B_IMM;
         expected_cond_branch = `TRUE;
+        expected_fu_type = BR_INST;
         #1 check_expected();
 
-        inst = `RV32_JAL;
+        inst.inst = `RV32_JAL;
         expected_has_dest = `TRUE;
         expected_cond_branch = `FALSE;
         expected_uncond_branch = `TRUE;
         expected_opa_select = OPA_IS_PC;
         expected_opb_select = OPB_IS_J_IMM;
+        expected_fu_type = BR_INST;
         #1 check_expected();
 
         $display("@@@ PASSED TEST 4");
@@ -139,12 +142,13 @@ module decoder_tb();
         // ------------------------------ Test 5 ------------------------------ //
         $display("\nTest 5: Check multiplication instructions");
 
-        inst = `RV32_MUL;
+        inst.inst = `RV32_MUL;
         expected_uncond_branch = `FALSE;
         expected_has_dest = `TRUE;
         expected_mult = `TRUE;
         expected_opa_select = OPA_IS_RS1;
         expected_opb_select = OPB_IS_RS2;
+        expected_fu_type = MULT_INST;
         #1 check_expected();
 
         $display("@@@ PASSED TEST 5");
@@ -152,8 +156,8 @@ module decoder_tb();
         // ------------------------------ Test 6 ------------------------------ //
         $display("\nTest 6: Check illegal instructions");
 
-        // test instsruction of all 1s
-        inst = '1;  
+        // test instruction of all 1s
+        inst.inst = '1;  
         set_expected_defaults();
         expected_illegal = `TRUE;
         #1 check_expected();
@@ -165,6 +169,7 @@ module decoder_tb();
     end
 
     function void set_expected_defaults();
+        expected_fu_type       = ALU_INST;
         expected_opa_select    = OPA_IS_RS1;
         expected_opb_select    = OPB_IS_RS2;
         expected_alu_func      = ALU_ADD;
@@ -182,6 +187,8 @@ module decoder_tb();
     function void check_expected();
         string error_msg = "";
         
+        if (fu_type !== expected_fu_type)
+            error_msg = $sformatf("%s\nfu_type: expected %0d, got %0d", error_msg, expected_fu_type, fu_type);
         if (opa_select !== expected_opa_select)
             error_msg = $sformatf("%s\nopa_select: expected %0d, got %0d", error_msg, expected_opa_select, opa_select);
         if (opb_select !== expected_opb_select)
