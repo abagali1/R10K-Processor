@@ -311,7 +311,8 @@ module br_stack_tb();
         rem_b_id = 4'b0010;
         br_task = CLEAR;
 
-        model_entries[1] = '0;
+        model_entries[1] = '0; 
+        model_entries[0].b_mask = 4'b1101;
 
         @(negedge clock);
 
@@ -343,6 +344,13 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[3].valid = 1;
+        model_entries[3].b_id = 4'b1000;
+        model_entries[3].b_mask = 4'b1000;
+        model_entries[3].rec_mt = in_mt;
+        model_entries[3].fl_head = in_fl_head;
+        model_entries[3].rob_tail = in_rob_tail;
+
         @(negedge clock);  
         //print_entries();
         dis_inst.uncond_branch = 0;
@@ -362,6 +370,13 @@ module br_stack_tb();
         dis_inst.PC = 1;
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
+
+        model_entries[2].valid = 1;
+        model_entries[2].b_id = 4'b0100;
+        model_entries[2].b_mask = 4'b1100;
+        model_entries[2].rec_mt = in_mt;
+        model_entries[2].fl_head = in_fl_head;
+        model_entries[2].rob_tail = in_rob_tail;
 
         @(negedge clock);  
 
@@ -383,8 +398,15 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[1].valid = 1;
+        model_entries[1].b_id = 4'b0010;
+        model_entries[1].b_mask = 4'b1110;
+        model_entries[1].rec_mt = in_mt;
+        model_entries[1].fl_head = in_fl_head;
+        model_entries[1].rob_tail = in_rob_tail;
+
         @(negedge clock);  
-        print_entries();
+
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
@@ -403,8 +425,15 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[0].valid = 1;
+        model_entries[0].b_id = 4'b0001;
+        model_entries[0].b_mask = 4'b1111;
+        model_entries[0].rec_mt = in_mt;
+        model_entries[0].fl_head = in_fl_head;
+        model_entries[0].rob_tail = in_rob_tail;
+
         @(negedge clock);  
-        //print_entries();
+
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
@@ -412,6 +441,9 @@ module br_stack_tb();
       
         rem_b_id = 4'b0010;
         br_task = SQUASH;
+
+        model_entries[1] = '0;
+        model_entries[0] = '0;
 
         @(negedge clock);  
 
@@ -426,8 +458,14 @@ module br_stack_tb();
 
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
+
+        model_entries[1].valid = 1;
+        model_entries[1].b_id = 4'b0010;
+        model_entries[1].b_mask = 4'b1110;
+        model_entries[1].rec_mt = in_mt;
+        model_entries[1].fl_head = in_fl_head;
+        model_entries[1].rob_tail = in_rob_tail;
         
-        //@(negedge clock); // this instruction only writes in if i put two negedges?
         @(negedge clock); 
 
         rem_b_id = '0;
@@ -463,8 +501,15 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[3].valid = 1;
+        model_entries[3].b_id = 4'b1000;
+        model_entries[3].b_mask = 4'b1000;
+        model_entries[3].rec_mt = in_mt;
+        model_entries[3].fl_head = in_fl_head;
+        model_entries[3].rob_tail = in_rob_tail;
+
         @(negedge clock);  
-        //print_entries();
+
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
@@ -482,6 +527,13 @@ module br_stack_tb();
         dis_inst.PC = 1;
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
+
+        model_entries[2].valid = 1;
+        model_entries[2].b_id = 4'b0100;
+        model_entries[2].b_mask = 4'b1100;
+        model_entries[2].rec_mt = in_mt;
+        model_entries[2].fl_head = in_fl_head;
+        model_entries[2].rob_tail = in_rob_tail;
 
         @(negedge clock);  
 
@@ -502,8 +554,15 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[1].valid = 1;
+        model_entries[1].b_id = 4'b0010;
+        model_entries[1].b_mask = 4'b1110;
+        model_entries[1].rec_mt = in_mt;
+        model_entries[1].fl_head = in_fl_head;
+        model_entries[1].rob_tail = in_rob_tail;
+
         @(negedge clock);  
-        print_entries();
+
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
@@ -521,8 +580,15 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[0].valid = 1;
+        model_entries[0].b_id = 4'b0001;
+        model_entries[0].b_mask = 4'b1111;
+        model_entries[0].rec_mt = in_mt;
+        model_entries[0].fl_head = in_fl_head;
+        model_entries[0].rob_tail = in_rob_tail;
+
         @(negedge clock);  
-        //print_entries();
+
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
@@ -530,6 +596,9 @@ module br_stack_tb();
       
         rem_b_id = 4'b0010;
         br_task = CLEAR;
+
+        model_entries[1] = '0;
+        model_entries[0].b_mask = 4'b1101;
 
         @(negedge clock);  
 
@@ -544,8 +613,14 @@ module br_stack_tb();
 
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
-        
-        //@(negedge clock); // this instruction only writes in if i put two negedges?
+
+        model_entries[1].valid = 1;
+        model_entries[1].b_id = 4'b0010;
+        model_entries[1].b_mask = 4'b1111;
+        model_entries[1].rec_mt = in_mt;
+        model_entries[1].fl_head = in_fl_head;
+        model_entries[1].rob_tail = in_rob_tail;
+
         @(negedge clock); 
 
         rem_b_id = '0;
@@ -583,6 +658,13 @@ module br_stack_tb();
 
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
+
+        model_entries[3].valid = 1;
+        model_entries[3].b_id = 4'b1000;
+        model_entries[3].b_mask = 4'b1000;
+        model_entries[3].rec_mt = in_mt;
+        model_entries[3].fl_head = in_fl_head;
+        model_entries[3].rob_tail = in_rob_tail;
 
         @(negedge clock);
 
@@ -650,22 +732,22 @@ function void check_entries();
     for (int i = 0; i < DEPTH; i++) begin
         if (model_entries[i].b_id != debug_entries[i].b_id) begin
             $error("@@@ FAILED @@@");
-            $error("Check entry error: expected %0d, but got %0d", model_entries[i].b_id, debug_entries[i].b_id);
+            $error("Check b_id error: expected %0d, but got %0d", model_entries[i].b_id, debug_entries[i].b_id);
             $finish;
         end
         if (model_entries[i].b_mask != debug_entries[i].b_mask) begin
             $error("@@@ FAILED @@@");
-            $error("Check entry error: expected %0d, but got %0d", model_entries[i].b_mask, debug_entries[i].b_mask);
+            $error("Check b_mask error: expected %0d, but got %0d", model_entries[i].b_mask, debug_entries[i].b_mask);
             $finish;
         end
         if (model_entries[i].fl_head != debug_entries[i].fl_head) begin
             $error("@@@ FAILED @@@");
-            $error("Check entry error: expected %0d, but got %0d", model_entries[i].fl_head, debug_entries[i].fl_head);
+            $error("Check fl_head error: expected %0d, but got %0d", model_entries[i].fl_head, debug_entries[i].fl_head);
             $finish;
         end
         if (model_entries[i].rob_tail != debug_entries[i].rob_tail) begin
             $error("@@@ FAILED @@@");
-            $error("Check entry error: expected %0d, but got %0d", model_entries[i].rob_tail, debug_entries[i].rob_tail);
+            $error("Check rob_tail error: expected %0d, but got %0d", model_entries[i].rob_tail, debug_entries[i].rob_tail);
             $finish;
         end
     end
@@ -729,7 +811,7 @@ function void print_entries();
 endfunction
 
 function void print_cdb();
-    $display("\nCDB In");
+    $display("\nCDB In\n");
     for (int i = 0; i < N; i++) begin
         $display("index: %0d, reg_idx: %b, p_reg_idx: %b, reg_val: %0d, valid: %0d", i, cdb_in[i].reg_idx, cdb_in[i].p_reg_idx, cdb_in[i].reg_val, cdb_in[i].valid);
     end
@@ -738,7 +820,7 @@ endfunction
 function void print_model_entries();
     $display("\nModel Entries\n");
     for (int i = 0; i < DEPTH; i++) begin
-        $display("index: %0d, b_id: %0d, b_mask: %0d, fl_head: %0d, rob_tail: %0d", i, model_entries[i].b_id, model_entries[i].b_mask, model_entries[i].fl_head, model_entries[i].rob_tail);
+        $display("index: %0d, b_id: %0b, b_mask: %0b, fl_head: %0d, rob_tail: %0d", i, model_entries[i].b_id, model_entries[i].b_mask, model_entries[i].fl_head, model_entries[i].rob_tail);
     end
 endfunction
 
