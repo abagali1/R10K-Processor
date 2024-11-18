@@ -56,7 +56,8 @@ module issue #(
     // alu issuing signals
     always_comb begin    
         alu_rd_en_vals = '0;
-        for (int i = 0; i <`NUM_FU_STORE; i++) begin
+        // TODO: 
+        for (int i = 0; i <`NUM_FU_ALU; i++) begin
             alu_rd_en_vals[i] = issued_alu[i].decoded_vals.valid;
             alu_reg_1[i] = issued_alu[i].t1.reg_idx;
             alu_reg_2[i] = issued_alu[i].t2.reg_idx;
@@ -78,7 +79,7 @@ module issue #(
     // mult issuing signals
     always_comb begin    
         mult_rd_en_vals = '0;
-        for (int i = 0; i <`NUM_FU_STORE; i++) begin
+        for (int i = 0; i <`NUM_FU_MULT; i++) begin
             mult_rd_en_vals[i] = issued_mult[i].decoded_vals.valid;
             mult_reg_1[i] = issued_mult[i].t1.reg_idx;
             mult_reg_2[i] = issued_mult[i].t2.reg_idx;
@@ -100,7 +101,7 @@ module issue #(
     // load issuing signals
     always_comb begin    
         ld_rd_en_vals = '0;
-        for (int i = 0; i <`NUM_FU_STORE; i++) begin
+        for (int i = 0; i <`NUM_FU_LD; i++) begin
             ld_rd_en_vals[i] = issued_ld[i].decoded_vals.valid;
             ld_reg_1[i] = issued_ld[i].t1.reg_idx;
             ld_reg_2[i] = issued_ld[i].t2.reg_idx;
