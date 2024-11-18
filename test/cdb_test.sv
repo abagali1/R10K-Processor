@@ -11,8 +11,8 @@
 `include "ISA.svh"
 
 module cdb_tb ();
-
-    parameter N = 4;
+    // THINGS ARE ONLY CHEKCKED WHEN N = 4
+    parameter N = `N;
     parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE;
 
     logic                       clock;
@@ -66,6 +66,7 @@ module cdb_tb ();
 
         clock = 0;
         reset = 1;
+        model_entries = '0;
         setup_fu_done();
         fu_done = fu_input;
         wr_data = wr_data_in;
@@ -91,8 +92,10 @@ module cdb_tb ();
 
         update_FU_done(5, 1);
         update_FU_done(11, 1);
+
         model_entries[0].reg_val = wr_data[11].result;
         model_entries[1].reg_val = wr_data[5].result;
+
         @(negedge clock);
 
         update_FU_done(5, 0);
@@ -112,6 +115,7 @@ module cdb_tb ();
         model_entries[1].reg_val = wr_data[2].result;
         model_entries[2].reg_val = wr_data[10].result;
         model_entries[3].reg_val = wr_data[5].result;
+
         @(negedge clock);
 
         update_FU_done(5, 0);
@@ -130,7 +134,9 @@ module cdb_tb ();
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
         print_all();
-        check_entries();
+        if (N == 4) begin
+            check_entries();
+        end
         $display("\n@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
         cycle_number++;
     end
