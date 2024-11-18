@@ -19,9 +19,9 @@ module br_stack_tb();
     logic                                                       clock;
     logic                                                       reset;
     DECODED_PACKET                                              dis_inst; 
-    MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                    in_mt;
+    MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                  in_mt;
     logic                   [$clog2(`ROB_SZ+1)-1:0]             in_fl_head;
-    logic                   [$clog2(`ROB_SZ)-1:0]     in_rob_tail;
+    logic                   [$clog2(`ROB_SZ)-1:0]               in_rob_tail;
 
     CDB_PACKET              [N-1:0]                             cdb_in;
     BR_TASK                                                     br_task;
@@ -36,6 +36,8 @@ module br_stack_tb();
         logic [DEPTH-1:0] debug_free_entries;
         logic [DEPTH-1:0] debug_stack_gnt;
     `endif
+
+    CHECKPOINT [DEPTH-1:0] model_entries;
    
     br_stack #(
         .DEPTH(DEPTH),
@@ -99,6 +101,13 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[3].valid = 1;
+        model_entries[3].b_id = 4'b1000;
+        model_entries[3].b_mask = 4'b1000;
+        model_entries[3].rec_mt = in_mt;
+        model_entries[3].fl_head = in_fl_head;
+        model_entries[3].rob_tail = in_rob_tail;
+
         @(negedge clock);  
         //print_entries();
         dis_inst.uncond_branch = 0;
@@ -127,8 +136,14 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[2].valid = 1;
+        model_entries[2].b_id = 4'b0100;
+        model_entries[2].b_mask = 4'b1100;
+        model_entries[2].rec_mt = in_mt;
+        model_entries[2].fl_head = in_fl_head;
+        model_entries[2].rob_tail = in_rob_tail;
+
         @(negedge clock);  
-        //print_entries();
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
@@ -147,8 +162,14 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[1].valid = 1;
+        model_entries[1].b_id = 4'b0010;
+        model_entries[1].b_mask = 4'b1110;
+        model_entries[1].rec_mt = in_mt;
+        model_entries[1].fl_head = in_fl_head;
+        model_entries[1].rob_tail = in_rob_tail;
+
         @(negedge clock);  
-        print_entries();
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
 
@@ -166,6 +187,13 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[0].valid = 1;
+        model_entries[0].b_id = 4'b0001;
+        model_entries[0].b_mask = 4'b1111;
+        model_entries[0].rec_mt = in_mt;
+        model_entries[0].fl_head = in_fl_head;
+        model_entries[0].rob_tail = in_rob_tail;
+
         @(negedge clock);  
         dis_inst.uncond_branch = 0;
         dis_inst.valid = 0;
@@ -176,6 +204,10 @@ module br_stack_tb();
 
         rem_b_id = 4'b0100;
         br_task = SQUASH;
+
+        model_entries[0] = '0;
+        model_entries[1] = '0;
+        model_entries[2] = '0;
 
         @(negedge clock);
 
@@ -208,6 +240,13 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[2].valid = 1;
+        model_entries[2].b_id = 4'b0100;
+        model_entries[2].b_mask = 4'b1100;
+        model_entries[2].rec_mt = in_mt;
+        model_entries[2].fl_head = in_fl_head;
+        model_entries[2].rob_tail = in_rob_tail;
+
         @(negedge clock);  
 
         dis_inst.uncond_branch = 0;
@@ -227,6 +266,13 @@ module br_stack_tb();
         dis_inst.PC = 1;
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
+
+        model_entries[1].valid = 1;
+        model_entries[1].b_id = 4'b0010;
+        model_entries[1].b_mask = 4'b1110;
+        model_entries[1].rec_mt = in_mt;
+        model_entries[1].fl_head = in_fl_head;
+        model_entries[1].rob_tail = in_rob_tail;
 
         @(negedge clock);  
         print_entries();
@@ -248,6 +294,13 @@ module br_stack_tb();
         dis_inst.uncond_branch = 1;
         dis_inst.valid = 1;
 
+        model_entries[0].valid = 1;
+        model_entries[0].b_id = 4'b0001;
+        model_entries[0].b_mask = 4'b1111;
+        model_entries[0].rec_mt = in_mt;
+        model_entries[0].fl_head = in_fl_head;
+        model_entries[0].rob_tail = in_rob_tail;
+
         @(negedge clock);  
         //print_entries();
         dis_inst.uncond_branch = 0;
@@ -257,6 +310,8 @@ module br_stack_tb();
 
         rem_b_id = 4'b0010;
         br_task = CLEAR;
+
+        model_entries[1] = '0;
 
         @(negedge clock);
 
@@ -571,7 +626,9 @@ module br_stack_tb();
     // Correctness Verification
     always @(posedge clock) begin
         #(`CLOCK_PERIOD * 0.2);
+        print_model_entries();
         print_entries();
+        check_entries();
         $display("\n@@@ FINISHED CYCLE NUMBER: %0d @@@ \n", cycle_number);
         cycle_number++;
     end
@@ -586,7 +643,34 @@ function void clear_inputs();
     cdb_in = '0;
     br_task = 0;
     rem_b_id = 0;
+    model_entries = '0;
 endfunction
+
+function void check_entries();
+    for (int i = 0; i < DEPTH; i++) begin
+        if (model_entries[i].b_id != debug_entries[i].b_id) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].b_id, debug_entries[i].b_id);
+            $finish;
+        end
+        if (model_entries[i].b_mask != debug_entries[i].b_mask) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].b_mask, debug_entries[i].b_mask);
+            $finish;
+        end
+        if (model_entries[i].fl_head != debug_entries[i].fl_head) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].fl_head, debug_entries[i].fl_head);
+            $finish;
+        end
+        if (model_entries[i].rob_tail != debug_entries[i].rob_tail) begin
+            $error("@@@ FAILED @@@");
+            $error("Check entry error: expected %0d, but got %0d", model_entries[i].rob_tail, debug_entries[i].rob_tail);
+            $finish;
+        end
+    end
+endfunction
+
 
 // function void add_checkpoint(MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] test_in_mt, logic [$clog2(`ROB_SZ+1)-1:0] test_in_fl_head, logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] test_in_rob_tail, DECODED_PACKET dis_inst_temp);
 //     //stack_gnt = data.b_id;
@@ -651,12 +735,12 @@ function void print_cdb();
     end
 endfunction
 
-// function void print_model_entries();
-//     $display("\nModel Entries\n");
-//     for (int i = 0; i < DEPTH; i++) begin
-//         $display("index: %0d, b_id: %0d, b_mask: %0d, rec_PC: %0d, fl_head: %0d, rob_tail: %0d", i, model_entries[i].b_id, model_entries[i].b_mask, model_entries[i].rec_PC, model_entries[i].fl_head, model_entries[i].rob_tail);
-//     end
-// endfunction
+function void print_model_entries();
+    $display("\nModel Entries\n");
+    for (int i = 0; i < DEPTH; i++) begin
+        $display("index: %0d, b_id: %0d, b_mask: %0d, fl_head: %0d, rob_tail: %0d", i, model_entries[i].b_id, model_entries[i].b_mask, model_entries[i].fl_head, model_entries[i].rob_tail);
+    end
+endfunction
 
 // function void print_free_entries();
 //     $display("\nFree Entries: %0d", debug_free_entries);

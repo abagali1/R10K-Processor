@@ -80,12 +80,11 @@ module cdb_tb ();
 
         update_FU_done(1, 1);
         model_entries[0].reg_val = wr_data[1].result;
-        $display("hey girl: %0d", wr_data[1].result);
         
         @(negedge clock);
         update_FU_done(1, 0);
 
-        $display("PASSED TEST 1");
+        $display("DONE TEST 1");
 
         // ------------------------------ Test 2 ------------------------------ //
         $display("\nTest 2: Multiple FUs Broadcast\n");
@@ -99,9 +98,9 @@ module cdb_tb ();
         update_FU_done(5, 0);
         update_FU_done(11, 0);
 
-        $display("PASSED TEST 2");
+        $display("DONE TEST 2");
 
-        // ------------------------------ Test 2 ------------------------------ //
+        // ------------------------------ Test 3 ------------------------------ //
         $display("\nTest 3: FU Request More than N\n");
 
         update_FU_done(5, 1);
@@ -121,7 +120,7 @@ module cdb_tb ();
         update_FU_done(9, 0);
         update_FU_done(10, 0);
 
-        $display("PASSED TEST 2 \n");
+        $display("DONE TEST 3 \n");
 
         $finish;
 
