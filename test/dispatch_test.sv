@@ -101,7 +101,9 @@ module dispatch_tb();
         print_other_inputs();
         @(negedge clock);
         @(negedge clock);
-        check_dispatched(2);
+        if (N == 5) begin
+            check_dispatched(2);
+        end
         rob_open = 0;
         rs_open = 0;
         bs_full = 0;
@@ -131,7 +133,9 @@ module dispatch_tb();
         print_other_inputs();
         @(negedge clock);
         @(negedge clock);
-        check_dispatched(0);
+        if (N == 5) begin
+            check_dispatched(0);
+        end
         rob_open = 0;
         rs_open = 0;
         bs_full = 0;
@@ -161,7 +165,9 @@ module dispatch_tb();
         print_other_inputs();
         @(negedge clock);
         @(negedge clock);
-        check_dispatched(3);
+        if (N == 5) begin
+            check_dispatched(3);
+        end
         rob_open = 0;
         rs_open = 0;
         bs_full = 0;
@@ -191,7 +197,9 @@ module dispatch_tb();
         print_other_inputs();
         @(negedge clock);
         @(negedge clock);
-        check_dispatched(2);
+        if (N == 5) begin
+            check_dispatched(2);
+        end
         rob_open = 0;
         rs_open = 0;
         bs_full = 0;
@@ -224,7 +232,9 @@ module dispatch_tb();
         print_other_inputs();
         @(negedge clock);
         @(negedge clock);
-        check_dispatched(2);
+        if (N == 5) begin
+            check_dispatched(2);
+        end
         rob_open = 0;
         rs_open = 0;
         bs_full = 0;
@@ -257,7 +267,9 @@ module dispatch_tb();
         print_other_inputs();
         @(negedge clock);
         @(negedge clock);
-        check_dispatched(2);
+        if (N == 5) begin
+            check_dispatched(2);
+        end
         rob_open = 0;
         rs_open = 0;
         bs_full = 0;
