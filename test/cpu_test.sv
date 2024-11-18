@@ -55,11 +55,14 @@ module testbench;
 
     ROB_PACKET [`N-1:0] retired_insts;
 
+    // DECODED_PACKET [`N-1:0] dis_insts;
+
     EXCEPTION_CODE error_status = NO_ERROR;
     logic [63:0] unified_memory [`MEM_64BIT_LINES-1:0];
 
     `ifdef DEBUG
         logic                   [$clog2(`N+1)-1:0]                          debug_num_dispatched;
+        DECODED_PACKET           [`N-1:0]                                   debug_dis_insts;
         logic                   [$clog2(`N+1)-1:0]                          debug_num_retired;
 
         INST_PACKET             [`INST_BUFF_DEPTH-1:0]                      debug_inst_buff_entries;
@@ -323,13 +326,162 @@ module testbench;
 //         //);
 //     endtask
 
+    // DEBUGGER
+
+    // inst buff
     function void print_inst_buff();
         $display("Instruction Buffer");
-        $display("#\t| valid |\t inst\t |    PC\t|\tNPC\t\t|\tpred |");
-        for(int i=0;i<`INST_BUFF_DEPTH;i++) begin
-            $write("%02d\t|  %d \t|  %x  |  %05d\t|\t%05d\t|\t%s\t |\n", i, debug_inst_buff_entries[i].valid, debug_inst_buff_entries[i].inst, debug_inst_buff_entries[i].PC, debug_inst_buff_entries[i].NPC, debug_inst_buff_entries[i].pred_taken ? "t" : "nt");
+        $display("#\t| valid |   inst     |   PC  |   NPC   | pred   |");
+        for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin
+            $display("%02d\t|   %d   | %x\t|  %05d |  %05d |   %s   |", 
+                i, 
+                debug_inst_buff_entries[i].valid, 
+                debug_inst_buff_entries[i].inst, 
+                debug_inst_buff_entries[i].PC, 
+                debug_inst_buff_entries[i].NPC, 
+                debug_inst_buff_entries[i].pred_taken ? "t" : "nt"
+            );
         end
     endfunction
+
+    // dispatch
+    function void print_dispatch();
+        $display("\nDispatch");
+        $display("#\t| valid |    inst    |    PC     |    NPC    |");
+        for (int i = 0; i < `N; i++) begin
+            $write("%02d\t|   %d   | %08x   | %08x  | %08x  |\n", 
+                i, 
+                debug_dis_insts[i].valid, 
+                debug_dis_insts[i].inst, 
+                debug_dis_insts[i].PC, 
+                debug_dis_insts[i].NPC
+            );
+        end
+    endfunction
+
+    // rob
+    function void print_rob();
+        $display("\nReorder Buffer (ROB)");
+        $display("Status | #  | valid |     PC       |  dest_reg   | halt | complete |    t   | t_old  |");
+        for (int i = 0; i < `ROB_SZ; i++) begin
+            string status = "";
+            if (i == debug_rob_tail && i== debug_rob_head)
+                status = "HT"; 
+            else if (i == debug_rob_head) 
+                status = "HEAD"; 
+            else if (i == debug_rob_tail)
+                status = "TAIL"; 
+            else
+                status = ""; 
+
+            $display("%-6s | %02d |  %d    |  %08x    |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
+                    status, 
+                    i, 
+                    debug_rob_entries[i].valid, 
+                    debug_rob_entries[i].PC, 
+                    debug_rob_entries[i].dest_reg_idx, 
+                    debug_rob_entries[i].halt, 
+                    debug_rob_entries[i].complete, 
+                    debug_rob_entries[i].t, 
+                    debug_rob_entries[i].t_old);
+        end
+    endfunction
+
+    // rs
+    // TODO valid bits for t, t1, t2??
+    function void print_rs();
+        $display("\nReservation Station (RS)");
+        $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1    |  t2    |  b_id   |   b_mask   |");
+        for (int i = 0; i < `RS_SZ; i++) begin
+            string t1_plus = "";
+            string t2_plus = "";
+            if (debug_rs_entries[i].t1.ready)
+                t1_plus = "+";
+            if (debug_rs_entries[i].t2.ready)
+                t2_plus = "+";
+            $display("%02d |  %d    |  %08x    |  %08x    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |", 
+                        i,
+                        debug_rs_entries[i].decoded_vals.valid,
+                        debug_rs_entries[i].decoded_vals.PC,
+                        debug_rs_entries[i].decoded_vals.NPC,
+                        debug_rs_entries[i].decoded_vals.fu_type,
+                        debug_rs_entries[i].t.reg_idx,
+                        debug_rs_entries[i].t1.reg_idx,
+                        t1_plus,
+                        debug_rs_entries[i].t2.reg_idx,
+                        t2_plus,
+                        debug_rs_entries[i].b_id,
+                        debug_rs_entries[i].b_mask);
+        end
+    endfunction
+
+    // map table
+    function void print_map_table();
+        $display("\nMap Table");
+        $display("#\t| reg_idx | ready |valid |");
+        for (int i = 0; i < `ARCH_REG_SZ; i++) begin
+            $display("%02d\t|  %04d   |   %1d   |   %1d  |", 
+                i, 
+                debug_mt_entries[i].reg_idx, 
+                debug_mt_entries[i].ready, 
+                debug_mt_entries[i].valid);
+        end
+    endfunction
+
+    // freelist
+    function void print_freelist();
+        $display("\nFree List");
+        $display("Pos\t| #  | reg_idx | valid |");
+        for (int i = 0; i < `ARCH_REG_SZ; i++) begin
+            string pos; 
+            pos = "";
+            if (i == debug_fl_head && i == debug_fl_tail)
+                pos = "HT"; 
+            else if (i == debug_fl_head)
+                pos = "HEAD";
+            else if (i == debug_fl_tail)
+                pos = "TAIL";
+
+            $display("%-2s\t| %02d |  %04d   |   %1d   |", 
+                pos, 
+                i, 
+                debug_fl_entries[i].reg_idx, 
+                debug_fl_entries[i].valid);
+        end
+    endfunction
+
+
+    // issue
+    function void print_issue();
+        $display("\Issue Stage");
+        $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1    |  t2    |  b_id   |   b_mask   |");
+        for (int i = 0; i < `RS_SZ; i++) begin
+            string t1_plus = "";
+            string t2_plus = "";
+            if (debug_rs_entries[i].t1.ready)
+                t1_plus = "+";
+            if (debug_rs_entries[i].t2.ready)
+                t2_plus = "+";
+            $display("%02d |  %d    |  %08x    |  %08x    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |", 
+                        i,
+                        debug_rs_entries[i].decoded_vals.valid,
+                        debug_rs_entries[i].decoded_vals.PC,
+                        debug_rs_entries[i].decoded_vals.NPC,
+                        debug_rs_entries[i].decoded_vals.fu_type,
+                        debug_rs_entries[i].t.reg_idx,
+                        debug_rs_entries[i].t1.reg_idx,
+                        t1_plus,
+                        debug_rs_entries[i].t2.reg_idx,
+                        t2_plus,
+                        debug_rs_entries[i].b_id,
+                        debug_rs_entries[i].b_mask);
+        end
+    endfunction
+
+    // fus
+    // branch stack
+    // cdb
+    // regfile
 
     function void dump_state();
         $display("--------------");
@@ -337,6 +489,11 @@ module testbench;
         $display("\n");
 
         print_inst_buff();
+        print_dispatch();
+        print_rob();
+        print_rs();
+        print_map_table();
+        print_freelist();
 
         if(clock_count > 250) begin
             $finish;

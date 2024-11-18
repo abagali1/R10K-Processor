@@ -42,6 +42,10 @@ module map_table #(
         r1_p_reg = '0;
         r2_p_reg = '0;
 
+        `ifdef DEBUG
+            debug_entries = entries;
+        `endif
+
         // check that the arch reg hasn't been mapped to a new register
         // Set ready bits
         for (int i = 0; i < N; i++) begin
