@@ -453,7 +453,7 @@ module testbench;
 
     // issue
     function void print_issue();
-        $display("\Issue Stage");
+        $display("\Issue");
         $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1    |  t2    |  b_id   |   b_mask   |");
         for (int i = 0; i < `RS_SZ; i++) begin
             string t1_plus = "";
