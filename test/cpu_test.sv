@@ -54,6 +54,7 @@ module testbench;
     COMMIT_PACKET [`N-1:0] committed_insts;
 
     ROB_PACKET [`N-1:0] retired_insts;
+    
 
     // DECODED_PACKET [`N-1:0] dis_insts;
 
@@ -98,6 +99,9 @@ module testbench;
         logic                   [`NUM_FU_ALU-1:0]                           debug_alu_done;
         logic                   [`NUM_FU_MULT-1:0]                          debug_mult_done;
         logic                   [`NUM_FU_MULT-1:0]                          debug_mult_rd_en;
+
+        ISSUE_PACKET            [`NUM_FU_ALU-1:0]                           debug_issued_alu_pack;
+        ISSUE_PACKET            [`NUM_FU_MULT-1:0]                          debug_issued_mult_pack;
     `endif
 
 
@@ -402,12 +406,6 @@ module testbench;
         $display("\nReservation Station");
         $display("#  | valid |    PC     |  NPC      | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   | alu issued | mult issued |");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
-            string t1_plus = "";
-            string t2_plus = "";
-            if (debug_rs_entries[i].t1.ready)
-                t1_plus = "+";
-            if (debug_rs_entries[i].t2.ready)
-                t2_plus = "+";
             $display("%02d |  %d    |  %05d    |  %05d    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |     %d      |      %d      |", 
                         i,
                         debug_rs_entries[i].decoded_vals.valid,
@@ -416,9 +414,9 @@ module testbench;
                         debug_rs_entries[i].decoded_vals.fu_type,
                         debug_rs_entries[i].t.reg_idx,
                         debug_rs_entries[i].t1.reg_idx,
-                        t1_plus,
+                        (debug_rs_entries[i].t1.ready) ? "+" : "",
                         debug_rs_entries[i].t2.reg_idx,
-                        t2_plus,
+                        (debug_rs_entries[i].t2.ready) ? "+" : "",
                         debug_rs_entries[i].b_id,
                         debug_rs_entries[i].b_mask,
                         debug_all_issued_alu[i],
@@ -467,8 +465,34 @@ module testbench;
     // TODO: need to add these debug outputs to the 'if debug' in cpu_test
     // TODO: probably also need to update issue test with these so the test doesn't break
     function void print_issue();
-        $display("\Issue Module");
+        $display("\nIssue Module");
+        $display("ALU packets");
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
+        for (int i = 0; i < `NUM_FU_ALU; i++) begin
+            $display("%02d |  %d    |  %08x  |  %08x   |  %08x   |  %08x      |  %08x      |", 
+                    i,
+                    debug_issued_alu_pack[i].decoded_vals.decoded_vals.valid,
+                    debug_issued_alu_pack[i].decoded_vals.decoded_vals.inst,
+                    debug_issued_alu_pack[i].decoded_vals.decoded_vals.PC,
+                    debug_issued_alu_pack[i].decoded_vals.decoded_vals.NPC,
+                    debug_issued_alu_pack[i].rs1_value,
+                    debug_issued_alu_pack[i].rs2_value);
+        end
+
+        $display("MULT packets");
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
+        for (int i = 0; i < `NUM_FU_MULT; i++) begin
+            $display("%02d |  %d    |  %08x  |  %08x   |  %08x   |  %08x      |  %08x      |", 
+                    i,
+                    debug_issued_mult_pack[i].decoded_vals.decoded_vals.valid,
+                    debug_issued_mult_pack[i].decoded_vals.decoded_vals.inst,
+                    debug_issued_mult_pack[i].decoded_vals.decoded_vals.PC,
+                    debug_issued_mult_pack[i].decoded_vals.decoded_vals.NPC,
+                    debug_issued_mult_pack[i].rs1_value,
+                    debug_issued_mult_pack[i].rs2_value);
+        end
     endfunction
+
 
     // fus
 
@@ -526,6 +550,7 @@ module testbench;
         print_freelist();
         print_br_stack();
         print_cdb();
+        print_issue();
         $display("\n");
 
         if(clock_count > 250) begin

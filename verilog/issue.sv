@@ -209,7 +209,7 @@ module issue #(
 
         // ALU
         for (int a = 0; a < `NUM_FU_ALU; a++) begin
-            issued_alu_pack_temp[a].decoded_vals = issued_alu;
+            issued_alu_pack_temp[a].decoded_vals = issued_alu[a];
             issued_alu_pack_temp[a].rs1_value = select_rs1_data(issued_alu[a], a);
             issued_alu_pack_temp[a].rs2_value = select_rs2_data(issued_alu[a], a);
         end
