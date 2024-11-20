@@ -18,7 +18,8 @@ module branch_fu (
     `endif 
 );
     FU_PACKET out;
-    ADDR target, branch_target;
+    ADDR target;
+    ADDR branch_target = is_pack.rs1_value + is_pack.rs2_value;
     logic taken, correct;
 
     assign fu_pack = out;
@@ -38,11 +39,6 @@ module branch_fu (
             default: taken = `FALSE;
         endcase
     end
-
-    basic_adder branch_target_calc (
-        .is_pack(is_pack),
-        .result(branch_target)
-    );
 
     `ifdef DEBUG
         assign debug_branch_target = branch_target;

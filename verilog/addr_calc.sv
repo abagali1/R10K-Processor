@@ -13,10 +13,7 @@ module addr_calc (
 );
     FU_PACKET out_packet, next_out_packet;
 
-    basic_adder result_calc (
-        .is_pack(is_pack),
-        .result(next_out_packet.result)
-    );
+    assign next_out_packet.result = is_pack.rs1_value + is_pack.rs2_value;
 
     always_ff @(posedge clock) begin
         if (reset) begin
