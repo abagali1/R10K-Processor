@@ -349,10 +349,10 @@ module rs #(
             if (cdb_in[i].valid) begin
                 for (int j = 0; j < DEPTH; j++) begin
                     if (entries[j].decoded_vals.valid) begin
-                        if (entries[j].t1.reg_idx == cdb_in[i].reg_idx) begin
+                        if (entries[j].t1.reg_idx == cdb_in[i].p_reg_idx) begin
                             next_entries[j].t1.ready = 1;
                         end
-                        if (entries[j].t2.reg_idx == cdb_in[i].reg_idx) begin
+                        if (entries[j].t2.reg_idx == cdb_in[i].p_reg_idx) begin
                             next_entries[j].t2.ready = 1;
                         end
                     end
