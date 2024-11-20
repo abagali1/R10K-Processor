@@ -12,11 +12,13 @@ module alu (
     output logic        data_ready
 );
     DATA result;
-    DATA opa = is_pack.rs1_value;
-    DATA opb = is_pack.rs2_value;
+    DATA opa;
+    DATA opb;
     FU_PACKET out, next_out;
 
     assign fu_pack = out;
+    assign opa = is_pack.rs1_value;
+    assign opb = is_pack.rs2_value;
 
     // ALU Compute Result
     always_comb begin
