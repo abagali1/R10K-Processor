@@ -341,7 +341,7 @@ module testbench;
     // inst buff
     function void print_inst_buff();
         $display("Instruction Buffer");
-        $display("#\t| valid |   inst    |   PC   |  NPC   | pred   |");
+        $display("#\t| valid |   inst     |   PC   |  NPC   | pred   |");
         for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin
             $display("%02d\t|   %d   | %x\t|  %05d |  %05d |   %s   |", 
                 i, 
@@ -357,9 +357,9 @@ module testbench;
     // dispatch
     function void print_dispatch();
         $display("\nDispatch");
-        $display("#\t| valid |    inst    |    PC     |    NPC    |");
+        $display("#\t| valid |    inst    |   PC   |   NPC  |");
         for (int i = 0; i < `N; i++) begin
-            $write("%02d\t|   %d   | %08x   | %08x  | %08x  |\n", 
+            $write("%02d\t|   %d   | %08x   | %05d  | %05d  |\n", 
                 i, 
                 debug_dis_insts[i].valid, 
                 debug_dis_insts[i].inst, 
@@ -372,7 +372,7 @@ module testbench;
     // rob
     function void print_rob();
         $display("\nReorder Buffer (ROB)");
-        $display("Status | #  | valid |     PC       |  dest_reg   | halt | complete |    t   | t_old  |");
+        $display("Status | #  | valid |    PC    |  dest_reg   | halt | complete |    t   | t_old  |");
         for (int i = 0; i < `ROB_SZ; i++) begin
             string status = "";
             if (i == debug_rob_tail && i== debug_rob_head)
@@ -384,7 +384,7 @@ module testbench;
             else
                 status = ""; 
 
-            $display("%-6s | %02d |  %d    |  %08x    |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
+            $display("%-6s | %02d |  %d    |  %05d   |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
                     status, 
                     i, 
                     debug_rob_entries[i].valid, 
@@ -400,7 +400,7 @@ module testbench;
     // rs
     function void print_rs();
         $display("\nReservation Station");
-        $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   | alu issued | mult issued |");
+        $display("#  | valid |    PC     |  NPC      | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   | alu issued | mult issued |");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
             string t1_plus = "";
             string t2_plus = "";
@@ -408,7 +408,7 @@ module testbench;
                 t1_plus = "+";
             if (debug_rs_entries[i].t2.ready)
                 t2_plus = "+";
-            $display("%02d |  %d    |  %08x    |  %08x    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |     %d      |      %d      |", 
+            $display("%02d |  %d    |  %05d    |  %05d    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |     %d      |      %d      |", 
                         i,
                         debug_rs_entries[i].decoded_vals.valid,
                         debug_rs_entries[i].decoded_vals.PC,
