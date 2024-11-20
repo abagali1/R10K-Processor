@@ -507,7 +507,7 @@ module testbench;
     // TODO uhh idk if this is pulling data correctly tbh
     function void print_cdb();
         $display("\nCDB");
-        $display("#  | valid | reg_idx | p_reg_idx | reg_val   |");
+        $display("#  | valid |reg_idx |p_reg_idx|  reg_val    |");
 
         for (int i = 0; i < `N; i++) begin
             $display("%02d |   %d   |  %02d    |   %02d    |  %08x   |", 
