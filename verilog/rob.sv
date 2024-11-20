@@ -105,10 +105,10 @@ module rob #(
             end
 
             for(int k=0; k < DEPTH; ++k) begin
-                if(entries[k].valid & (entries[k].t == complete_t[j] || entries[k].t == br_complete_t)) begin
+                if(entries[k].valid && (entries[k].t == complete_t[j] || entries[k].t == br_complete_t)) begin
                     next_entries[k].complete = 'b1;
                     `ifdef DEBUG
-                        next_entries[k].data = debug_data[k];
+                        next_entries[k].data = debug_data[j];
                     `endif
                 end
             end
