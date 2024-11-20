@@ -40,7 +40,7 @@ module regfile #(
         .DEPTH      (DEPTH),
         .READ_PORTS (2*NUM_FU), // 2 read ports
         .WRITE_PORTS(N),
-        .BYPASS_EN  (0)) // don't need internal forwarding
+        .BYPASS_EN  (1)) // don't need internal forwarding
     regfile_mem (
         .clock(clock),
         .reset(reset),   // must be written before read
