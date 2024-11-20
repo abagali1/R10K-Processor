@@ -85,7 +85,7 @@ module cdb_tb ();
         @(negedge clock);
         update_FU_done(1, 0);
 
-        $display("DONE TEST 1");
+        $display("DONE TEST 1, CHECK MANUALLY");
 
         // ------------------------------ Test 2 ------------------------------ //
         $display("\nTest 2: Multiple FUs Broadcast\n");
@@ -101,7 +101,7 @@ module cdb_tb ();
         update_FU_done(5, 0);
         update_FU_done(11, 0);
 
-        $display("DONE TEST 2");
+        $display("DONE TEST 2, CHECK MANUALLY");
 
         // ------------------------------ Test 3 ------------------------------ //
         $display("\nTest 3: FU Request More than N\n");
@@ -124,7 +124,7 @@ module cdb_tb ();
         update_FU_done(9, 0);
         update_FU_done(10, 0);
 
-        $display("DONE TEST 3 \n");
+        $display("DONE TEST 3, CHECK MANUALLY \n");
 
         $finish;
 
