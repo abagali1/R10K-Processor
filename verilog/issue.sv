@@ -162,41 +162,10 @@ module issue #(
 
     // ---- REGFILE INPUT ----
 
-    assign reg_idx_1 = {alu_reg_1, mult_reg_1, ld_reg_1, st_reg_1, br_reg_1};
-    assign reg_idx_2 = {alu_reg_2, mult_reg_2, ld_reg_2, st_reg_2, br_reg_2};
-
-    // always_comb begin
-    //     reg_idx_1 = '0;
-    //     reg_idx_2 = '0;
-
-    //     // ALU
-    //     for (int a = 0; a < `NUM_FU_ALU; a++) begin
-    //         reg_idx_1[a] = alu_reg_1[a];
-    //         reg_idx_2[a] = alu_reg_2[a];
-    //     end
-
-    //     // MULT
-    //     for (int m = 0; m < `NUM_FU_MULT; m++) begin
-    //         reg_idx_1[(`NUM_FU_ALU) + m] = mult_reg_1[m];
-    //         reg_idx_2[(`NUM_FU_ALU) + m] = mult_reg_2[m];
-    //     end
-
-    //     // LD
-    //     for (int l = 0; l < `NUM_FU_LD; l++) begin
-    //         reg_idx_1[(`NUM_FU_ALU + `NUM_FU_MULT) + l] = ld_reg_1[l];
-    //         reg_idx_2[(`NUM_FU_ALU + `NUM_FU_MULT) + l] = ld_reg_2[l];
-    //     end
-
-    //     // STORE
-    //     for (int s = 0; s < `NUM_FU_STORE; s++) begin
-    //         reg_idx_1[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s] = st_reg_1[s];
-    //         reg_idx_2[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s] = st_reg_2[s];
-    //     end
-
-    //     // BR
-    //     reg_idx_1[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE) + b] = br_reg_1[b];
-    //     reg_idx_2[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE) + b] = br_reg_2[b];
-    // end
+    // assign reg_idx_1 = {alu_reg_1, mult_reg_1, ld_reg_1, st_reg_1, br_reg_1};
+    assign reg_idx_1 = {br_reg_1, st_reg_1, ld_reg_1, mult_reg_1, alu_reg_1};
+    assign reg_idx_2 = {br_reg_2, st_reg_2, ld_reg_2, mult_reg_2, alu_reg_2};
+    // assign reg_idx_2 = {alu_reg_2, mult_reg_2, ld_reg_2, st_reg_2, br_reg_2};
 
     // ---- ISSUE PACKET ----
 

@@ -197,59 +197,6 @@ module rs #(
 
     assign all_issued_insts = all_issued_alu | all_issued_mult | all_issued_ld | all_issued_store | all_issued_br;
 
-    // always_comb begin
-    //     issued_alu = 0;
-    //     issued_mult = 0;
-    //     issued_ld = 0;
-    //     issued_store = 0;
-    //     issued_br = 0;
-
-    //     `ifdef DEBUG
-    //         debug_all_issued_alu = all_issued_alu;
-    //         debug_all_issued_mult = all_issued_mult;
-    //     `endif
-
-    //     for(int i=0;i<`NUM_FU_ALU;i++) begin
-    //         for(int j=0;j<DEPTH;j++) begin
-    //             if(alu_issued_bus[i][j]) begin
-    //                 issued_alu[i] = entries[j];
-    //             end
-    //         end
-    //     end
-
-    //     for(int i=0;i<`NUM_FU_MULT;i++) begin
-    //         for(int j=0;j<DEPTH;j++) begin
-    //             if(mult_issued_bus[i][j]) begin
-    //                 issued_mult[i] = entries[j];
-    //             end
-    //         end
-    //     end
-
-    //     for(int i=0;i<`NUM_FU_LD;i++) begin
-    //         for(int j=0;j<DEPTH;j++) begin
-    //             if(ld_issued_bus[i][j]) begin
-    //                 issued_ld[i] = entries[j];
-    //             end
-    //         end
-    //     end
-
-    //     for(int i=0;i<`NUM_FU_STORE;i++) begin
-    //         for(int j=0;j<DEPTH;j++) begin
-    //             if(store_issued_bus[i][j]) begin
-    //                 issued_store[i] = entries[j];
-    //             end
-    //         end
-    //     end
-
-    //     for(int i=0;i<`NUM_FU_BR;i++) begin
-    //         for(int j=0;j<DEPTH;j++) begin
-    //             if(br_issued_bus[i][j]) begin
-    //                 issued_br[i] = entries[j];
-    //             end
-    //         end
-    //     end
-    // end
-
     psel_gen #(
         .WIDTH(DEPTH),
         .REQS(N))
