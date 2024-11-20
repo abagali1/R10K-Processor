@@ -400,7 +400,7 @@ module testbench;
     // rs
     function void print_rs();
         $display("\nReservation Station");
-        $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   |");
+        $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   | alu issued | mult issued |");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
             string t1_plus = "";
             string t2_plus = "";
