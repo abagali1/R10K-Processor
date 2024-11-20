@@ -74,6 +74,9 @@ module RS_tb();
     logic                       [DEPTH-1:0]                                          debug_br_req;
     logic                       [`NUM_FU_BR-1:0][`NUM_FU_BR-1:0]                     debug_br_fu_gnt_bus;
     logic                       [`NUM_FU_BR-1:0][DEPTH-1:0]                          debug_br_inst_gnt_bus;
+
+    logic                       [DEPTH-1:0]                                          debug_all_issued_alu,
+    logic                       [DEPTH-1:0]                                          debug_all_issued_mult
 `endif
 
     RS_PACKET model_rs[$:(DEPTH)] = '{DEPTH{0}};
