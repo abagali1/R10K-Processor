@@ -221,7 +221,7 @@ build/regfile.simv: $(REG_FILES)
 build/regfile.cov: $(REG_FILES)
 synth/regfile.vg: $(REG_FILES)
 
-BR_FILES = verilog/sys_defs.svh verilog/basic_adder.sv
+BR_FILES = verilog/sys_defs.svh
 build/branch_fu.simv: $(BR_FILES)
 build/branch_fu.cov: $(BR_FILES)
 synth/branch_fu.vg: $(BR_FILES)
@@ -278,7 +278,6 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/issue.sv \
 			  verilog/alu.sv \
 			  verilog/branch_fu.sv \
-			  verilog/basic_adder.sv \
 			  verilog/mult.sv \
 			  verilog/decode.sv \
 			  verilog/decoder.sv

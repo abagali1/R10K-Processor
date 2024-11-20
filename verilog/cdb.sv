@@ -42,7 +42,7 @@ module cdb #(
     logic [NUM_FU-1:0] cdb_gnt;
     logic [N-1:0][NUM_FU-1:0] cdb_gnt_bus;
 
-    assign stall_sig = ~cdb_gnt;
+    assign stall_sig = cdb_gnt ^ fu_done;
 
     psel_gen #(
         .WIDTH(NUM_FU),
