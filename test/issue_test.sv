@@ -236,14 +236,14 @@ module issue_tb();
                 // TODO: figure out why these (reg_idx_1 and 2) are equal to X
                 $display("reg 1 idx: %b", reg_idx_1);
                 $display("reg 2 idx: %b", reg_idx_2);
-                if (reg_idx_1[(`NUM_FUS-`NUM_FU_ALU)+i] !== expected_alu_reg_idx_1[i]) begin
+                if (reg_idx_1[i] !== expected_alu_reg_idx_1[i]) begin
                     $error("ALU reg_idx_1 mismatch at index %0d, %d. Expected: %0d, Got: %0d",
-                           i, (`NUM_FUS-`NUM_FU_ALU)+i, expected_alu_reg_idx_1[i], reg_idx_1[(`NUM_FUS-`NUM_FU_ALU)+i]);
+                           i, (`NUM_FUS-`NUM_FU_ALU)+i, expected_alu_reg_idx_1[i], reg_idx_1[i]);
                     $finish;
                 end
-                if (reg_idx_2[(`NUM_FUS-`NUM_FU_ALU)+i] !== expected_alu_reg_idx_2[i]) begin
+                if (reg_idx_2[i] !== expected_alu_reg_idx_2[i]) begin
                     $error("ALU reg_idx_2 mismatch at index %0d, %d. Expected: %0d, Got: %0d",
-                           i, (`NUM_FUS-`NUM_FU_ALU)+i, expected_alu_reg_idx_2[i], reg_idx_2[(`NUM_FUS-`NUM_FU_ALU)+i]);
+                           i, (`NUM_FUS-`NUM_FU_ALU)+i, expected_alu_reg_idx_2[i], reg_idx_2[i]);
                     $finish;
                 end
             end
