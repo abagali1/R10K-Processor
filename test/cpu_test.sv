@@ -541,6 +541,7 @@ module testbench;
         print_inst_buff();
         print_dispatch();
         print_rob();
+        $display("N is ", `N);
         $display("\nALU Data Ready: %b", debug_alu_done);
         $display();
         $display("MULT Rd EN: %b", debug_mult_rd_en);
