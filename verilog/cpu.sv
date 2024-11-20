@@ -62,7 +62,10 @@ module cpu (
 
         output logic                    [`NUM_FU_ALU-1:0]                   debug_alu_done,
         output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_done,
-        output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_rd_en
+        output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_rd_en,
+
+        output ISSUE_PACKET             [`NUM_FU_ALU-1:0]                   debug_issued_alu_pack, 
+        output ISSUE_PACKET             [`NUM_FU_MULT-1:0]                  debug_issued_mult_pack
     `endif
 );
 
@@ -217,6 +220,8 @@ module cpu (
         assign debug_alu_done = alu_done;
         assign debug_mult_done = mult_done;
         assign debug_mult_rd_en = mult_rd_en;
+        assign debug_issued_alu_pack = issued_alu_pack;
+        assign debug_issued_mult_pack = issued_mult_pack;
     `endif
 
 
