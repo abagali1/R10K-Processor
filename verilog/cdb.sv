@@ -31,7 +31,7 @@ module cdb #(
     input FU_PACKET     [NUM_FU-1:0] wr_data,
 
     output CDB_PACKET   [N-1:0]      entries,
-    output logic        [NUM_FU-1:0] stall_sig   
+    output logic        [NUM_FU-1:0] stall_sig
 
     `ifdef DEBUG
     ,   output logic [NUM_FU-1:0] debug_cdb_gnt,
@@ -66,6 +66,7 @@ module cdb #(
     endgenerate
 
     always_comb begin
+        entries = 0;
         for (int i = 0; i < N; i++) begin
             entries[i].reg_idx = selected_packets[i].decoded_vals.decoded_vals.dest_reg_idx;
             entries[i].p_reg_idx = selected_packets[i].decoded_vals.t.reg_idx;

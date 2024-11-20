@@ -77,7 +77,7 @@ module issue #(
     // ----- MULT -----
 
     // mult issuing signals
-    always_comb begin    
+    always_comb begin
         mult_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_MULT; i++) begin
             mult_rd_en_vals[i] = issued_mult[i].decoded_vals.valid;

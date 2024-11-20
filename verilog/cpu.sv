@@ -54,8 +54,13 @@ module cpu (
         output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_free_entries,
         output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_stack_gnt,
 
-        output CDB_PACKET               [`N-1:0]                             debug_cdb_entries
-        
+        output CDB_PACKET               [`N-1:0]                            debug_cdb_entries,
+        output logic                    [`NUM_FUS-`NUM_FU_BR-1:0]           debug_cdb_gnt,
+        output logic                    [`N-1:0][`NUM_FUS-`NUM_FU_BR-1:0]   debug_cdb_gnt_bus,
+
+        output logic                    [`NUM_FU_ALU-1:0]                   debug_alu_done,
+        output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_done,
+        output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_rd_en
     `endif
 );
 
@@ -205,6 +210,9 @@ module cpu (
         assign debug_num_dispatched = num_dis;
         assign debug_num_retired = num_retired;
         assign debug_cdb_entries = cdb_entries;
+        assign debug_alu_done = alu_done;
+        assign debug_mult_done = mult_done;
+        assign debug_mult_rd_en = mult_rd_en;
     `endif
 
 
@@ -362,6 +370,11 @@ module cpu (
         .wr_data({alu_fu_out, mult_fu_out, ld_fu_out, st_fu_out}), 
         .entries(cdb_entries),
         .stall_sig(cdb_stall_sig)
+
+        `ifdef DEBUG
+        ,   .debug_cdb_gnt(debug_cdb_gnt),
+            .debug_cdb_gnt_bus(debug_cdb_gnt_bus)
+        `endif
     );
 
     br_stack pancake (

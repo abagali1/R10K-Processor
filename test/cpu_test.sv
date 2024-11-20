@@ -89,7 +89,13 @@ module testbench;
         logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_free_entries;
         logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_stack_gnt;
 
-        CDB_PACKET              [`N-1:0]                                     debug_cdb_entries;
+        CDB_PACKET              [`N-1:0]                                    debug_cdb_entries;
+        logic                   [`NUM_FUS-`NUM_FU_BR-1:0]                   debug_cdb_gnt;
+        logic                   [`N-1:0][`NUM_FUS-`NUM_FU_BR-1:0]           debug_cdb_gnt_bus;
+
+        logic                   [`NUM_FU_ALU-1:0]                           debug_alu_done;
+        logic                   [`NUM_FU_MULT-1:0]                          debug_mult_done;
+        logic                   [`NUM_FU_MULT-1:0]                          debug_mult_rd_en;
     `endif
 
 
@@ -333,7 +339,7 @@ module testbench;
     // inst buff
     function void print_inst_buff();
         $display("Instruction Buffer");
-        $display("#\t| valid |   inst     |   PC   |  NPC   | pred   |");
+        $display("#\t| valid |   inst    |   PC   |  NPC   | pred   |");
         for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin
             $display("%02d\t|   %d   | %x\t|  %05d |  %05d |   %s   |", 
                 i, 
@@ -393,7 +399,7 @@ module testbench;
     function void print_rs();
         $display("\nReservation Station");
         $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   |");
-        for (int i = 0; i < `RS_SZ; i++) begin
+        for (int i = `RS_SZ-1; i >= 0; i--) begin
             string t1_plus = "";
             string t2_plus = "";
             if (debug_rs_entries[i].t1.ready)
@@ -433,7 +439,7 @@ module testbench;
     // freelist
     function void print_freelist();
         $display("\nFree List");
-        $display("Pos\t| #  | reg_idx | valid |");
+        $display("Status | #  | reg_idx | valid |");
         for (int i = 0; i < `ARCH_REG_SZ; i++) begin
             string pos; 
             pos = "";
@@ -444,7 +450,7 @@ module testbench;
             else if (i == debug_fl_tail)
                 pos = "TAIL";
 
-            $display("%-2s\t| %02d |  %04d   |   %1d   |", 
+            $display("%-6s | %02d |  %04d   |   %1d   |", 
                 pos, 
                 i, 
                 debug_fl_entries[i].reg_idx, 
@@ -483,7 +489,6 @@ module testbench;
     endfunction
 
     // fus
-    
 
     // branch stack
     function void print_br_stack();
@@ -506,11 +511,11 @@ module testbench;
     // cdb
     // TODO uhh idk if this is pulling data correctly tbh
     function void print_cdb();
-        $display("\nCDB");
-        $display("#  | valid |reg_idx |p_reg_idx|  reg_val    |");
+        $display("\nCDB, gnt: %b", debug_cdb_gnt);
+        $display("#  |   valid |  reg_idx | p_reg_idx | \treg_val   |");
 
         for (int i = 0; i < `N; i++) begin
-            $display("%02d |   %d   |  %02d    |   %02d    |  %08x   |", 
+            $display("%02d |   \t%d    |    %02d    |     %02d    |  %08x   |", 
                 i, 
                 debug_cdb_entries[i].valid, 
                 debug_cdb_entries[i].reg_idx, 
@@ -530,6 +535,10 @@ module testbench;
         print_inst_buff();
         print_dispatch();
         print_rob();
+        $display("\nALU Data Ready: %b", debug_alu_done);
+        $display();
+        $display("MULT Rd EN: %b", debug_mult_rd_en);
+        $display("MULT Data Ready: %b", debug_mult_done);
         print_rs();
         print_map_table();
         print_freelist();
