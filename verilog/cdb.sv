@@ -66,12 +66,12 @@ module cdb #(
     endgenerate
 
     always_comb begin
-        entries = 0;
+        entries = '0;
         for (int i = 0; i < N; i++) begin
             entries[i].reg_idx = selected_packets[i].decoded_vals.decoded_vals.dest_reg_idx;
             entries[i].p_reg_idx = selected_packets[i].decoded_vals.t.reg_idx;
             entries[i].reg_val = selected_packets[i].result;
-            entries[i].valid = (selected_packets[i]) ? 1 : 0;
+            entries[i].valid = selected_packets[i].decoded_vals.decoded_vals.valid;
         end
 
          `ifdef DEBUG
