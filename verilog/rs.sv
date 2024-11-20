@@ -197,108 +197,58 @@ module rs #(
 
     assign all_issued_insts = all_issued_alu | all_issued_mult | all_issued_ld | all_issued_store | all_issued_br;
 
-    always_comb begin
-        issued_alu = 0;
-        issued_mult = 0;
-        issued_ld = 0;
-        issued_store = 0;
-        issued_br = 0;
+    // always_comb begin
+    //     issued_alu = 0;
+    //     issued_mult = 0;
+    //     issued_ld = 0;
+    //     issued_store = 0;
+    //     issued_br = 0;
 
-        `ifdef DEBUG
-            debug_all_issued_alu = all_issued_alu;
-            debug_all_issued_mult = all_issued_mult;
-        `endif
+    //     `ifdef DEBUG
+    //         debug_all_issued_alu = all_issued_alu;
+    //         debug_all_issued_mult = all_issued_mult;
+    //     `endif
 
-        for(int i=0;i<`NUM_FU_ALU;i++) begin
-            for(int j=0;j<DEPTH;j++) begin
-                if(alu_issued_bus[i][j]) begin
-                    issued_alu[i] = entries[j];
-                    if (br_task == CLEAR) begin
-                        if (entries[j].b_id == rem_b_id) begin
-                            issued_alu[i] = 0;
-                        end else begin
-                            issued_alu[i].b_mask = issued_alu[i].b_mask & ~rem_b_id;
-                        end
-                    end
-                    if (br_task == SQUASH) begin
-                        issued_alu[i] = (issued_alu[i].b_mask & rem_b_id) ? 0 : entries[j];
-                    end
-                end
-            end
-        end
+    //     for(int i=0;i<`NUM_FU_ALU;i++) begin
+    //         for(int j=0;j<DEPTH;j++) begin
+    //             if(alu_issued_bus[i][j]) begin
+    //                 issued_alu[i] = entries[j];
+    //             end
+    //         end
+    //     end
 
-        for(int i=0;i<`NUM_FU_MULT;i++) begin
-            for(int j=0;j<DEPTH;j++) begin
-                if(mult_issued_bus[i][j]) begin
-                    issued_mult[i] = entries[j];
-                    if (br_task == CLEAR) begin
-                        if (entries[j].b_id == rem_b_id) begin
-                            issued_mult[i] = 0;
-                        end else begin
-                            issued_mult[i].b_mask = issued_mult[i].b_mask & ~rem_b_id;
-                        end
-                    end
-                    if (br_task == SQUASH) begin
-                        issued_mult[i] = (issued_mult[i].b_mask & rem_b_id) ? 0 : entries[j];
-                    end
-                end
-            end
-        end
+    //     for(int i=0;i<`NUM_FU_MULT;i++) begin
+    //         for(int j=0;j<DEPTH;j++) begin
+    //             if(mult_issued_bus[i][j]) begin
+    //                 issued_mult[i] = entries[j];
+    //             end
+    //         end
+    //     end
 
-        for(int i=0;i<`NUM_FU_LD;i++) begin
-            for(int j=0;j<DEPTH;j++) begin
-                if(ld_issued_bus[i][j]) begin
-                    issued_ld[i] = entries[j];
-                    if (br_task == CLEAR) begin
-                        if (entries[j].b_id == rem_b_id) begin
-                            issued_ld[i] = 0;
-                        end else begin
-                            issued_ld[i].b_mask = issued_ld[i].b_mask & ~rem_b_id;
-                        end
-                    end
-                    if (br_task == SQUASH) begin
-                        issued_ld[i] = (issued_ld[i].b_mask & rem_b_id) ? 0 : entries[j];
-                    end
-                end
-            end
-        end
+    //     for(int i=0;i<`NUM_FU_LD;i++) begin
+    //         for(int j=0;j<DEPTH;j++) begin
+    //             if(ld_issued_bus[i][j]) begin
+    //                 issued_ld[i] = entries[j];
+    //             end
+    //         end
+    //     end
 
-        for(int i=0;i<`NUM_FU_STORE;i++) begin
-            for(int j=0;j<DEPTH;j++) begin
-                if(store_issued_bus[i][j]) begin
-                    issued_store[i] = entries[j];
-                    if (br_task == CLEAR) begin
-                        if (entries[j].b_id == rem_b_id) begin
-                            issued_store[i] = 0;
-                        end else begin
-                            issued_store[i].b_mask = issued_store[i].b_mask & ~rem_b_id;
-                        end
-                    end
-                    if (br_task == SQUASH) begin
-                        issued_store[i] = (issued_store[i].b_mask & rem_b_id) ? 0 : entries[j];
-                    end
-                end
-            end
-        end
+    //     for(int i=0;i<`NUM_FU_STORE;i++) begin
+    //         for(int j=0;j<DEPTH;j++) begin
+    //             if(store_issued_bus[i][j]) begin
+    //                 issued_store[i] = entries[j];
+    //             end
+    //         end
+    //     end
 
-        for(int i=0;i<`NUM_FU_BR;i++) begin
-            for(int j=0;j<DEPTH;j++) begin
-                if(br_issued_bus[i][j]) begin
-                    issued_br[i] = entries[j];
-                    if (br_task == CLEAR) begin
-                        if (entries[j].b_id == rem_b_id) begin
-                            issued_br[i] = 0;
-                        end else begin
-                            issued_br[i].b_mask = issued_br[i].b_mask & ~rem_b_id;
-                        end
-                    end
-                    if (br_task == SQUASH) begin
-                        issued_br[i] = (issued_br[i].b_mask & rem_b_id) ? 0 : entries[j];
-                    end
-                end
-            end
-        end
-    end
+    //     for(int i=0;i<`NUM_FU_BR;i++) begin
+    //         for(int j=0;j<DEPTH;j++) begin
+    //             if(br_issued_bus[i][j]) begin
+    //                 issued_br[i] = entries[j];
+    //             end
+    //         end
+    //     end
+    // end
 
     psel_gen #(
         .WIDTH(DEPTH),
@@ -310,55 +260,28 @@ module rs #(
         .empty()
     );
 
-    // Logic for assigning req to issuing psels
-    always_comb begin
-        alu_req = 0;
-        mult_req = 0;
-        ld_req = 0;
-        store_req = 0;
-        br_req = 0;
-        for (int i = 0; i < DEPTH; i++) begin
-            if (entries[i].decoded_vals.valid & entries[i].t1.ready & entries[i].t2.ready) begin
-                if (entries[i].decoded_vals.fu_type == ALU_INST) begin
-                    alu_req[i] = 1;
-                end 
-                if (entries[i].decoded_vals.fu_type == MULT_INST) begin
-                    mult_req[i] = 1;
-                end 
-                if (entries[i].decoded_vals.fu_type == LD_INST) begin
-                    ld_req[i] = 1;
-                end 
-                if (entries[i].decoded_vals.fu_type == STORE_INST) begin
-                    store_req[i] = 1;
-                end  
-                if (entries[i].decoded_vals.fu_type == BR_INST) begin
-                    br_req[i] = 1;
-                end
-            end
-        end
-    end
-
     // Combinational Logic
     always_comb begin
         next_entries = entries;
         next_num_entries = num_entries;
         other_sig = open_spots | all_issued_insts;
 
-        // Marks entry tags as ready (parallelized)
-        for (int i = 0; i < N; i++) begin
-            if (cdb_in[i].valid) begin
-                for (int j = 0; j < DEPTH; j++) begin
-                    if (entries[j].decoded_vals.valid) begin
-                        if (entries[j].t1.reg_idx == cdb_in[i].p_reg_idx) begin
-                            next_entries[j].t1.ready = 1;
-                        end
-                        if (entries[j].t2.reg_idx == cdb_in[i].p_reg_idx) begin
-                            next_entries[j].t2.ready = 1;
-                        end
-                    end
-                end
-            end
-        end
+        alu_req = 0;
+        mult_req = 0;
+        ld_req = 0;
+        store_req = 0;
+        br_req = 0;
+
+        issued_alu = 0;
+        issued_mult = 0;
+        issued_ld = 0;
+        issued_store = 0;
+        issued_br = 0;
+
+        `ifdef DEBUG
+            debug_all_issued_alu = all_issued_alu;
+            debug_all_issued_mult = all_issued_mult;
+        `endif
 
         // Branch mask logic
         if (br_task == SQUASH) begin
@@ -377,6 +300,88 @@ module rs #(
                 end
             end
         end
+
+        // Marks entry tags as ready (parallelized)
+        for (int i = 0; i < N; i++) begin
+            if (cdb_in[i].valid) begin
+                for (int j = 0; j < DEPTH; j++) begin
+                    if (next_entries[j].decoded_vals.valid) begin
+                        if (next_entries[j].t1.reg_idx == cdb_in[i].p_reg_idx) begin
+                            next_entries[j].t1.ready = 1;
+                        end
+                        if (next_entries[j].t2.reg_idx == cdb_in[i].p_reg_idx) begin
+                            next_entries[j].t2.ready = 1;
+                        end
+                    end
+                end
+            end
+        end
+
+        ////////////////////////
+
+        for (int i = 0; i < DEPTH; i++) begin
+            if (next_entries[i].decoded_vals.valid & next_entries[i].t1.ready & next_entries[i].t2.ready) begin
+                if (next_entries[i].decoded_vals.fu_type == ALU_INST) begin
+                    alu_req[i] = 1;
+                end 
+                if (next_entries[i].decoded_vals.fu_type == MULT_INST) begin
+                    mult_req[i] = 1;
+                end 
+                if (next_entries[i].decoded_vals.fu_type == LD_INST) begin
+                    ld_req[i] = 1;
+                end 
+                if (next_entries[i].decoded_vals.fu_type == STORE_INST) begin
+                    store_req[i] = 1;
+                end  
+                if (next_entries[i].decoded_vals.fu_type == BR_INST) begin
+                    br_req[i] = 1;
+                end
+            end
+        end
+
+        ////////////////////////
+
+        for(int i=0;i<`NUM_FU_ALU;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                if(alu_issued_bus[i][j]) begin
+                    issued_alu[i] = next_entries[j];
+                end
+            end
+        end
+
+        for(int i=0;i<`NUM_FU_MULT;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                if(mult_issued_bus[i][j]) begin
+                    issued_mult[i] = next_entries[j];
+                end
+            end
+        end
+
+        for(int i=0;i<`NUM_FU_LD;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                if(ld_issued_bus[i][j]) begin
+                    issued_ld[i] = next_entries[j];
+                end
+            end
+        end
+
+        for(int i=0;i<`NUM_FU_STORE;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                if(store_issued_bus[i][j]) begin
+                    issued_store[i] = next_entries[j];
+                end
+            end
+        end
+
+        for(int i=0;i<`NUM_FU_BR;i++) begin
+            for(int j=0;j<DEPTH;j++) begin
+                if(br_issued_bus[i][j]) begin
+                    issued_br[i] = next_entries[j];
+                end
+            end
+        end
+
+        ////////////////////////
 
         next_open_spots = other_sig;
         next_b_mask = (b_mask | b_id) & ~rem_b_id;
