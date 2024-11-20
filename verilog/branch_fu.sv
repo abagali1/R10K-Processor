@@ -50,7 +50,7 @@ module branch_fu (
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            out         <= '0;
+            out         <= '{result: '0, decoded_vals: '0, pred_correct: '1};
             data_ready  <= '0;
             br_task     <= NOTHING;
         end else if (rd_en) begin
@@ -58,7 +58,7 @@ module branch_fu (
             data_ready  <= 1;
             br_task     <= (correct ? CLEAR : SQUASH);
         end else begin
-            out         <= '0;
+            out         <= '{result: '0, decoded_vals: '0, pred_correct: '1};
             data_ready  <= '0;
             br_task     <= NOTHING;
         end

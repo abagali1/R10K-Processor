@@ -84,9 +84,9 @@ module cpu (
         if (reset) begin
             PC <= 0;
         end 
-        // else if (!br_fu_out.pred_correct) begin
-        //     PC <= br_fu_out.result;
-        // end 
+        else if (!br_fu_out.pred_correct) begin
+            PC <= br_fu_out.result;
+        end 
         else begin
             PC <= NPC + num_input * 4;
         end
