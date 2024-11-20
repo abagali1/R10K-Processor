@@ -7,7 +7,7 @@
 
 module rs #(
     parameter DEPTH = `RS_SZ,
-    parameter N = 3
+    parameter N = `N
 )
 (
     input                                                                               clock,
