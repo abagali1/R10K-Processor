@@ -10,6 +10,5 @@ nop
 nop
 nop
 nop
-sw x3, 100(x0)
 wfi
 
