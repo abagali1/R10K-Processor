@@ -440,7 +440,7 @@ module testbench;
     function void print_freelist();
         $display("\nFree List");
         $display("Status | #  | reg_idx | valid |");
-        for (int i = 0; i < `ARCH_REG_SZ; i++) begin
+        for (int i = 0; i < `ROB_SZ; i++) begin
             string pos; 
             pos = "";
             if (i == debug_fl_head && i == debug_fl_tail)

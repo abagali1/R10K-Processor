@@ -45,6 +45,14 @@ module inst_buffer #(
 
         next_tail = (tail + num_accept) % DEPTH;
         
+        // head - next_head
+        // br_tail - tail
+        for (int j = 0; j < N; ++j) begin
+            if (j < num_dispatch) begin
+                next_entries[(head + j) % DEPTH] = '0;
+            end
+        end
+
         for(int j=0;j < DEPTH; ++j) begin
             if(j < num_accept) begin
                 next_entries[(tail+j) % DEPTH] = in_insts[j];
