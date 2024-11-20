@@ -49,8 +49,9 @@ module map_table #(
         // check that the arch reg hasn't been mapped to a new register
         // Set ready bits
         for (int i = 0; i < N; i++) begin
-            if (ready_valid[i]) begin
-                next_entries[ready_reg_idx[i]].ready = (next_entries[ready_reg_idx[i]].reg_idx == ready_phys_idx[i]) ? 1 : 0;
+            // set to one if ready, and if dest_reg is not zero
+            if (ready_valid[i] && (next_entries[ready_reg_idx[i]].reg_idx == ready_phys_idx[i]) && ready_phys_idx[i] != 0) begin
+                next_entries[ready_reg_idx[i]].ready = 1;
             end
         end
 
