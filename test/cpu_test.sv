@@ -494,10 +494,10 @@ module testbench;
     // TODO uhh idk if this is pulling data correctly tbh
     function void print_cdb();
         $display("\nCDB, gnt: %b", debug_cdb_gnt);
-        $display("#  |   valid |  reg_idx | p_reg_idx | \treg_val   |");
+        $display("#  |   valid |  reg_idx | p_reg_idx |   reg_val   |");
 
         for (int i = 0; i < `N; i++) begin
-            $display("%02d |   \t%d    |    %02d    |     %02d    |  %08x   |", 
+            $display("%02d |    %d    |    %02d    |     %02d    |  %08x   |", 
                 i, 
                 debug_cdb_entries[i].valid, 
                 debug_cdb_entries[i].reg_idx, 
