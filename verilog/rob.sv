@@ -99,6 +99,9 @@ module rob #(
                 next_entries[(tail+j) % DEPTH].complete = 0;
                 next_entries[(tail+j) % DEPTH].t = t[j];
                 next_entries[(tail+j) % DEPTH].t_old = t_old[j];
+                `ifdef DEBUG
+                    next_entries[(tail+j) % DEPTH].data = '0;
+                `endif
             end
 
             for(int k=0; k < DEPTH; ++k) begin
