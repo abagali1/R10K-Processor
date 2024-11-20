@@ -205,8 +205,8 @@ module rs #(
         issued_br = 0;
 
         `ifdef DEBUG
-            assign debug_all_issued_alu = all_issued_alu;
-            assign debug_all_issued_mult = all_issued_mult;
+            debug_all_issued_alu = all_issued_alu;
+            debug_all_issued_mult = all_issued_mult;
         `endif
 
         for(int i=0;i<`NUM_FU_ALU;i++) begin
