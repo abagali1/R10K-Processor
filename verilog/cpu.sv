@@ -564,7 +564,7 @@ module cpu (
     always_comb begin
         committed_insts = '0;
         for (int i = 0; i < `N; i++) begin
-            committed_insts[i].NPC = retiring_data[i].PC; // TODO
+            committed_insts[i].NPC = retiring_data[i].PC + 4; // TODO make this correct
             committed_insts[i].data = retiring_data[i].data;
             committed_insts[i].reg_idx = retiring_data[i].dest_reg_idx;
             committed_insts[i].halt = retiring_data[i].halt;
