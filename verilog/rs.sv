@@ -64,7 +64,10 @@ module rs #(
         output logic                [`NUM_FU_BR-1:0][DEPTH-1:0]                         debug_br_issued_bus,
         output logic                [DEPTH-1:0]                                         debug_br_req,
         output logic                [`NUM_FU_BR-1:0][`NUM_FU_BR-1:0]                    debug_br_fu_gnt_bus,
-        output logic                [`NUM_FU_BR-1:0][DEPTH-1:0]                         debug_br_inst_gnt_bus
+        output logic                [`NUM_FU_BR-1:0][DEPTH-1:0]                         debug_br_inst_gnt_bus,
+
+        output logic                [DEPTH-1:0]                                         debug_all_issued_alu,
+        output logic                [DEPTH-1:0]                                         debug_all_issued_mult
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -200,6 +203,11 @@ module rs #(
         issued_ld = 0;
         issued_store = 0;
         issued_br = 0;
+
+        `ifdef DEBUG
+            assign debug_all_issued_alu = all_issued_alu;
+            assign debug_all_issued_mult = all_issued_mult;
+        `endif
 
         for(int i=0;i<`NUM_FU_ALU;i++) begin
             for(int j=0;j<DEPTH;j++) begin

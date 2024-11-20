@@ -80,6 +80,8 @@ module testbench;
         logic                   [`RS_SZ-1:0]                                debug_rs_other_sig;
         logic                   [$clog2(`RS_SZ+1)-1:0]                      debug_rs_open_entries;
         logic                   [`RS_SZ-1:0]                                debug_rs_all_issued_insts;
+        logic                   [`RS_SZ-1:0]                                debug_all_issued_alu;
+        logic                   [`RS_SZ-1:0]                                debug_all_issued_mult;
 
         ROB_PACKET              [`ROB_SZ-1:0]                               debug_rob_entries;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_head;
@@ -406,7 +408,7 @@ module testbench;
                 t1_plus = "+";
             if (debug_rs_entries[i].t2.ready)
                 t2_plus = "+";
-            $display("%02d |  %d    |  %08x    |  %08x    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |", 
+            $display("%02d |  %d    |  %08x    |  %08x    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |     %d      |      %d      |", 
                         i,
                         debug_rs_entries[i].decoded_vals.valid,
                         debug_rs_entries[i].decoded_vals.PC,
@@ -418,7 +420,9 @@ module testbench;
                         debug_rs_entries[i].t2.reg_idx,
                         t2_plus,
                         debug_rs_entries[i].b_id,
-                        debug_rs_entries[i].b_mask);
+                        debug_rs_entries[i].b_mask,
+                        debug_all_issued_alu[i],
+                        debug_all_issued_mult[i]);
         end
     endfunction
 
@@ -463,29 +467,7 @@ module testbench;
     // TODO: need to add these debug outputs to the 'if debug' in cpu_test
     // TODO: probably also need to update issue test with these so the test doesn't break
     function void print_issue();
-        $display("\Issue");
-        $display("#  | valid |     PC       |  NPC         | fu_type|   t   |  t1    |  t2    |  b_id   |   b_mask   |");
-        for (int i = 0; i < `RS_SZ; i++) begin
-            string t1_plus = "";
-            string t2_plus = "";
-            if (debug_rs_entries[i].t1.ready)
-                t1_plus = "+";
-            if (debug_rs_entries[i].t2.ready)
-                t2_plus = "+";
-            $display("%02d |  %d    |  %08x    |  %08x    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |", 
-                        i,
-                        debug_rs_entries[i].decoded_vals.valid,
-                        debug_rs_entries[i].decoded_vals.PC,
-                        debug_rs_entries[i].decoded_vals.NPC,
-                        debug_rs_entries[i].decoded_vals.fu_type,
-                        debug_rs_entries[i].t.reg_idx,
-                        debug_rs_entries[i].t1.reg_idx,
-                        t1_plus,
-                        debug_rs_entries[i].t2.reg_idx,
-                        t2_plus,
-                        debug_rs_entries[i].b_id,
-                        debug_rs_entries[i].b_mask);
-        end
+        $display("\Issue Module");
     endfunction
 
     // fus
