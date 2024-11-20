@@ -45,6 +45,8 @@ module cpu (
         output logic                    [`RS_SZ-1:0]                        debug_rs_other_sig,
         output logic                    [$clog2(`RS_SZ+1)-1:0]              debug_rs_open_entries,
         output logic                    [`RS_SZ-1:0]                        debug_rs_all_issued_insts,
+        output logic                    [`RS_SZ-1:0]                        debug_all_issued_alu,
+        output logic                    [`RS_SZ-1:0]                        debug_all_issued_mult,
 
         output ROB_PACKET               [`ROB_SZ-1:0]                       debug_rob_entries,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_head,
@@ -334,7 +336,9 @@ module cpu (
             .debug_open_spots(debug_rs_open_spots),
             .debug_other_sig(debug_rs_other_sig),
             .debug_open_entries(debug_rs_open_entries),
-            .debug_all_issued_insts(debug_rs_all_issued_insts)
+            .debug_all_issued_insts(debug_rs_all_issued_insts),
+            .debug_all_issued_alu(debug_all_issued_alu),
+            .debug_all_issued_mult(debug_all_issued_mult)
         `endif
     );
 
