@@ -292,6 +292,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(alu_issued_bus[i][j]) begin
                     issued_alu[i] = next_entries[j];
+                    next_entries[j] = 0;
                 end
             end
         end
@@ -300,6 +301,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(mult_issued_bus[i][j]) begin
                     issued_mult[i] = next_entries[j];
+                    next_entries[j] = 0;
                 end
             end
         end
@@ -308,6 +310,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(ld_issued_bus[i][j]) begin
                     issued_ld[i] = next_entries[j];
+                    next_entries[j] = 0;
                 end
             end
         end
@@ -316,6 +319,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(store_issued_bus[i][j]) begin
                     issued_store[i] = next_entries[j];
+                    next_entries[j] = 0;
                 end
             end
         end
@@ -324,6 +328,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(br_issued_bus[i][j]) begin
                     issued_br[i] = next_entries[j];
+                    next_entries[j] = 0;
                 end
             end
         end
