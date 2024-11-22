@@ -461,9 +461,6 @@ module cpu (
         .reg_data_1(reg_data_1),
         .reg_data_2(reg_data_2),
 
-        .br_task(br_task),
-        .rem_b_id(br_fu_out.decoded_vals.b_id),
-
         .issued_alu(issued_alu), 
         .issued_mult(issued_mult),
         .issued_ld(issued_ld),
@@ -501,6 +498,9 @@ module cpu (
                 .stall(cdb_stall_sig[i]),
                 .rd_in(alu_rd_en[i]),
 
+                .rem_br_task(br_task),
+                .rem_b_id(br_fu_out.decoded_vals.b_id),
+
                 .fu_pack(alu_fu_out[i]),
                 .data_ready(alu_done[i])
             );
@@ -527,6 +527,9 @@ module cpu (
         .reset(reset),
         .is_pack(issued_br_pack),
         .rd_en(br_rd_en),
+
+        .rem_br_task(br_task),
+        .rem_b_id(br_fu_out.decoded_vals.b_id),
 
         .fu_pack(br_fu_out),
         .br_task(br_task),

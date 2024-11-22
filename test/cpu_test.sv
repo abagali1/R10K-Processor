@@ -571,9 +571,9 @@ module testbench;
         print_issue();
         $display("\n");
 
-        if(clock_count > 250) begin
-            $finish;
-        end
+        // if(clock_count > 250) begin
+        //     $finish;
+        // end
     endfunction
 
 
