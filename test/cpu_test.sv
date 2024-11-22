@@ -83,6 +83,7 @@ module testbench;
         logic                   [`RS_SZ-1:0]                                debug_rs_all_issued_insts;
         logic                   [`RS_SZ-1:0]                                debug_all_issued_alu;
         logic                   [`RS_SZ-1:0]                                debug_all_issued_mult;
+        logic                   [`RS_SZ-1:0]                                debug_all_issued_br;
 
         ROB_PACKET              [`ROB_SZ-1:0]                               debug_rob_entries;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_head;
@@ -102,6 +103,7 @@ module testbench;
 
         ISSUE_PACKET            [`NUM_FU_ALU-1:0]                           debug_issued_alu_pack;
         ISSUE_PACKET            [`NUM_FU_MULT-1:0]                          debug_issued_mult_pack;
+        ISSUE_PACKET                                                        debug_issued_br_pack;
     `endif
 
 
@@ -347,7 +349,7 @@ module testbench;
         $display("Instruction Buffer");
         $display("#\t| valid |   inst     |   PC   |  NPC   | pred   |");
         for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin
-            $display("%02d\t|   %d   | %x\t|  %05d |  %05d |   %s   |", 
+            $display("%02d\t|   %d   | %x\t|  %05x |  %05x |   %s   |", 
                 i, 
                 debug_inst_buff_entries[i].valid, 
                 debug_inst_buff_entries[i].inst, 
@@ -363,7 +365,7 @@ module testbench;
         $display("\nDispatch");
         $display("#\t| valid |    inst    |   PC   |   NPC  |");
         for (int i = 0; i < `N; i++) begin
-            $write("%02d\t|   %d   | %08x   | %05d  | %05d  |\n", 
+            $write("%02d\t|   %d   | %08x   | %05x  | %05x  |\n", 
                 i, 
                 debug_dis_insts[i].valid, 
                 debug_dis_insts[i].inst, 
@@ -388,7 +390,7 @@ module testbench;
             else
                 status = ""; 
 
-            $display("%-6s | %02d |  %d    |  %05d   |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
+            $display("%-6s | %02d |  0x%x  |  %05d   |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
                     status, 
                     i, 
                     debug_rob_entries[i].valid, 
@@ -404,9 +406,9 @@ module testbench;
     // rs
     function void print_rs();
         $display("\nReservation Station");
-        $display("#  | valid |    PC     |  NPC      | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   | alu issued | mult issued |");
+        $display("#  | valid |    PC     |  NPC      | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   | alu issued | mult issued | br issued   |");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
-            $display("%02d |  %d    |  %05d    |  %05d    |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04d   |   %04d     |     %d      |      %d      |", 
+            $display("%02d |  %d    |  0x%05x  |  0x%05x  |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04b   |   %04b     |     %d      |      %d      |      %d      |", 
                         i,
                         debug_rs_entries[i].decoded_vals.valid,
                         debug_rs_entries[i].decoded_vals.PC,
@@ -420,7 +422,9 @@ module testbench;
                         debug_rs_entries[i].b_id,
                         debug_rs_entries[i].b_mask,
                         debug_all_issued_alu[i],
-                        debug_all_issued_mult[i]);
+                        debug_all_issued_mult[i],
+                        debug_all_issued_br[i]
+                        );
         end
     endfunction
 
@@ -469,7 +473,7 @@ module testbench;
         $display("ALU packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
-            $display("%02d |  %d    |  %08x  |  %08d   |  %08d   |  %08x      |  %08x      |", 
+            $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
                     i,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.inst,
@@ -482,7 +486,7 @@ module testbench;
         $display("MULT packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
         for (int i = 0; i < `NUM_FU_MULT; i++) begin
-            $display("%02d |  %d    |  %08x  |  %08d   |  %08d   |  %08x      |  %08x      |", 
+            $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
                     i,
                     debug_issued_mult_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_mult_pack[i].decoded_vals.decoded_vals.inst,
@@ -491,6 +495,16 @@ module testbench;
                     debug_issued_mult_pack[i].rs1_value,
                     debug_issued_mult_pack[i].rs2_value);
         end
+        $display("BR packets");
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
+        $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
+                    0,
+                    debug_issued_br_pack.decoded_vals.decoded_vals.valid,
+                    debug_issued_br_pack.decoded_vals.decoded_vals.inst,
+                    debug_issued_br_pack.decoded_vals.decoded_vals.PC,
+                    debug_issued_br_pack.decoded_vals.decoded_vals.NPC,
+                    debug_issued_br_pack.rs1_value,
+                    debug_issued_br_pack.rs2_value);
     endfunction
 
 
@@ -535,7 +549,7 @@ module testbench;
 
     function void dump_state();
         $display("--------------");
-        $display("Clock #%02d, num_dispatched: %02d , num_issued: %02d, num_retired: %02d", clock_count, debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
+        $display("Clock #%02d, NPC: %x, num_dispatched: %02d , num_issued: %02d, num_retired: %02d", clock_count, NPC, debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
         $display("\n");
 
         print_inst_buff();
