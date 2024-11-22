@@ -64,11 +64,10 @@ module rob #(
         // Dependent for-loop to retire instructions. 
         // We must retire instructions first in order to accept the highest # of incoming instructions
         for (int i = 0; i < N; ++i) begin
-            if (((head+i) % DEPTH) != tail && entries[(head+i) % DEPTH].complete) begin
+            if ((num_entries == DEPTH || ((head+i) % DEPTH) != tail) && entries[(head+i) % DEPTH].complete) begin
                 retiring_data[i] = entries[(head+i) % DEPTH];
                 next_entries[(head+i) % DEPTH] = '0;
                 next_head = (((head+i) % DEPTH) + 1) % DEPTH;
-                // next_num_entries--; // TODO: double check that removing this and just counting next_num_entries at the end is ok
                 num_retired++;
             end else begin
                 break;
