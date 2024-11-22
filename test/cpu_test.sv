@@ -378,7 +378,7 @@ module testbench;
     // rob
     function void print_rob();
         $display("\nReorder Buffer (ROB)");
-        $display("Status | #  | valid |    PC    |  dest_reg   | halt | complete |    t   | t_old  |");
+        $display("Status | #  |     PC     |  dest_reg   | halt | complete |    t   | t_old  |");
         for (int i = 0; i < `ROB_SZ; i++) begin
             string status = "";
             if (i == debug_rob_tail && i== debug_rob_head)
@@ -390,10 +390,10 @@ module testbench;
             else
                 status = ""; 
 
-            $display("%-6s | %02d |  0x%x  |  %05d   |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
+            $display("%-6s | %02d |  0x%05x   |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
                     status, 
                     i, 
-                    debug_rob_entries[i].valid, 
+                    //debug_rob_entries[i].valid, 
                     debug_rob_entries[i].PC, 
                     debug_rob_entries[i].dest_reg_idx, 
                     debug_rob_entries[i].halt, 

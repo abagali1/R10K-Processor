@@ -37,7 +37,7 @@ module freelist #(
  
     // assign num_avail = (num_entries + wr_num > N) ? N : num_entries + wr_num; // only dependent on what is being written in, not what is being read out
 
-    assign head_ptr = next_head; 
+    assign head_ptr = head + 1; 
     
     always_comb begin
         rd_reg = '0;
