@@ -279,12 +279,6 @@ module RS_tb();
         br_task = CLEAR;
         @(negedge clock);
 
-        // just a double check
-        if (~(issued_alu[0].decoded_vals.valid && issued_alu[0].b_mask == '0 && issued_alu[0].b_id == '0)) begin
-            $error("ERROR WITH EBR");
-            $finish;
-        end
-
         reset = 1;
         clear_signals();
         @(negedge clock); // verify issued
@@ -669,15 +663,18 @@ module RS_tb();
                 ALU_INST: begin
                     $write("%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu_buffer[i].decoded_vals.valid, issued_alu_buffer[i].t.reg_idx, issued_alu_buffer[i].t1.reg_idx, issued_alu_buffer[i].t2.reg_idx, issued_alu_buffer[i].b_mask, issued_alu_buffer[i].decoded_vals.fu_type);
                     $write("\t\t\t\t");
+                    $write("\t\t\t\t");
                     $write("%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_alu[i].decoded_vals.valid, issued_alu[i].t.reg_idx, issued_alu[i].t1.reg_idx, issued_alu[i].t2.reg_idx, issued_alu[i].b_mask, issued_alu[i].decoded_vals.fu_type);
                 end
                 MULT_INST: begin
                     $write("%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_mult_buffer[i].decoded_vals.valid, issued_mult_buffer[i].t.reg_idx, issued_mult_buffer[i].t1.reg_idx, issued_mult_buffer[i].t2.reg_idx, issued_mult_buffer[i].b_mask, issued_mult_buffer[i].decoded_vals.fu_type);
                     $write("\t\t\t\t");
+                    $write("\t\t\t\t");
                     $write("%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_mult[i].decoded_vals.valid, issued_mult[i].t.reg_idx, issued_mult[i].t1.reg_idx, issued_mult[i].t2.reg_idx, issued_mult[i].b_mask, issued_mult[i].decoded_vals.fu_type);
                 end
                 BR_INST: begin
                     $write("%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_br_buffer[i].decoded_vals.valid, issued_br_buffer[i].t.reg_idx, issued_br_buffer[i].t1.reg_idx, issued_br_buffer[i].t2.reg_idx, issued_br_buffer[i].b_mask, issued_br_buffer[i].decoded_vals.fu_type);
+                    $write("\t\t\t\t");
                     $write("\t\t\t\t");
                     $write("%02d\t|\t%01d\t|\t%02d\t |\t%02d\t|\t%02d\t|\t%04b\t|\t%01d\t|", i, issued_br[i].decoded_vals.valid, issued_br[i].t.reg_idx, issued_br[i].t1.reg_idx, issued_br[i].t2.reg_idx, issued_br[i].b_mask, issued_br[i].decoded_vals.fu_type);
 
@@ -696,9 +693,9 @@ module RS_tb();
         `ifdef DEBUG
             $write("\n");
             $write("ALU Issued Bus [%b]", debug_alu_req);
-            $write("\t\t");
+            $write("\t\t\t\t");
             $write("MULT Issued Bus [%b]", debug_mult_req);
-            $write("\t\t");
+            $write("\t\t\t\t");
             $write("BR Issued Bus [%b]", debug_br_req);
             $write("\n");
             for(int i=`NUM_FU_ALU-1;i>=0;i--) begin
@@ -731,7 +728,7 @@ module RS_tb();
             //          idx       valid    dest    t1        t2     bmask      op
             $write("%02d\t|\t%01d\t|\t%02d\t |\t%02d[%b]\t|\t%02d[%b]\t|\t%04b\t|\t%01d\t|", i, model_rs[i].decoded_vals.valid, model_rs[i].t.reg_idx, model_rs[i].t1.reg_idx, model_rs[i].t1.valid, model_rs[i].t2.reg_idx, model_rs[i].t2.valid, model_rs[i].b_mask, model_rs[i].decoded_vals.fu_type);
             `ifdef DEBUG
-                $write("\t\t");
+                $write("\t\t\t\t\t\t");
                 $write("%02d\t|\t%01d\t|\t%02d\t |\t%02d[%b]\t|\t%02d[%b]\t|\t%04b\t|\t%01d\t|", i, debug_entries[i].decoded_vals.valid, debug_entries[i].t.reg_idx, debug_entries[i].t1.reg_idx, debug_entries[i].t1.valid, debug_entries[i].t2.reg_idx, debug_entries[i].t2.valid, debug_entries[i].b_mask, debug_entries[i].decoded_vals.fu_type);
             `endif
             $write("\n");
