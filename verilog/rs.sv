@@ -213,17 +213,17 @@ module rs #(
         next_num_entries = num_entries;
         other_sig = open_spots | all_issued_insts;
 
-        alu_req = 0;
-        mult_req = 0;
-        ld_req = 0;
-        store_req = 0;
-        br_req = 0;
+        alu_req = '0;
+        mult_req = '0;
+        ld_req = '0;
+        store_req = '0;
+        br_req = '0;
 
-        issued_alu = 0;
-        issued_mult = 0;
-        issued_ld = 0;
-        issued_store = 0;
-        issued_br = 0;
+        issued_alu = '0;
+        issued_mult = '0;
+        issued_ld = '0;
+        issued_store = '0;
+        issued_br = '0;
 
         `ifdef DEBUG
             debug_all_issued_alu = all_issued_alu;
@@ -234,7 +234,7 @@ module rs #(
         if (br_task == SQUASH) begin
             for (int i = 0; i < DEPTH; i++) begin
                 if ((entries[i].b_mask & rem_b_id) != 0) begin
-                    next_entries[i] = 0;
+                    next_entries[i] = '0;
                     other_sig[i] = 1;
                     next_num_entries--;
                 end
@@ -292,7 +292,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(alu_issued_bus[i][j]) begin
                     issued_alu[i] = next_entries[j];
-                    next_entries[j] = 0;
+                    next_entries[j] = '0;
                 end
             end
         end
@@ -301,7 +301,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(mult_issued_bus[i][j]) begin
                     issued_mult[i] = next_entries[j];
-                    next_entries[j] = 0;
+                    next_entries[j] = '0;
                 end
             end
         end
@@ -310,7 +310,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(ld_issued_bus[i][j]) begin
                     issued_ld[i] = next_entries[j];
-                    next_entries[j] = 0;
+                    next_entries[j] = '0;
                 end
             end
         end
@@ -319,7 +319,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(store_issued_bus[i][j]) begin
                     issued_store[i] = next_entries[j];
-                    next_entries[j] = 0;
+                    next_entries[j] = '0;
                 end
             end
         end
@@ -328,7 +328,7 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(br_issued_bus[i][j]) begin
                     issued_br[i] = next_entries[j];
-                    next_entries[j] = 0;
+                    next_entries[j] = '0;
                 end
             end
         end
@@ -373,8 +373,13 @@ module rs #(
         end
     end
 
-    // `ifdef DEBUG
-    //     always @(posedge clock) begin
+    `ifdef DEBUG
+        always @(posedge clock) begin
+            for(int i=0;i<`NUM_FU_BR;i++) begin
+                $display("br intructions going to issue register");
+                $display("branch inst: %0x, PC: %0d", issued_br[i].decoded_vals.inst, issued_br[i].decoded_vals.PC);
+            end
+
     //         $display("============== RESERVATION STATION ==============\n");
             
     //         $display("  Inputs:");
@@ -396,6 +401,6 @@ module rs #(
     //         $display("");
 
     //         $display("  Outputs:");// TODO
-    //     end
-    // `endif
+        end
+    `endif
 endmodule

@@ -11,6 +11,7 @@ module inst_buffer #(
     input INST_PACKET    [DEPTH-1:0]                in_insts,
     input logic          [$clog2(N+1)-1:0]          num_dispatch,
     input logic          [$clog2(DEPTH+1)-1:0]      num_accept,
+    input logic                                     br_en, // only happens when branch squashes
     
     output INST_PACKET   [N-1:0]                    dispatched_insts,
     output               [$clog2(DEPTH+1)-1:0]      open_entries
@@ -67,7 +68,7 @@ module inst_buffer #(
     end
 
     always_ff @(posedge clock) begin
-        if (reset) begin
+        if (reset || br_en) begin
             num_entries <= '0;
             head <= '0;
             tail <= '0;

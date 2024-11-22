@@ -64,7 +64,7 @@ module rob #(
         // Dependent for-loop to retire instructions. 
         // We must retire instructions first in order to accept the highest # of incoming instructions
         for (int i = 0; i < N; ++i) begin
-            if (entries[(head+i) % DEPTH].valid & entries[(head+i) % DEPTH].complete) begin
+            if (((head+i) % DEPTH) != tail && entries[(head+i) % DEPTH].complete) begin
                 retiring_data[i] = entries[(head+i) % DEPTH];
                 next_entries[(head+i) % DEPTH] = '0;
                 next_head = (((head+i) % DEPTH) + 1) % DEPTH;
@@ -75,37 +75,9 @@ module rob #(
             end
         end
 
-        // These statements are dependent on updated num_accept
-        next_tail = (br_en) ? (br_tail + num_accept) % DEPTH : (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
-        // needed for loop to squash valid bits
-        if (br_en) begin
-            for (int i = 0; i < DEPTH; i++) begin
-                if ((tail < br_tail) & (i > tail | i <= br_tail)) begin
-                    next_entries[i] = '0;
-                end else if ((tail > br_tail) & (i < tail | i >= br_tail)) begin
-                    next_entries[i] = '0;
-                end
-            end
-        end
-        // TODO: verify that commenting this out is ok, and just iterating through next entries is ok to count num_entries
-        // next_num_entries += num_accept;
-
-        for(int j=0;j < N; ++j) begin
-            if(j < num_accept) begin
-                next_entries[(tail+j) % DEPTH].PC = wr_data[j].PC;
-                next_entries[(tail+j) % DEPTH].dest_reg_idx = wr_data[j].dest_reg_idx;
-                next_entries[(tail+j) % DEPTH].halt = wr_data[j].halt;
-                next_entries[(tail+j) % DEPTH].valid = wr_data[j].valid;
-                next_entries[(tail+j) % DEPTH].complete = 0;
-                next_entries[(tail+j) % DEPTH].t = t[j];
-                next_entries[(tail+j) % DEPTH].t_old = t_old[j];
-                `ifdef DEBUG
-                    next_entries[(tail+j) % DEPTH].data = '0;
-                `endif
-            end
-
+        for (int j = 0; j < N; j++) begin
             for(int k=0; k < DEPTH; ++k) begin
-                if(entries[k].valid && (entries[k].t == complete_t[j] || entries[k].t == br_complete_t)) begin
+                if(entries[k].t == complete_t[j] || entries[k].t == br_complete_t) begin
                     next_entries[k].complete = 'b1;
                     `ifdef DEBUG
                         next_entries[k].data = debug_data[j];
@@ -114,15 +86,55 @@ module rob #(
             end
         end
 
+        // These statements are dependent on updated num_accept
+        next_tail = (br_en) ? (br_tail) % DEPTH : (tail + num_accept) % DEPTH; // next_tail points to one past the youngest inst
+        // needed for loop to squash valid bits
+        // if (br_en) begin
+        //     for (int i = 0; i < DEPTH; i++) begin
+        //         if ((tail < br_tail) & (i > tail | i <= br_tail)) begin
+        //             next_entries[i] = '0;
+        //         end else if ((tail > br_tail) & (i < tail | i >= br_tail)) begin
+        //             next_entries[i] = '0;
+        //         end
+        //     end
+        // end
+        // TODO: verify that commenting this out is ok, and just iterating through next entries is ok to count num_entries
+        // next_num_entries += num_accept;
+
+        for(int j = 0;j < N; ++j) begin
+            if(j < num_accept) begin
+                next_entries[(tail+j) % DEPTH].PC = wr_data[j].PC;
+                next_entries[(tail+j) % DEPTH].dest_reg_idx = wr_data[j].dest_reg_idx;
+                next_entries[(tail+j) % DEPTH].halt = wr_data[j].halt;
+                //next_entries[(tail+j) % DEPTH].valid = wr_data[j].valid;
+                next_entries[(tail+j) % DEPTH].complete = 0;
+                next_entries[(tail+j) % DEPTH].t = t[j];
+                next_entries[(tail+j) % DEPTH].t_old = t_old[j];
+                `ifdef DEBUG
+                    next_entries[(tail+j) % DEPTH].data = '0;
+                `endif
+            end
+        end
+
         // two assumptions:
         // - branch is the first instruction in the the dispatched instruction window
         // - only one branch per dispatched instruction window
         // TODO: would be nice to get another pair of eyes on this to update num_entries (entries in use)
-        next_num_entries = 0;
-        for (int i = 0; i < DEPTH; i++) begin
-            if (next_entries[i].valid) begin
-                next_num_entries++;
+        // next_num_entries = 0;
+        // for (int i = 0; i < DEPTH; i++) begin
+        //     if (next_entries[i].valid) begin
+        //         next_num_entries++;
+        //     end
+        // end
+
+        if (br_en) begin
+            if (br_tail <= tail) begin
+                next_num_entries = num_entries - num_retired - (tail - br_tail);
+            end else begin
+                next_num_entries = num_entries - num_retired - (`ROB_SZ - (br_tail - tail));
             end
+        end else begin
+            next_num_entries = num_entries - num_retired + num_accept;
         end
         
         `ifdef DEBUG
@@ -148,6 +160,8 @@ module rob #(
             tail <= next_tail;
             entries <= next_entries;
         end
+
+        $display("rob num entries: %0d", num_entries);
     end
 
     // // DEBUG OUTPUT

@@ -28,7 +28,7 @@
 // `define DEBUG_RS '1
 
 // superscalar width
-`define N 5
+`define N 1
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
@@ -45,7 +45,7 @@
 
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 4
-`define NUM_FU_MULT 4
+`define NUM_FU_MULT 2
 `define NUM_FU_LD 2
 `define NUM_FU_STORE 2
 `define NUM_FU_BR 1

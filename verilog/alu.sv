@@ -56,4 +56,15 @@ module alu (
         end
     end
 
+    `ifdef DEBUG
+        always_ff @(posedge clock) begin
+            $display("============== ALU ================");
+
+            $display("   Packet Inst: %0d, Result: %0x, Data_ready: %0d, Stall: %0d", out.decoded_vals.decoded_vals.inst, out.result, data_ready, stall);
+            
+        end
+    `endif
+
+    
+
 endmodule

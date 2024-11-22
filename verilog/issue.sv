@@ -10,6 +10,9 @@ module issue #(
     input  DATA           [NUM_FU-1:0]             reg_data_1,
     input  DATA           [NUM_FU-1:0]             reg_data_2,
 
+    input  BR_TASK                                 br_task,
+    input  BR_MASK                                 rem_b_id,
+
     input RS_PACKET       [`NUM_FU_ALU-1:0]        issued_alu, 
     input RS_PACKET       [`NUM_FU_MULT-1:0]       issued_mult,
     input RS_PACKET       [`NUM_FU_LD-1:0]         issued_ld,
@@ -57,9 +60,8 @@ module issue #(
     // alu issuing signals
     always_comb begin
         alu_rd_en_vals = '0;
-        // TODO: 
         for (int i = 0; i <`NUM_FU_ALU; i++) begin
-            alu_rd_en_vals[i] = issued_alu[i].decoded_vals.valid;
+            alu_rd_en_vals[i] = issued_alu[i].decoded_vals.valid; //(br_task == SQUASH && ((issued_alu[i].b_mask & rem_b_id) != 0)) ? '0 : issued_alu[i].decoded_vals.valid;
             alu_reg_1[i] = issued_alu[i].t1.reg_idx;
             alu_reg_2[i] = issued_alu[i].t2.reg_idx;
         end
@@ -68,7 +70,7 @@ module issue #(
     always_ff @(posedge clock) begin
         if (reset) begin
             alu_rd_en       <= 0;
-            issued_alu_pack <= 0;
+            issued_alu_pack <= '0;
         end else begin
             alu_rd_en       <= alu_rd_en_vals;
             issued_alu_pack <= issued_alu_pack_temp;
@@ -81,7 +83,7 @@ module issue #(
     always_comb begin
         mult_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_MULT; i++) begin
-            mult_rd_en_vals[i] = issued_mult[i].decoded_vals.valid;
+            mult_rd_en_vals[i] = (br_task == SQUASH && ((issued_mult[i].b_mask & rem_b_id) != 0)) ? '0 : issued_mult[i].decoded_vals.valid;
             mult_reg_1[i] = issued_mult[i].t1.reg_idx;
             mult_reg_2[i] = issued_mult[i].t2.reg_idx;
         end
@@ -90,7 +92,7 @@ module issue #(
     always_ff @(posedge clock) begin
         if (reset) begin
             mult_rd_en          <= 0;
-            issued_mult_pack    <= 0;
+            issued_mult_pack    <= '0;
         end else begin
             mult_rd_en          <= mult_rd_en_vals;
             issued_mult_pack    <= issued_mult_pack_temp;
@@ -103,7 +105,7 @@ module issue #(
     always_comb begin    
         ld_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_LD; i++) begin
-            ld_rd_en_vals[i] = issued_ld[i].decoded_vals.valid;
+            ld_rd_en_vals[i] = (br_task == SQUASH && ((issued_ld[i].b_mask & rem_b_id) != 0)) ? 0 : issued_ld[i].decoded_vals.valid;
             ld_reg_1[i] = issued_ld[i].t1.reg_idx;
             ld_reg_2[i] = issued_ld[i].t2.reg_idx;
         end
@@ -112,7 +114,7 @@ module issue #(
     always_ff @(posedge clock) begin
         if (reset) begin
             ld_rd_en        <= 0;
-            issued_ld_pack  <= 0;
+            issued_ld_pack  <= '0;
         end else begin
             ld_rd_en        <= ld_rd_en_vals;
             issued_ld_pack  <= issued_ld_pack_temp;
@@ -125,7 +127,7 @@ module issue #(
     always_comb begin    
         st_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_STORE; i++) begin
-            st_rd_en_vals[i] = issued_st[i].decoded_vals.valid;
+            st_rd_en_vals[i] = (br_task == SQUASH && ((issued_st[i].b_mask & rem_b_id) != 0)) ? 0 : issued_st[i].decoded_vals.valid;
             st_reg_1[i] = issued_st[i].t1.reg_idx;
             st_reg_2[i] = issued_st[i].t2.reg_idx;
         end
@@ -134,7 +136,7 @@ module issue #(
     always_ff @(posedge clock) begin
         if (reset) begin
             st_rd_en        <= 0;
-            issued_st_pack  <= 0;
+            issued_st_pack  <= '0;
         end else begin
             st_rd_en        <= st_rd_en_vals;
             issued_st_pack  <= issued_st_pack_temp;
@@ -151,9 +153,11 @@ module issue #(
     end
 
     always_ff @(posedge clock) begin
+        $display("issue register br inst: %0x, PC: %0d", issued_br_pack.decoded_vals.decoded_vals.inst, issued_br_pack.decoded_vals.decoded_vals.PC);
+
         if (reset) begin
             br_rd_en        <= 0;
-            issued_br_pack  <= 0;
+            issued_br_pack  <= '0;
         end else begin
             br_rd_en        <= br_rd_en_vals;
             issued_br_pack  <= issued_br_pack_temp;
@@ -179,6 +183,7 @@ module issue #(
         // ALU
         for (int a = 0; a < `NUM_FU_ALU; a++) begin
             issued_alu_pack_temp[a].decoded_vals = issued_alu[a];
+            issued_alu_pack_temp[a].decoded_vals.b_mask = (br_task == CLEAR && ((issued_alu[a].b_mask & rem_b_id) != 0)) ? issued_alu[a].b_mask ^ rem_b_id : issued_alu[a].b_mask;
             issued_alu_pack_temp[a].rs1_value = select_rs1_data(issued_alu[a], a);
             issued_alu_pack_temp[a].rs2_value = select_rs2_data(issued_alu[a], a);
         end
@@ -186,6 +191,7 @@ module issue #(
         // MULT
         for (int m = 0; m < `NUM_FU_MULT; m++) begin
             issued_mult_pack_temp[m].decoded_vals = issued_mult[m];
+            issued_mult_pack_temp[m].decoded_vals.b_mask = (br_task == CLEAR && ((issued_mult[m].b_mask & rem_b_id) != 0)) ? issued_mult[m].b_mask ^ rem_b_id : issued_mult[m].b_mask;
             issued_mult_pack_temp[m].rs1_value = select_rs1_data(issued_mult[m], (`NUM_FU_ALU) + m); 
             issued_mult_pack_temp[m].rs2_value = select_rs2_data(issued_mult[m], (`NUM_FU_ALU) + m); 
         end
@@ -193,6 +199,7 @@ module issue #(
         // LD
         for (int l = 0; l < `NUM_FU_LD; l++) begin
             issued_ld_pack_temp[l].decoded_vals = issued_ld[l];
+            issued_ld_pack_temp[l].decoded_vals.b_mask = (br_task == CLEAR && ((issued_ld[l].b_mask & rem_b_id) != 0)) ? issued_ld[l].b_mask ^ rem_b_id : issued_ld[l].b_mask;
             issued_ld_pack_temp[l].rs1_value = select_rs1_data(issued_ld[l], (`NUM_FU_ALU + `NUM_FU_MULT) + l);
             issued_ld_pack_temp[l].rs2_value = select_rs2_data(issued_ld[l], (`NUM_FU_ALU + `NUM_FU_MULT) + l);
         end
@@ -200,14 +207,16 @@ module issue #(
         // STORE
         for (int s = 0; s < `NUM_FU_STORE; s++) begin
             issued_st_pack_temp[s].decoded_vals = issued_st[s];
+            issued_st_pack_temp[s].decoded_vals.b_mask = (br_task == CLEAR && ((issued_st[s].b_mask & rem_b_id) != 0)) ? issued_st[s].b_mask ^ rem_b_id : issued_st[s].b_mask;
             issued_st_pack_temp[s].rs1_value = select_rs1_data(issued_st[s], (`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s);
             issued_st_pack_temp[s].rs2_value = select_rs2_data(issued_st[s], (`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s);
         end
 
         // BR
         issued_br_pack_temp.decoded_vals = issued_br;
-        issued_br_pack_temp = reg_data_1[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
-        issued_br_pack_temp = reg_data_2[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
+        issued_br_pack_temp.decoded_vals.b_mask = (br_task == CLEAR && ((issued_br.b_mask & rem_b_id) != 0)) ? issued_br.b_mask ^ rem_b_id : issued_br.b_mask;
+        issued_br_pack_temp.rs1_value = reg_data_1[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
+        issued_br_pack_temp.rs2_value = reg_data_2[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
     end
 
     function DATA select_rs1_data(RS_PACKET inst, int reg_idx);
