@@ -15,9 +15,13 @@ module alu (
     output logic        data_ready
 );
     DATA result, opa, opb;
-    FU_PACKET out, next_out;
 
-    assign fu_pack = out;
+    RS_PACKET out;
+
+    always_comb begin
+        out = is_pack.decoded_vals;
+        out.b_mask = (rem_br_task == CLEAR) ? out.b_mask ^ rem_b_id : is_pack.decoded_vals.b_mask;
+    end
 
     // ALU opA mux
     always_comb begin
@@ -61,28 +65,28 @@ module alu (
         endcase
     end
 
-    assign next_out = '{result: result, decoded_vals: is_pack.decoded_vals, pred_correct: 0};
 
     always_ff @(posedge clock) begin
         if (reset || (rem_br_task == SQUASH && (is_pack.decoded_vals.b_mask & rem_b_id) != '0)) begin
             data_ready  <= '0;
-            out         <= '0;
+            fu_pack         <= '0;
         end else if (stall) begin
             data_ready  <= data_ready;
-            out         <= out;
+            fu_pack         <= fu_pack;
         end else if (rd_in) begin
             data_ready  <= 1;
-            out         <= next_out;
+            fu_pack         <= '{result: result, decoded_vals: out, pred_correct: 0};
+;
         end else begin
             data_ready  <= '0;
-            out         <= '0;
+            fu_pack         <= '0;
         end
     end
 
     `ifdef DEBUG
         always_ff @(posedge clock) begin
             $display("============== ALU ================");
-            $display("   Packet Inst: %0d, Result: %0x, Data_ready: %0d, Stall: %0d", out.decoded_vals.decoded_vals.inst, out.result, data_ready, stall);
+            $display("   Packet Inst: %0d, Result: %0x, Data_ready: %0d, Stall: %0d", fu_pack.decoded_vals.decoded_vals.inst, fu_pack.result, data_ready, stall);
             
         end
     `endif
