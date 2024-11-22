@@ -323,7 +323,7 @@ module cpu (
         .fu_mult_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT-1:`NUM_FU_ALU]),
         .fu_ld_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LD-1:`NUM_FU_ALU+`NUM_FU_MULT]),
         .fu_store_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LD+`NUM_FU_STORE-1:`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LD]),
-        .fu_br_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LD+`NUM_FU_STORE-1]), 
+        .fu_br_busy(1'b0), 
 
         .num_accept(num_dis),
 
@@ -377,8 +377,8 @@ module cpu (
     cdb cbd (
         .clock(clock),
         .reset(reset),
-        .fu_done({alu_done, mult_done, ld_done, st_done}), 
-        .wr_data({alu_fu_out, mult_fu_out, ld_fu_out, st_fu_out}), 
+        .fu_done({st_done, ld_done, mult_done, alu_done}), 
+        .wr_data({st_fu_out, ld_fu_out, mult_fu_out, alu_fu_out}), 
         .entries(cdb_entries),
         .stall_sig(cdb_stall_sig)
 
