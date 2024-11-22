@@ -160,15 +160,15 @@ module alu_tb();
         rs_pack.decoded_vals = disp_pack;
         is_pack.decoded_vals = rs_pack;
 
-        is_pack.rs1_value = 0;
+        is_pack.rs1_value = 3;
         is_pack.rs2_value = 1;
-        expected = 0;
+        expected = 1;
         @(negedge clock);
 
         stall = 1;
         is_pack.rs1_value = 15;
-        is_pack.rs2_value = 5;
-        expected = 0; // expect the value from the last calculation because stall
+        is_pack.rs2_value = 0;
+        expected = 1; // expect the value from the last calculation because stall
         @(negedge clock);
 
         $display("@@@ PASSED TEST 4");
@@ -176,6 +176,7 @@ module alu_tb();
         // ------------------------------ Test 5 ------------------------------ //
         $display("\nTest 5: Check that ALU stalls");
 
+        stall = 0;
         disp_pack.alu_func = ALU_AND;
         rs_pack.decoded_vals = disp_pack;
         is_pack.decoded_vals = rs_pack;

@@ -106,7 +106,7 @@ module testbench;
 
 
     // Instantiate the Pipeline
-    cpu verisimpleV (.*);
+    cpu dut (.*);
 
     // Generate System Clock
     always begin
@@ -469,7 +469,7 @@ module testbench;
         $display("ALU packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
-            $display("%02d |  %d    |  %08x  |  %08x   |  %08x   |  %08x      |  %08x      |", 
+            $display("%02d |  %d    |  %08x  |  %08d   |  %08d   |  %08x      |  %08x      |", 
                     i,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.inst,
@@ -482,7 +482,7 @@ module testbench;
         $display("MULT packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
         for (int i = 0; i < `NUM_FU_MULT; i++) begin
-            $display("%02d |  %d    |  %08x  |  %08x   |  %08x   |  %08x      |  %08x      |", 
+            $display("%02d |  %d    |  %08x  |  %08d   |  %08d   |  %08x      |  %08x      |", 
                     i,
                     debug_issued_mult_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_mult_pack[i].decoded_vals.decoded_vals.inst,
@@ -499,11 +499,11 @@ module testbench;
     // branch stack
     function void print_br_stack();
         $display("\nBranch Stack");
-        $display("#  | valid |  b_id  | b_mask | fl_head|rob_tail|");
+        $display("#  | valid |   b_id   |  b_mask  | fl_head|rob_tail|");
 
         // Print the state of each entry in the branch stack
         for (int i = 0; i < `BRANCH_PRED_SZ; i++) begin
-            $display("%02d |   %d   |   %02d   |   %02d   |   %02d   |   %02d   |", 
+            $display("%02d |   %d   |   %04b   |   %04b   |   %02d   |   %02d   |", 
                 i, 
                 debug_bs_entries[i].valid, 
                 debug_bs_entries[i].b_id, 
@@ -545,7 +545,10 @@ module testbench;
         $display("\nALU Data Ready: %b", debug_alu_done);
         $display();
         $display("MULT Rd EN: %b", debug_mult_rd_en);
-        $display("MULT Data Ready: %b", debug_mult_done);
+        $display("MULT Data Ready: %b", dut.mult_done);
+        $display("FU DONE: %b", dut.cbd.fu_done);
+//       $display("MULT Data Ready: %b", debug_mult_done);
+
         print_rs();
         print_map_table();
         print_freelist();

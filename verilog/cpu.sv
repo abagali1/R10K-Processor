@@ -232,6 +232,7 @@ module cpu (
         .in_insts(in_insts),
         .num_dispatch(num_dis),
         .num_accept(num_input),
+        .br_en(br_done & ~br_fu_out.pred_correct), 
 
         .dispatched_insts(ib_insts),
         .open_entries(ib_open)
@@ -456,6 +457,9 @@ module cpu (
         .reg_data_1(reg_data_1),
         .reg_data_2(reg_data_2),
 
+        .br_task(br_task),
+        .rem_b_id(br_fu_out.decoded_vals.b_id),
+
         .issued_alu(issued_alu), 
         .issued_mult(issued_mult),
         .issued_ld(issued_ld),
@@ -569,7 +573,7 @@ module cpu (
             committed_insts[i].reg_idx = retiring_data[i].dest_reg_idx;
             committed_insts[i].halt = retiring_data[i].halt;
             committed_insts[i].illegal = '0; //TODO
-            committed_insts[i].valid = retiring_data[i].valid;
+            committed_insts[i].valid = (i < num_retired) ? 1 : 0;
         end
     end
 

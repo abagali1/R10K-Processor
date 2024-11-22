@@ -28,8 +28,8 @@ module decode #(
             id_packet[i].PC   = insts[i].PC;
             id_packet[i].NPC  = insts[i].NPC;
             id_packet[i].valid = insts[i].valid;
-            id_packet[i].reg1 = (id_packet[i].opa_select == OPA_IS_RS1 && !id_packet[i].halt) ? insts[i].inst.r.rs1 : 0;
-            id_packet[i].reg2 = (id_packet[i].opb_select == OPB_IS_RS2 && !id_packet[i].halt) ?  insts[i].inst.r.rs2 : 0;
+            id_packet[i].reg1 = (id_packet[i].opa_select == OPA_IS_RS1 && !id_packet[i].halt || id_packet[i].cond_branch) ? insts[i].inst.r.rs1 : 0;
+            id_packet[i].reg2 = (id_packet[i].opb_select == OPB_IS_RS2 && !id_packet[i].halt || id_packet[i].cond_branch) ?  insts[i].inst.r.rs2 : 0;
             id_packet[i].dest_reg_idx = (has_dest_reg[i]) ? insts[i].inst.r.rd : `ZERO_REG;
             id_packet[i].pred_taken = insts[i].pred_taken;
         end
