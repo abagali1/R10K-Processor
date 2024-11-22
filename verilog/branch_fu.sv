@@ -23,6 +23,13 @@ module branch_fu (
     ADDR target, branch_target;
     logic taken, correct;
 
+    RS_PACKET out;
+
+    always_comb begin
+        out = is_pack.decoded_vals;
+        out.b_mask = (rem_br_task == CLEAR) ? out.b_mask ^ rem_b_id : is_pack.decoded_vals.b_mask;
+    end
+
     assign correct = is_pack.decoded_vals.decoded_vals.pred_taken == taken;
 
     assign target = taken ? branch_target : is_pack.decoded_vals.decoded_vals.NPC;
@@ -55,7 +62,7 @@ module branch_fu (
             data_ready  <= '0;
             br_task     <= NOTHING;
         end else if (rd_en) begin
-            fu_pack     <= '{result: target, decoded_vals: is_pack.decoded_vals, pred_correct: correct};
+            fu_pack     <= '{result: target, decoded_vals: out, pred_correct: correct};
             data_ready  <= 1;
             br_task     <= (correct ? CLEAR : SQUASH);
         end else begin
