@@ -8,6 +8,9 @@ module alu (
     input logic         stall,
     input logic         rd_in,
 
+    input BR_TASK       rem_br_task,
+    input BR_MASK       rem_b_id,
+
     output FU_PACKET    fu_pack,
     output logic        data_ready
 );
@@ -61,7 +64,7 @@ module alu (
     assign next_out = '{result: result, decoded_vals: is_pack.decoded_vals, pred_correct: 0};
 
     always_ff @(posedge clock) begin
-        if (reset) begin
+        if (reset || (rem_br_task == SQUASH && (is_pack.decoded_vals.b_mask & rem_b_id) != '0)) begin
             data_ready  <= '0;
             out         <= '0;
         end else if (stall) begin
