@@ -30,7 +30,8 @@ module mult (
     logic done;
 
     // keep track of each instruction's is_pack
-    RS_PACKET [`MULT_STAGES-1:0] packets, next_packets, input_packet;
+    RS_PACKET [`MULT_STAGES-1:0] packets, next_packets;
+    RS_PACKET input_packet;
 
     MULT_FUNC [`MULT_STAGES-2:0] internal_funcs;
     MULT_FUNC func_out;
@@ -87,7 +88,7 @@ module mult (
     // populate the rest of fu_pack using the final element of orig_packets
     assign fu_pack.decoded_vals = packets[`MULT_STAGES-1];
 
-    `ifdef DEBUG_MULT
+    `ifdef DEBUG
         always_ff @(posedge clock) begin
             $display("============== MULT ================");
             for (int i = 0; i < `MULT_STAGES; i++) begin
