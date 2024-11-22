@@ -61,7 +61,7 @@ module issue #(
     always_comb begin
         alu_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_ALU; i++) begin
-            alu_rd_en_vals[i] = issued_alu[i].decoded_vals.valid; //(br_task == SQUASH && ((issued_alu[i].b_mask & rem_b_id) != 0)) ? '0 : issued_alu[i].decoded_vals.valid;
+            alu_rd_en_vals[i] = (br_task == SQUASH && ((issued_alu[i].b_mask & rem_b_id) != 0)) ? '0 : issued_alu[i].decoded_vals.valid;
             alu_reg_1[i] = issued_alu[i].t1.reg_idx;
             alu_reg_2[i] = issued_alu[i].t2.reg_idx;
         end
@@ -184,32 +184,32 @@ module issue #(
         for (int a = 0; a < `NUM_FU_ALU; a++) begin
             issued_alu_pack_temp[a].decoded_vals = issued_alu[a];
             issued_alu_pack_temp[a].decoded_vals.b_mask = (br_task == CLEAR && ((issued_alu[a].b_mask & rem_b_id) != 0)) ? issued_alu[a].b_mask ^ rem_b_id : issued_alu[a].b_mask;
-            issued_alu_pack_temp[a].rs1_value = select_rs1_data(issued_alu[a], a);
-            issued_alu_pack_temp[a].rs2_value = select_rs2_data(issued_alu[a], a);
+            issued_alu_pack_temp[a].rs1_value = reg_data_1[a];
+            issued_alu_pack_temp[a].rs2_value = reg_data_2[a];
         end
 
         // MULT
         for (int m = 0; m < `NUM_FU_MULT; m++) begin
             issued_mult_pack_temp[m].decoded_vals = issued_mult[m];
             issued_mult_pack_temp[m].decoded_vals.b_mask = (br_task == CLEAR && ((issued_mult[m].b_mask & rem_b_id) != 0)) ? issued_mult[m].b_mask ^ rem_b_id : issued_mult[m].b_mask;
-            issued_mult_pack_temp[m].rs1_value = select_rs1_data(issued_mult[m], (`NUM_FU_ALU) + m); 
-            issued_mult_pack_temp[m].rs2_value = select_rs2_data(issued_mult[m], (`NUM_FU_ALU) + m); 
+            issued_mult_pack_temp[m].rs1_value = reg_data_1[(`NUM_FU_ALU) + m]; 
+            issued_mult_pack_temp[m].rs2_value = reg_data_2[(`NUM_FU_ALU) + m]; 
         end
 
         // LD
         for (int l = 0; l < `NUM_FU_LD; l++) begin
             issued_ld_pack_temp[l].decoded_vals = issued_ld[l];
             issued_ld_pack_temp[l].decoded_vals.b_mask = (br_task == CLEAR && ((issued_ld[l].b_mask & rem_b_id) != 0)) ? issued_ld[l].b_mask ^ rem_b_id : issued_ld[l].b_mask;
-            issued_ld_pack_temp[l].rs1_value = select_rs1_data(issued_ld[l], (`NUM_FU_ALU + `NUM_FU_MULT) + l);
-            issued_ld_pack_temp[l].rs2_value = select_rs2_data(issued_ld[l], (`NUM_FU_ALU + `NUM_FU_MULT) + l);
+            issued_ld_pack_temp[l].rs1_value = reg_data_1[(`NUM_FU_ALU + `NUM_FU_MULT) + l];
+            issued_ld_pack_temp[l].rs2_value =reg_data_2[(`NUM_FU_ALU + `NUM_FU_MULT) + l];
         end
 
         // STORE
         for (int s = 0; s < `NUM_FU_STORE; s++) begin
             issued_st_pack_temp[s].decoded_vals = issued_st[s];
             issued_st_pack_temp[s].decoded_vals.b_mask = (br_task == CLEAR && ((issued_st[s].b_mask & rem_b_id) != 0)) ? issued_st[s].b_mask ^ rem_b_id : issued_st[s].b_mask;
-            issued_st_pack_temp[s].rs1_value = select_rs1_data(issued_st[s], (`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s);
-            issued_st_pack_temp[s].rs2_value = select_rs2_data(issued_st[s], (`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s);
+            issued_st_pack_temp[s].rs1_value = reg_data_1[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s];
+            issued_st_pack_temp[s].rs2_value = reg_data_2[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s];
         end
 
         // BR
@@ -218,28 +218,6 @@ module issue #(
         issued_br_pack_temp.rs1_value = reg_data_1[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
         issued_br_pack_temp.rs2_value = reg_data_2[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
     end
-
-    function DATA select_rs1_data(RS_PACKET inst, int reg_idx);
-        case(inst.decoded_vals.opa_select)
-            OPA_IS_RS1: return reg_data_1[reg_idx];
-            OPA_IS_NPC: return inst.decoded_vals.NPC;
-            OPA_IS_PC: return inst.decoded_vals.PC;
-            OPA_IS_ZERO: return 0;
-            default: return 32'hdeadface;
-        endcase
-    endfunction
-
-    function DATA select_rs2_data(RS_PACKET inst, int reg_idx);
-        case (inst.decoded_vals.opb_select)
-            OPB_IS_RS2:   return reg_data_2[reg_idx];
-            OPB_IS_S_IMM: return `RV32_signext_Simm(inst.decoded_vals.inst);
-            OPB_IS_I_IMM: return `RV32_signext_Iimm(inst.decoded_vals.inst);
-            OPB_IS_B_IMM: return `RV32_signext_Bimm(inst.decoded_vals.inst);
-            OPB_IS_U_IMM: return `RV32_signext_Uimm(inst.decoded_vals.inst);
-            OPB_IS_J_IMM: return `RV32_signext_Jimm(inst.decoded_vals.inst);
-            default:      return 32'hfacefeed; // face feed
-        endcase
-    endfunction
 
 
 endmodule
