@@ -47,6 +47,7 @@ module cpu (
         output logic                    [`RS_SZ-1:0]                        debug_rs_all_issued_insts,
         output logic                    [`RS_SZ-1:0]                        debug_all_issued_alu,
         output logic                    [`RS_SZ-1:0]                        debug_all_issued_mult,
+        output logic                    [`RS_SZ-1:0]                        debug_all_issued_br,
 
         output ROB_PACKET               [`ROB_SZ-1:0]                       debug_rob_entries,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_head,
@@ -65,7 +66,8 @@ module cpu (
         output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_rd_en,
 
         output ISSUE_PACKET             [`NUM_FU_ALU-1:0]                   debug_issued_alu_pack, 
-        output ISSUE_PACKET             [`NUM_FU_MULT-1:0]                  debug_issued_mult_pack
+        output ISSUE_PACKET             [`NUM_FU_MULT-1:0]                  debug_issued_mult_pack,
+        output ISSUE_PACKET                                                 debug_issued_br_pack
     `endif
 );
 
@@ -222,6 +224,7 @@ module cpu (
         assign debug_mult_rd_en = mult_rd_en;
         assign debug_issued_alu_pack = issued_alu_pack;
         assign debug_issued_mult_pack = issued_mult_pack;
+        assign debug_issued_br_pack = issued_br_pack;
     `endif
 
 
@@ -344,7 +347,8 @@ module cpu (
             .debug_open_entries(debug_rs_open_entries),
             .debug_all_issued_insts(debug_rs_all_issued_insts),
             .debug_all_issued_alu(debug_all_issued_alu),
-            .debug_all_issued_mult(debug_all_issued_mult)
+            .debug_all_issued_mult(debug_all_issued_mult),
+            .debug_all_issued_br(debug_all_issued_br)
         `endif
     );
 

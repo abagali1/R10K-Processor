@@ -65,10 +65,11 @@ module branch_fu (
     `ifdef DEBUG
         always @(posedge clock) begin #2;
             $display("============== BRANCH FU ==============\n");
+            $display("  rd_en: %b",  rd_en);
             $display("  Issue Packet:");
             $display("  b_id: %0d, b_mask: %0d, rs1_value: %0d, rs2_value: %0d", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs1_value, is_pack.rs2_value);
             $display("  FU Packet Out:");
-            $display("  branch target: %0d, prediction correct: %0d, br task: %0s", fu_pack.result, correct, br_task.name());
+            $display("  branch target: %x, prediction correct: %0d, br task: %0s", fu_pack.result, correct, br_task.name());
             // gonna let you finish this anup
         end
     `endif
