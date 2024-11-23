@@ -20,8 +20,7 @@ typedef struct packed {
 module ROB_tb();
 
     parameter DEPTH = `ROB_SZ;
-    parameter WIDTH = 32;
-    parameter N = 3;
+    parameter N = `N;
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     logic                                                                           clock;
