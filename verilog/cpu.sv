@@ -20,6 +20,7 @@ module cpu (
 
     // Note: these are assigned at the very bottom of the modulo
     output COMMIT_PACKET                [`N-1:0]                            committed_insts,
+    output ROB_PACKET                   [`N-1:0]                            retired_insts,
 
     output logic                        [3:0]                               ib_open,
     output ADDR                                                             NPC
@@ -378,6 +379,7 @@ module cpu (
             .debug_tail(debug_rob_tail)
         `endif
     );
+    assign retired_insts = retiring_data;
 
     cdb cbd (
         .clock(clock),
