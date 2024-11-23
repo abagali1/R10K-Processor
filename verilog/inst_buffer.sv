@@ -34,8 +34,11 @@ module inst_buffer #(
     assign open_entries = DEPTH - num_entries + num_dispatch;
 
     always_comb begin
-        for (int i = 0; i < N; ++i) begin
-            dispatched_insts[i] = entries[(head+i) % DEPTH];
+        dispatched_insts = '0;
+        if (~br_en) begin
+            for (int i = 0; i < N; ++i) begin
+                dispatched_insts[i] = entries[(head+i) % DEPTH];
+            end
         end
     end
 
