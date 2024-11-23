@@ -54,7 +54,7 @@ module testbench;
     COMMIT_PACKET [`N-1:0] committed_insts;
 
     ROB_PACKET [`N-1:0] retired_insts;
-    
+
 
     // DECODED_PACKET [`N-1:0] dis_insts;
 
@@ -550,6 +550,10 @@ module testbench;
     function void dump_state();
         $display("--------------");
         $display("Clock #%02d, NPC: %x, num_dispatched: %02d , num_issued: %02d, num_retired: %02d", clock_count, NPC, debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
+        $display("PCs Retired");
+        for(int i=0;i<debug_num_retired;i++) begin
+            $display("%02d: 0x%05x", i, retired_insts[i].PC);
+        end
         $display("\n");
 
         print_inst_buff();
