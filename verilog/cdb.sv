@@ -44,10 +44,6 @@ module cdb #(
 
     assign stall_sig = cdb_gnt ^ fu_done;
 
-    always_ff @(posedge clock) begin
-        $display("stall sig: %0b fu_done: %0b", stall_sig, fu_done );
-    end
-
     psel_gen #(
         .WIDTH(NUM_FU),
         .REQS(N)) 
@@ -83,5 +79,13 @@ module cdb #(
             debug_cdb_gnt_bus = cdb_gnt_bus;
         `endif
     end
+
+    `ifdef DEBUG
+        `ifndef DC
+            always @(posedge clock) begin
+                $display("stall sig: %0b fu_done: %0b", stall_sig, fu_done );
+            end
+        `endif
+    `endif
 
 endmodule

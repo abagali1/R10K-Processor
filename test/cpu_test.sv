@@ -96,6 +96,7 @@ module testbench;
         CDB_PACKET              [`N-1:0]                                    debug_cdb_entries;
         logic                   [`NUM_FUS-`NUM_FU_BR-1:0]                   debug_cdb_gnt;
         logic                   [`N-1:0][`NUM_FUS-`NUM_FU_BR-1:0]           debug_cdb_gnt_bus;
+        logic                   [`NUM_FUS-`NUM_FU_BR-1:0]                   debug_cdb_fu_done;
 
         logic                   [`NUM_FU_ALU-1:0]                           debug_alu_done;
         logic                   [`NUM_FU_MULT-1:0]                          debug_mult_done;
@@ -108,7 +109,64 @@ module testbench;
 
 
     // Instantiate the Pipeline
-    cpu dut (.*);
+    cpu dut(
+        .clock(clock),
+        .reset(reset),
+        .in_insts(in_insts),
+        .num_input(num_input),
+        .committed_insts(committed_insts),
+        .retired_insts(retired_insts),
+        .ib_open(ib_open),
+        .NPC(NPC)
+
+        `ifdef DEBUG
+        ,   .debug_num_dispatched(debug_num_dispatched),
+            .debug_num_retired(debug_num_retired),
+
+            .debug_inst_buff_entries(debug_inst_buff_entries),
+            .debug_inst_buff_head(debug_inst_buff_head),
+            .debug_inst_buff_tail(debug_inst_buff_tail),
+
+            .debug_dis_insts(debug_dis_insts),
+
+            .debug_fl_entries(debug_fl_entries),
+            .debug_fl_head(debug_fl_head),
+            .debug_fl_tail(debug_fl_tail),
+
+            .debug_mt_entries(debug_mt_entries),
+
+            .debug_rs_entries(debug_rs_entries),
+            .debug_rs_open_spots(debug_rs_open_spots),
+            .debug_rs_other_sig(debug_rs_other_sig),
+            .debug_rs_open_entries(debug_rs_open_entries),
+            .debug_rs_all_issued_insts(debug_rs_all_issued_insts),
+
+            .debug_all_issued_alu(debug_all_issued_alu),
+            .debug_all_issued_mult(debug_all_issued_mult),
+            .debug_all_issued_br(debug_all_issued_br),
+
+            .debug_rob_entries(debug_rob_entries),
+            .debug_rob_head(debug_rob_head),
+            .debug_rob_tail(debug_rob_tail),
+
+            .debug_bs_entries(debug_bs_entries),
+            .debug_bs_free_entries(debug_bs_free_entries),
+            .debug_bs_stack_gnt(debug_bs_stack_gnt),
+
+            .debug_cdb_entries(debug_cdb_entries),
+            .debug_cdb_gnt(debug_cdb_gnt),
+            .debug_cdb_gnt_bus(debug_cdb_gnt_bus),
+            .debug_cdb_fu_done(debug_cdb_fu_done),
+
+            .debug_alu_done(debug_alu_done),
+            .debug_mult_done(debug_mult_done),
+            .debug_mult_rd_en(debug_mult_rd_en),
+
+            .debug_issued_alu_pack(debug_issued_alu_pack),
+            .debug_issued_mult_pack(debug_issued_mult_pack),
+            .debug_issued_br_pack(debug_issued_br_pack)
+        `endif
+    );
 
     // Generate System Clock
     always begin
@@ -563,9 +621,10 @@ module testbench;
         $display("\nALU Data Ready: %b", debug_alu_done);
         $display();
         $display("MULT Rd EN: %b", debug_mult_rd_en);
-        $display("MULT Data Ready: %b", dut.mult_done);
-        $display("FU DONE: %b", dut.cbd.fu_done);
-//       $display("MULT Data Ready: %b", debug_mult_done);
+        $display("MULT Data Ready: %b", debug_mult_done);
+        // $display("MULT Data Ready: %b", dut.mult_done);
+        $display("FU DONE: %b", debug_cdb_fu_done);
+        // $display("FU DONE: %b", dut.cbd.fu_done);
 
         print_rs();
         print_map_table();
