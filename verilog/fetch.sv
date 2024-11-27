@@ -38,6 +38,9 @@ module fetch #(
     // calculate prefetch target
         // Q: how can we check multiple cache entries to find the next item not in the cache?
         // perhaps return this from cache based on previous cache search?
+        // when the branch predictor predicts taken, how do we update this value
+            // i dont think we need to squash prefetched mem requests, as they could still
+            // be useful in the cache if we mispredict
 
     // check cache validity and make request
     always_comb begin
@@ -66,6 +69,7 @@ module fetch #(
             next_mshr_data[mem_data_tag] = '0;
             next_mshr_valid[mem_data_tag] = '0;
             // this logic writes to cache but doesn't put data in out_insts
+            // this is because we retrieve two insts from memory with every request
         end
     end
 
@@ -73,6 +77,8 @@ module fetch #(
     always_comb begin
         // Q: how to coalesce data exiting the mshr with cache hits?
         // this is an issue because inst buffer needs to be in-order (i think)
+        // could only push ready data, and only advance prefetch target to the first non-ready instruction
+            // might necessitate refetching from cache? waste of ports but otherwise we'd need a large intermed storage solution
     end
 
     // Q: does cache need to have be N-way read?
