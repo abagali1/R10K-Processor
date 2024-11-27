@@ -68,7 +68,7 @@ module freelist #(
         next_head = (next_head + rd_num) % DEPTH;
     end
 
-    always @(posedge clock) begin
+    always_ff @(posedge clock) begin
         if (reset) begin
             head <= 0;
             tail <= 0;

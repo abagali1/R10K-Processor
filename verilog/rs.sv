@@ -376,33 +376,36 @@ module rs #(
     end
 
     `ifdef DEBUG
-        always @(posedge clock) begin
-            for(int i=0;i<`NUM_FU_BR;i++) begin
-                $display("br intructions going to issue register");
-                $display("branch inst: %0x, PC: %0d", issued_br[i].decoded_vals.inst, issued_br[i].decoded_vals.PC);
+        `ifndef DC
+            always @(posedge clock) begin
+                for(int i=0;i<`NUM_FU_BR;i++) begin
+                    $display("br intructions going to issue register");
+                    $display("branch inst: %0x, PC: %0d", issued_br[i].decoded_vals.inst, issued_br[i].decoded_vals.PC);
+                end
+
+        //         $display("============== RESERVATION STATION ==============\n");
+
+
+        //         $display("  Inputs:");
+
+        //         $display("    rs_in:");
+        //         for (int i = 0; i < N; i++) begin
+        //             $display("      rs_in[%0d]: type=%0d dr=%0d, r1=%0d, r2=%0d", i, rs_in[i].fu_type, rs_in[i].dest_reg_idx, rs_in[i].reg1, rs_in[i].reg2);
+        //         end
+        //         $display("");
+
+        //         $display("  State:");
+
+        //         $display("    Entries:");
+        //         $display("-------------------------------------");
+        //         $display("    | i | type |  t | t1 | t2 | valid  |");
+        //         for (int i = 0; i < DEPTH; i++) begin
+        //             $display("    %02d |  %02d  | %02d | %02d | %02d |    %01d   |", i, entries[i].decoded_vals.fu_type, entries[i].t.reg_idx, entries[i].t1.reg_idx, entries[i].t2.reg_idx, entries[i].decoded_vals.valid);
+        //         end
+        //         $display("");
+
+        //         $display("  Outputs:");// TODO
             end
-
-    //         $display("============== RESERVATION STATION ==============\n");
-            
-    //         $display("  Inputs:");
-
-    //         $display("    rs_in:");
-    //         for (int i = 0; i < N; i++) begin
-    //             $display("      rs_in[%0d]: type=%0d dr=%0d, r1=%0d, r2=%0d", i, rs_in[i].fu_type, rs_in[i].dest_reg_idx, rs_in[i].reg1, rs_in[i].reg2);
-    //         end
-    //         $display("");
-
-    //         $display("  State:");
-
-    //         $display("    Entries:");
-    //         $display("-------------------------------------");
-    //         $display("    | i | type |  t | t1 | t2 | valid  |");
-    //         for (int i = 0; i < DEPTH; i++) begin
-    //             $display("    %02d |  %02d  | %02d | %02d | %02d |    %01d   |", i, entries[i].decoded_vals.fu_type, entries[i].t.reg_idx, entries[i].t1.reg_idx, entries[i].t2.reg_idx, entries[i].decoded_vals.valid);
-    //         end
-    //         $display("");
-
-    //         $display("  Outputs:");// TODO
-        end
+        `endif
     `endif
 endmodule

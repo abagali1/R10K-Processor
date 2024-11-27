@@ -85,15 +85,17 @@ module inst_buffer #(
     end
 
     // `ifdef DEBUG
-    //     always_ff @(posedge clock) begin
-    //         $display("      INST BUFF      ");
-    //         $display("---------------------");
-    //         $display(" valid  |\tinst ");
-    //         for (int i = 0; i < num_entries; i++) begin
-    //             $display("\t%0d\t|\t%0h\t", entries[i].valid, entries[i].inst);
+    //     `ifndef DC
+    //         always @(posedge clock) begin
+    //             $display("      INST BUFF      ");
+    //             $display("---------------------");
+    //             $display(" valid  |\tinst ");
+    //             for (int i = 0; i < num_entries; i++) begin
+    //                 $display("\t%0d\t|\t%0h\t", entries[i].valid, entries[i].inst);
+    //             end
+    //             $display("num_entries: %0d, num_dispatch: %0d, open_entries: %0d, num_accept: %0d", num_entries, num_dispatch, open_entries, num_accept);
     //         end
-    //         $display("num_entries: %0d, num_dispatch: %0d, open_entries: %0d, num_accept: %0d", num_entries, num_dispatch, open_entries, num_accept);
-    //     end
+    //     `endif
     // `endif
 
 endmodule

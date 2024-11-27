@@ -14,7 +14,7 @@
 module cpu (
     input                                                                   clock, // System clock
     input                                                                   reset, // System reset
-    
+
     input INST_PACKET                   [7:0]                               in_insts,
     input logic                         [3:0]                               num_input,
 
@@ -28,7 +28,7 @@ module cpu (
     `ifdef DEBUG
     ,   output  logic                   [$clog2(`N+1)-1:0]                  debug_num_dispatched,
         output  logic                   [$clog2(`N+1)-1:0]                  debug_num_retired,
-    
+
         output INST_PACKET              [`INST_BUFF_DEPTH-1:0]              debug_inst_buff_entries,
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_head,
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_tail,
@@ -61,6 +61,7 @@ module cpu (
         output CDB_PACKET               [`N-1:0]                            debug_cdb_entries,
         output logic                    [`NUM_FUS-`NUM_FU_BR-1:0]           debug_cdb_gnt,
         output logic                    [`N-1:0][`NUM_FUS-`NUM_FU_BR-1:0]   debug_cdb_gnt_bus,
+        output logic                    [`NUM_FUS-`NUM_FU_BR-1:0]           debug_cdb_fu_done,
 
         output logic                    [`NUM_FU_ALU-1:0]                   debug_alu_done,
         output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_done,
@@ -395,6 +396,10 @@ module cpu (
         `endif
     );
 
+    `ifdef DEBUG
+        assign debug_cdb_fu_done = {st_done, ld_done, mult_done, alu_done};
+    `endif
+
     br_stack pancake (
         .clock(clock),
         .reset(reset),
@@ -588,13 +593,15 @@ module cpu (
 
     // DEBUG OUTPUTS
     `ifdef DEBUG
-        int cycle = 0;
-        always @(posedge clock) begin
-            $display("====================== CPU ======================");
-            $display("@@@ Cycle %0d @@@", cycle);
-            $display("Time: %0t", $time);
-            cycle++;
-        end
+        `ifndef DC
+            int cycle = 0;
+            always @(posedge clock) begin
+                $display("====================== CPU ======================");
+                $display("@@@ Cycle %0d @@@", cycle);
+                $display("Time: %0t", $time);
+                cycle++;
+            end
+        `endif
     `endif
 
 endmodule // pipeline

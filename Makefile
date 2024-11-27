@@ -235,7 +235,7 @@ build/mult.cov: $(MULT_FILES)
 synth/mult.vg: $(MULT_FILES)
 
 # TODO: add any files required for the RS here (besides test/rs_test.sv and verilog/rs.sv)
-RS_REQS = verilog/sys_defs.svh verilog/rs_psel.sv
+RS_REQS = verilog/sys_defs.svh verilog/rs_psel.sv verilog/psel_gen.sv
 build/rs.simv: $(RS_FILES)
 build/rs.cov: $(RS_FILES)
 synth/rs.vg: $(RS_FILES)
@@ -283,6 +283,7 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/decoder.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
+build/cpu.syn.simv: $(CPU_TESTBENCH)
 build/cpu.cov: $(CPU_SOURCES) $(CPU_HEADERS)
 synth/cpu.vg: $(CPU_SOURCES) $(CPU_HEADERS)
 # ---- Running ---- #

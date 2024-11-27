@@ -150,8 +150,10 @@ module issue #(
     end
 
     always_ff @(posedge clock) begin
-        $display("issue register br inst: %0x, PC: %0d", issued_br_pack.decoded_vals.decoded_vals.inst, issued_br_pack.decoded_vals.decoded_vals.PC);
-        //$display("br_task: %0s, rem_b_id: %0b, current br b_mask: %0b", br_task.name(), rem_b_id, issued_br.b_mask);
+        `ifndef DC
+            $display("issue register br inst: %0x, PC: %0d", issued_br_pack.decoded_vals.decoded_vals.inst, issued_br_pack.decoded_vals.decoded_vals.PC);
+            //$display("br_task: %0s, rem_b_id: %0b, current br b_mask: %0b", br_task.name(), rem_b_id, issued_br.b_mask);
+        `endif
 
         if (reset) begin
             br_rd_en        <= 0;

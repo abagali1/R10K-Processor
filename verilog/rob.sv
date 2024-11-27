@@ -160,24 +160,28 @@ module rob #(
             entries <= next_entries;
         end
 
-        $display("rob num entries: %0d", num_entries);
+        `ifndef DC
+            $display("rob num entries: %0d", num_entries);
+        `endif
     end
 
     // // DEBUG OUTPUT
     // `ifdef DEBUG
-    //     always @(posedge clock) begin
-    //         $display("====================== ROB ======================");
-    //         $display("Entries: ");
-    //         $display("dest_reg_idx\tt\tt_old\tcomplete\tvalid");
-    //         for (int j = 0; j < DEPTH; j++) begin
-    //             $display("\t%4d\t%1d\t%5d\t%8d\t%5d",
-    //                 entries[j].dest_reg_idx, entries[j].t, entries[j].t_old,
-    //                 entries[j].complete, entries[j].valid
-    //             );
+    //     `ifndef DC
+    //         always @(posedge clock) begin
+    //             $display("====================== ROB ======================");
+    //             $display("Entries: ");
+    //             $display("dest_reg_idx\tt\tt_old\tcomplete\tvalid");
+    //             for (int j = 0; j < DEPTH; j++) begin
+    //                 $display("\t%4d\t%1d\t%5d\t%8d\t%5d",
+    //                     entries[j].dest_reg_idx, entries[j].t, entries[j].t_old,
+    //                     entries[j].complete, entries[j].valid
+    //                 );
+    //             end
+    //             $display("num entries in use: %d\n", next_num_entries);
+    //             $display("");
     //         end
-    //         $display("num entries in use: %d\n", next_num_entries);
-    //         $display("");
-    //     end
+    //     `endif
     // `endif
 
 endmodule

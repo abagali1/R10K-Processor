@@ -58,6 +58,7 @@ module br_stack #(
     always_comb begin
         next_entries = entries;
         next_free_entries = free_entries;
+        cp_out = '0;
 
         `ifdef DEBUG
             debug_entries = entries;
