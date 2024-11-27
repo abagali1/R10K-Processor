@@ -12,7 +12,7 @@ module map_table #(
     input REG_IDX                   [N-1:0]                 r2_idx,
     input REG_IDX                   [N-1:0]                 dest_reg_idx, // dest_regs that are getting mapped to a new phys_reg from free_list
     input PHYS_REG_IDX              [N-1:0]                 free_reg,  // comes from the free list
-    input logic                     [N-1:0]                 incoming_valid, // inputs to expect                       
+    input logic                     [N-1:0]                 incoming_valid, // inputs to expect
 
     input REG_IDX                   [N-1:0]                 ready_reg_idx, // readys from CDB - arch reg
     input PHYS_REG_IDX              [N-1:0]                 ready_phys_idx, // corresponding phys reg
@@ -25,7 +25,7 @@ module map_table #(
     output PHYS_REG_IDX             [N-1:0]                 t_old_data, //?
     output MAP_TABLE_PACKET         [N-1:0]                 r1_p_reg,
     output MAP_TABLE_PACKET         [N-1:0]                 r2_p_reg,
-    
+
     output MAP_TABLE_PACKET         [DEPTH-1:0]             out_mt // output map table for architectural mt
 
     `ifdef DEBUG
@@ -70,7 +70,7 @@ module map_table #(
             end
         end
 
-        out_mt = next_entries;
+        out_mt = entries;
     end
 
     always @(posedge clock) begin

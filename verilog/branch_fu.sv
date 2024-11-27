@@ -30,7 +30,7 @@ module branch_fu (
         out.b_mask = (rem_br_task == CLEAR) ? out.b_mask ^ rem_b_id : is_pack.decoded_vals.b_mask;
     end
 
-    assign correct = is_pack.decoded_vals.decoded_vals.pred_taken == taken;
+    assign correct = is_pack.decoded_vals.decoded_vals.pred_taken == taken; // TODO: Add target addr check
 
     assign target = taken ? branch_target : is_pack.decoded_vals.decoded_vals.NPC;
 
