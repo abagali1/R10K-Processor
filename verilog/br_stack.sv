@@ -14,14 +14,14 @@ module br_stack #(
 
     input DECODED_PACKET                                                    dis_inst, // first dispatched instruction
     input MAP_TABLE_PACKET          [`ARCH_REG_SZ-1:0]                      in_mt,
-    input logic                     [$clog2(`ROB_SZ+1)-1:0]       in_fl_head,
+    input logic                     [$clog2(`ROB_SZ+1)-1:0]                 in_fl_head,
     input logic                     [$clog2(`ROB_SZ)-1:0]                   in_rob_tail,
-    
+
     input CDB_PACKET                [N-1:0]                                 cdb_in,
-    
+
     input BR_TASK                                                           br_task, // not defined here. in main sysdefs
     input BR_MASK                                                           rem_b_id, // b_id to remove
-    
+
     output BR_MASK                                                          assigned_b_id, // b_id given to a dispatched branch instruction
     output CHECKPOINT                                                       cp_out,
     output logic                                                            full
@@ -39,7 +39,7 @@ module br_stack #(
 
     logic [DEPTH-1:0] free_entries; // bit map of whether an entry is free (1 if free)
     logic [DEPTH-1:0] next_free_entries;
-    
+
     logic [DEPTH-1:0] stack_gnt;
 
     psel_gen #(

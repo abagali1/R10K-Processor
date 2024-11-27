@@ -34,6 +34,7 @@ module cpu (
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_tail,
 
         output DECODED_PACKET           [`N-1:0]                            debug_dis_insts,
+        output logic                    [$clog2(`N+1)-1:0]                  debug_dispatch_limit,
 
         output FREE_LIST_PACKET         [`ROB_SZ-1:0]                       debug_fl_entries,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_head,
@@ -259,6 +260,10 @@ module cpu (
 
         .num_dispatch(num_dis), 
         .out_insts(dis_insts)
+
+        `ifdef DEBUG
+        ,   .debug_dispatch_limit(debug_dispatch_limit)
+        `endif
     );
 
     freelist flo_from_progressive (

@@ -19,25 +19,26 @@ module dispatch #(
     output logic            [$clog2(N+1)-1:0]    num_dispatch,
     output DECODED_PACKET   [N-1:0]              out_insts
 
-    
     `ifdef DEBUG
-    , logic [$clog2(N+1)-1:0] debug_num_valid_inst
+    , output logic [$clog2(N+1)-1:0] debug_num_valid_inst,
+      output logic [$clog2(N+1)-1:0] debug_dispatch_limit
     `endif
 );
 
     logic [$clog2(N+1)-1:0] num_rob_rs; 
     logic [$clog2(N+1)-1:0] num_valid_inst;
     logic [$clog2(N+1)-1:0] limit;
-    
+
     assign num_rob_rs = rob_open < rs_open ? rob_open : rs_open;
     assign limit = num_valid_inst < num_rob_rs ? num_valid_inst : num_rob_rs;
-    
+
     `ifdef DEBUG
         assign debug_num_valid_inst = num_valid_inst;
+        assign debug_dispatch_limit = limit;
     `endif
 
     DECODED_PACKET [N-1:0] decoded_insts;
-    
+
     decode #(
         .N(N)
     ) decode (
@@ -59,7 +60,7 @@ module dispatch #(
         end
     end
 
-    
+
     always_comb begin
         num_dispatch = 0;
         out_insts = '0;
@@ -75,23 +76,23 @@ module dispatch #(
                 end else begin
                     out_insts[i] = decoded_insts[i];
                     num_dispatch++;
-                end                
+                end
             end
         end
     end
 
-    `ifdef DEBUG
-        `ifndef DC
-            always @(posedge clock) begin
-                $display("      DISPATCH      ");
-                $display("---------------------");
-                $display(" valid  |\tinst ");
-                for (int i = 0; i < num_dispatch; i++) begin
-                    $display("\t%0d\t|\t%0h\t", out_insts[i].valid, out_insts[i].inst);
-                end
-                $display("num_dispatch: %0d", num_dispatch);
-            end
-        `endif
-    `endif
+    // `ifdef DEBUG
+    //     `ifndef DC
+    //         always @(posedge clock) begin
+    //             $display("      DISPATCH");
+    //             $display("---------------------");
+    //             $display(" valid  |\tinst ");
+    //             for (int i = 0; i < num_dispatch; i++) begin
+    //                 $display("\t%0d\t|\t%0h\t", out_insts[i].valid, out_insts[i].inst);
+    //             end
+    //             $display("num_dispatch: %0d", num_dispatch);
+    //         end
+    //     `endif
+    // `endif
 
 endmodule

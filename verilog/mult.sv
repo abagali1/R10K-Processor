@@ -88,16 +88,16 @@ module mult (
     // populate the rest of fu_pack using the final element of orig_packets
     assign fu_pack.decoded_vals = packets[`MULT_STAGES-1];
 
-    `ifdef DEBUG
-        `ifndef DC
-            always @(posedge clock) begin
-                $display("============== MULT ================");
-                for (int i = 0; i < `MULT_STAGES; i++) begin
-                    $display("   Packets[%0d] = %0d", i, packets[i].decoded_vals.inst);
-                end
-            end
-        `endif
-    `endif
+    // `ifdef DEBUG
+    //     `ifndef DC
+    //         always @(posedge clock) begin
+    //             $display("============== MULT ================");
+    //             for (int i = 0; i < `MULT_STAGES; i++) begin
+    //                 $display("   Packets[%0d] = %0d", i, packets[i].decoded_vals.inst);
+    //             end
+    //         end
+    //     `endif
+    // `endif
 
 endmodule // mult
 

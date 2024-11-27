@@ -63,8 +63,10 @@ module testbench;
 
     `ifdef DEBUG
         logic                   [$clog2(`N+1)-1:0]                          debug_num_dispatched;
-        DECODED_PACKET           [`N-1:0]                                   debug_dis_insts;
+        DECODED_PACKET          [`N-1:0]                                    debug_dis_insts;
         logic                   [$clog2(`N+1)-1:0]                          debug_num_retired;
+
+        logic                   [$clog2(`N+1)-1:0]                          debug_dispatch_limit;
 
         INST_PACKET             [`INST_BUFF_DEPTH-1:0]                      debug_inst_buff_entries;
         logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]              debug_inst_buff_head;
@@ -128,6 +130,7 @@ module testbench;
             .debug_inst_buff_tail(debug_inst_buff_tail),
 
             .debug_dis_insts(debug_dis_insts),
+            .debug_dispatch_limit(debug_dispatch_limit),
 
             .debug_fl_entries(debug_fl_entries),
             .debug_fl_head(debug_fl_head),
@@ -420,7 +423,7 @@ module testbench;
 
     // dispatch
     function void print_dispatch();
-        $display("\nDispatch");
+        $display("\nDispatch (Limit: %02d)", debug_dispatch_limit);
         $display("#\t| valid |    inst    |   PC   |   NPC  |");
         for (int i = 0; i < `N; i++) begin
             $write("%02d\t|   %d   | %08x   | %05x  | %05x  |\n", 
@@ -490,9 +493,9 @@ module testbench;
     // TODO: need to add debug_mt_entries to the map table test
     function void print_map_table();
         $display("\nMap Table");
-        $display("#\t| reg_idx | ready |valid |");
+        $display("reg_idx| p_reg_idx | ready |valid |");
         for (int i = 0; i < `ARCH_REG_SZ; i++) begin
-            $display("%02d\t|  %04d   |   %1d   |   %1d  |", 
+            $display("%02d\t|  %04d     |   %1d   |   %1d  |", 
                 i, 
                 debug_mt_entries[i].reg_idx, 
                 debug_mt_entries[i].ready, 
