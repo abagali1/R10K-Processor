@@ -28,7 +28,7 @@
 // `define DEBUG_RS '1
 
 // superscalar width
-`define N 5
+`define N 2
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
