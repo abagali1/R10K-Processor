@@ -115,7 +115,7 @@ module br_stack #(
         // Set ready bit for everything in the map table
         for (int i = 0; i < N; i++) begin
             for (int j = 0; j < DEPTH; j++) begin
-                if (cdb_in[i].p_reg_idx == entries[j].rec_mt[cdb_in[i].reg_idx].reg_idx) begin // CHECK is this not supposed entries[j].rec_mt[cdb_in[i].reg_idx].reg_idx
+                if (cdb_in[i].p_reg_idx == next_entries[j].rec_mt[cdb_in[i].reg_idx].reg_idx) begin // CHECK is this not supposed entries[j].rec_mt[cdb_in[i].reg_idx].reg_idx
                     next_entries[j].rec_mt[cdb_in[i].reg_idx].ready = 1;
                 end
             end
