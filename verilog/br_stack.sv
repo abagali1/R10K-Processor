@@ -16,6 +16,7 @@ module br_stack #(
     input MAP_TABLE_PACKET          [`ARCH_REG_SZ-1:0]                      in_mt,
     input logic                     [$clog2(`ROB_SZ+1)-1:0]                 in_fl_head,
     input logic                     [$clog2(`ROB_SZ)-1:0]                   in_rob_tail,
+    input logic                     [$clog2(`SQ_SZ)-1:0]                    in_sq_tail,
 
     input CDB_PACKET                [N-1:0]                                 cdb_in,
 
@@ -101,6 +102,7 @@ module br_stack #(
                     next_entries[k].rec_mt = in_mt;
                     next_entries[k].fl_head = in_fl_head;
                     next_entries[k].rob_tail = in_rob_tail;
+                    next_entries[k].sq_tail = in_sq_tail;
 
                     for (int i = 0; i < DEPTH; i++) begin
                         next_entries[k].b_mask |= next_entries[i].b_id;

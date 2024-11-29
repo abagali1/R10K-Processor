@@ -90,6 +90,7 @@ module testbench;
         ROB_PACKET              [`ROB_SZ-1:0]                               debug_rob_entries;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_head;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_tail;
+        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_num_entries;
 
         CHECKPOINT              [`BRANCH_PRED_SZ-1:0]                       debug_bs_entries;
         logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_free_entries;
@@ -107,6 +108,10 @@ module testbench;
         ISSUE_PACKET            [`NUM_FU_ALU-1:0]                           debug_issued_alu_pack;
         ISSUE_PACKET            [`NUM_FU_MULT-1:0]                          debug_issued_mult_pack;
         ISSUE_PACKET                                                        debug_issued_br_pack;
+
+        logic                   [$clog2(`SQ_SZ)-1:0]                        debug_sq_head;
+        logic                   [$clog2(`SQ_SZ)-1:0]                        debug_sq_tail;
+        logic                   [$clog2(`SQ_SZ+1)-1:0]                      debug_sq_open;
     `endif
 
 
@@ -151,6 +156,7 @@ module testbench;
             .debug_rob_entries(debug_rob_entries),
             .debug_rob_head(debug_rob_head),
             .debug_rob_tail(debug_rob_tail),
+            .debug_rob_num_entries(debug_rob_num_entries),
 
             .debug_bs_entries(debug_bs_entries),
             .debug_bs_free_entries(debug_bs_free_entries),
@@ -167,7 +173,11 @@ module testbench;
 
             .debug_issued_alu_pack(debug_issued_alu_pack),
             .debug_issued_mult_pack(debug_issued_mult_pack),
-            .debug_issued_br_pack(debug_issued_br_pack)
+            .debug_issued_br_pack(debug_issued_br_pack),
+
+            .debug_sq_head(debug_sq_head),
+            .debug_sq_tail(debug_sq_tail),
+            .debug_sq_open(debug_sq_open)
         `endif
     );
 
@@ -262,7 +272,7 @@ module testbench;
 
                 block = unified_memory[current[31:3]];
                 in_insts[i].inst = block.word_level[current[2]];
-                
+
                 if (in_insts[i].inst) begin
                     in_insts[i].valid = 1;
                     in_insts[i].PC = current;
@@ -423,7 +433,7 @@ module testbench;
 
     // dispatch
     function void print_dispatch();
-        $display("\nDispatch (Limit: %02d)", debug_dispatch_limit);
+        $display("\nDispatch (Limit: %02d) (SQ Open: %02d) (SQ Tail: %02d)", debug_dispatch_limit, debug_sq_open, debug_sq_tail);
         $display("#\t| valid |    inst    |   PC   |   NPC  |");
         for (int i = 0; i < `N; i++) begin
             $write("%02d\t|   %d   | %08x   | %05x  | %05x  |\n", 
@@ -438,7 +448,7 @@ module testbench;
 
     // rob
     function void print_rob();
-        $display("\nReorder Buffer (ROB)");
+        $display("\nReorder Buffer (ROB) (%02d)", debug_rob_num_entries);
         $display("Status | #  |     PC     |  dest_reg   | halt | complete |    t   | t_old  |");
         for (int i = 0; i < `ROB_SZ; i++) begin
             string status = "";
@@ -467,9 +477,9 @@ module testbench;
     // rs
     function void print_rs();
         $display("\nReservation Station");
-        $display("#  | valid |    PC     |  NPC      | fu_type|   t   |  t1   |  t2   |  b_id   |   b_mask   | alu issued | mult issued | br issued   |");
+        $display("#  | valid |  PC   |  NPC  |fu_type| t |t1 |t2 |b_id|b_mask| sq tail|alu issued|mult issued|br issued|");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
-            $display("%02d |  %d    |  0x%05x  |  0x%05x  |  %02d    |  %02d   |  %02d%-2s |  %02d%-2s |  %04b   |   %04b     |     %d      |      %d      |      %d      |", 
+            $display("%02d |  %d    |0x%05x|0x%05x|  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |", 
                         i,
                         debug_rs_entries[i].decoded_vals.valid,
                         debug_rs_entries[i].decoded_vals.PC,
@@ -477,11 +487,12 @@ module testbench;
                         debug_rs_entries[i].decoded_vals.fu_type,
                         debug_rs_entries[i].t.reg_idx,
                         debug_rs_entries[i].t1.reg_idx,
-                        (debug_rs_entries[i].t1.ready) ? "+" : "",
+                        (debug_rs_entries[i].t1.ready) ? "+" : " ",
                         debug_rs_entries[i].t2.reg_idx,
-                        (debug_rs_entries[i].t2.ready) ? "+" : "",
+                        (debug_rs_entries[i].t2.ready) ? "+" : " ",
                         debug_rs_entries[i].b_id,
                         debug_rs_entries[i].b_mask,
+                        debug_rs_entries[i].decoded_vals.sq_tail,
                         debug_all_issued_alu[i],
                         debug_all_issued_mult[i],
                         debug_all_issued_br[i]
@@ -637,7 +648,7 @@ module testbench;
         print_issue();
         $display("\n");
 
-        // if(clock_count > 250) begin
+        // if(clock_count > 950) begin
         //     $finish;
         // end
     endfunction

@@ -73,7 +73,7 @@ module issue #(
             issued_alu_pack <= issued_alu_pack_temp;
         end 
     end
-    
+
     // ----- MULT -----
 
     // mult issuing signals
@@ -95,11 +95,11 @@ module issue #(
             issued_mult_pack    <= issued_mult_pack_temp;
         end 
     end
-    
+
     // ----- LD -----
 
     // load issuing signals
-    always_comb begin    
+    always_comb begin
         ld_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_LD; i++) begin
             ld_rd_en_vals[i] = issued_ld[i].decoded_vals.valid;
@@ -117,11 +117,11 @@ module issue #(
             issued_ld_pack  <= issued_ld_pack_temp;
         end 
     end
-    
+
     // ----- STORE -----
 
     // store issuing signals
-    always_comb begin    
+    always_comb begin
         st_rd_en_vals = '0;
         for (int i = 0; i <`NUM_FU_STORE; i++) begin
             st_rd_en_vals[i] = issued_st[i].decoded_vals.valid;
@@ -143,7 +143,7 @@ module issue #(
     // ----- BRANCH -----
 
     // branch issuing signals
-    always_comb begin    
+    always_comb begin
         br_rd_en_vals = issued_br.decoded_vals.valid;
         br_reg_1 = issued_br.t1.reg_idx;
         br_reg_2 = issued_br.t2.reg_idx;

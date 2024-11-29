@@ -9,15 +9,18 @@
 module dispatch #(
     parameter N = `N
 )(
-    input                                        clock,
-    input                                        reset,
-    input logic             [$clog2(N+1)-1:0]    rob_open,
-    input logic             [$clog2(N+1)-1:0]    rs_open,
-    input INST_PACKET       [N-1:0]              insts,
-    input logic                                  bs_full,
+    input                                               clock,
+    input                                               reset,
+    input logic             [$clog2(N+1)-1:0]           rob_open,
+    input logic             [$clog2(N+1)-1:0]           rs_open,
+    input logic             [$clog2(N+1)-1:0]           sq_open,
+    input logic             [$clog2(`SQ_SZ-1):0]        sq_tail_in,
+    input INST_PACKET       [N-1:0]                     insts,
+    input logic                                         bs_full,
 
-    output logic            [$clog2(N+1)-1:0]    num_dispatch,
-    output DECODED_PACKET   [N-1:0]              out_insts
+    output logic            [$clog2(N+1)-1:0]           num_dispatch,
+    output logic            [$clog2(N+1)-1:0]           num_store_dispatched,
+    output DECODED_PACKET   [N-1:0]                     out_insts
 
     `ifdef DEBUG
     , output logic [$clog2(N+1)-1:0] debug_num_valid_inst,
@@ -25,7 +28,7 @@ module dispatch #(
     `endif
 );
 
-    logic [$clog2(N+1)-1:0] num_rob_rs; 
+    logic [$clog2(N+1)-1:0] num_rob_rs;
     logic [$clog2(N+1)-1:0] num_valid_inst;
     logic [$clog2(N+1)-1:0] limit;
 
@@ -62,21 +65,30 @@ module dispatch #(
 
 
     always_comb begin
-        num_dispatch = 0;
+        num_dispatch = '0;
         out_insts = '0;
+        num_store_dispatched = '0;
+
         for (int i = 0; i < N; i++) begin
             if (decoded_insts[i].valid && i < limit) begin
                 if ((decoded_insts[i].uncond_branch || decoded_insts[i].cond_branch)) begin
-                    if (i == 0 && !bs_full) begin 
-                        out_insts[i] = decoded_insts[i];
-                        num_dispatch++;
-                    end else begin
+                    if (!(i ==0 && !bs_full)) begin
                         break;
                     end
+                    out_insts[i] = decoded_insts[i];
+                end else if (decoded_insts[i].wr_mem || decoded_insts[i].rd_mem) begin
+                    if(decoded_insts[i].wr_mem) begin
+                        if(sq_open - num_store_dispatched <= 0) begin
+                            break;
+                        end
+                        num_store_dispatched++;
+                    end
+                    out_insts[i] = decoded_insts[i];
+                    out_insts[i].sq_tail = (sq_tail_in + num_store_dispatched) % `SQ_SZ;
                 end else begin
                     out_insts[i] = decoded_insts[i];
-                    num_dispatch++;
                 end
+                num_dispatch++;
             end
         end
     end
