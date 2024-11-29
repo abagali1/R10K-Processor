@@ -42,6 +42,16 @@ module fetch #(
             // i dont think we need to squash prefetched mem requests, as they could still
             // be useful in the cache if we mispredict
 
+    // TODO: needs review? maybe i'm missing an edge case...
+    // if there is a branch, prefetch_target = target
+    // if the icache isn't valid, prefetch_target = next_miss_addr
+    // otherwise, prefetch_target = current_fetch_addr + 8 (next instruction)
+    always_comb begin
+        prefetch_target = br_en ? target :
+                         ~icache_valid ? next_miss_addr :
+                         current_fetch_addr + 8;
+    end
+
     // check cache validity and make request
     always_comb begin
         next_mem_addr = mem_addr;
@@ -73,13 +83,46 @@ module fetch #(
         end
     end
 
+    MEM_BLOCK mshr_data_current;
+    MEM_BLOCK cache_data_current;
+
     // construct out_insts
     always_comb begin
         // Q: how to coalesce data exiting the mshr with cache hits?
         // this is an issue because inst buffer needs to be in-order (i think)
         // could only push ready data, and only advance prefetch target to the first non-ready instruction
             // might necessitate refetching from cache? waste of ports but otherwise we'd need a large intermed storage solution
+
+        next_out_insts = '0;
+        next_num_insts = '0;
+        // Q: how do we know if data from MSHR is still fetching? do we need to add a separate bit for ready or not?
+        // or is it that when its done fetching data, we evict it, so things in MSHR are only ever fetching?
+        if (ibuff_open) begin
+            // grab mshr data
+            for (int i = 0; i < 2 && next_num_insts < N; i++) begin
+                if (mshr_valid_insts[i]) begin
+                    next_out_insts[next_num_insts].inst = mshr_data_current.word_level[i];
+                    next_out_insts[next_num_insts].PC = mshr_addr + (i * 4);
+                    next_out_insts[next_num_insts].valid = 1'b1;
+                    next_num_insts = next_num_insts + 1;
+                end
+            end
+
+            // grab cache data if we need more data?
+            if (next_num_insts < N && icache_valid) begin
+                for (int i = 0; i < 2 && next_num_insts < N; i++) begin
+                    if (cache_valid_insts[i]) begin
+                        next_out_insts[next_num_insts].inst = icache_out.word_level[i];
+                        next_out_insts[next_num_insts].PC = cache_addr + (i * 4);
+                        next_out_insts[next_num_insts].valid = 1'b1;
+                        next_num_insts = next_num_insts + 1;
+                    end
+                end
+            end
+        end
     end
+
+    
 
     // Q: does cache need to have be N-way read?
     // icache icache_0 (
