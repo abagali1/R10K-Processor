@@ -1,0 +1,145 @@
+`include "sys_defs.svh"
+
+/*
+ASSUMPTIONS
+    - 
+    - Only 1 store is retired at a time
+    - Blocking: DM interface outputs a store-in-progress signal which will block store from retiring
+
+WORKFLOW
+    DISPATCH
+        - Loads/Stores record current SQ Tail (+ offset) in RS_PACKET
+            - 
+
+    D$ MISS
+        - Issue comes in, addr calced, placed in entries next cycle
+        - ROB retires store, SQ executes store, DM outputs HIGH store-in-progress
+            - ROB will not retire stores if store-in-progress
+        - DM completes transaction, DM sets store_complete to HIGH
+            - SQ sets FU_Pack and data_ready HIGH next cycle
+
+    D$ HIT
+        - Issue
+        - ROB retires, SQ executes, DM outputs HIGH store_complete
+
+*/
+
+module sq #(
+    parameter DEPTH=`SQ_SZ,
+    parameter N=`N
+)
+(
+    input                                                               clock,
+    input                                                               reset,
+
+    // Dispatch, allocate entry, increments tail pointer
+    input                               [$clog2(N+1)-1:0]               num_store_dispatched,
+
+    // Issue, append store to queue
+    input ISSUE_PACKET                                                  is_pack,
+    input logic                                                         rd_en,
+
+    // Set HIGH by ROB when store is retired, send store to memory
+    input logic                                                         start_store,
+
+    // Data Memory system serving another request
+    input logic                                                         dm_stalled,
+
+    input logic                                                         br_en,
+    input logic                         [$clog2(DEPTH)-1:0]             br_tail,
+
+    output logic                        [$clog2(DEPTH+1)-1:0]           open_entries,
+
+    output ADDR                                                         Dmem_addr,
+    output MEM_BLOCK                                                    Dmem_store_data,
+    output MEM_SIZE                                                     Dmem_size,
+
+    // Transaction completed, send packet to CDB
+    output FU_PACKET                                                    fu_pack,
+    output logic                                                        data_ready,
+
+    output logic                        [$clog2(DEPTH)-1:0]             sq_head,
+    output logic                        [$clog2(DEPTH)-1:0]             sq_tail
+);
+
+
+    FU_PACKET [DEPTH-1:0] entries, next_entries;
+    logic [$clog2(DEPTH)-1:0] head, next_head;
+    logic [$clog2(DEPTH)-1:0] tail, next_tail; // tail points to the last SW in queue (NOT one-past last SW)
+
+    logic [$clog2(DEPTH+1)-1:0] num_entries, next_num_entries; // keeps tracks of # of ALLOCATED entries (dispatched but not issued)
+
+    DATA addr_result;
+    basic_adder addr_calcer(
+        .is_pack(is_pack),
+        .result(addr_result)
+    );
+
+    assign execute_store = start_store && !dm_stalled && num_entries > 0;
+
+    assign open_entries = (DEPTH - num_entries + (execute_store ? 1 : 0)) > N ? N : (DEPTH - num_entries + (execute_store ? 1 : 0));
+    assign sq_head = next_head;
+    assign sq_tail = tail; // output next_tail so we can dispatch stores and loads in the same cycle. 
+    //Stores will always be first instruction in dispatch stage
+
+
+    always_comb begin
+        next_entries = entries;
+        next_head = head;
+        next_tail = br_en ? br_tail : tail;
+        next_num_entries = num_entries - (br_en ? (br_tail <= tail ? (tail - br_tail) : (DEPTH - br_tail - tail)) : 0);
+
+        Dmem_addr = '0;
+        Dmem_store_data = '0;
+        Dmem_size = '0;
+
+        fu_pack = '0;
+        data_ready = '0;
+
+
+        next_tail = (next_tail + num_store_dispatched) % DEPTH;
+        next_num_entries -= num_store_dispatched;
+
+        if(rd_en) begin
+            next_entries[is_pack.decoded_vals.decoded_vals.sq_tail] = '{decoded_vals: is_pack.decoded_vals, result: addr_result, rs2_value: is_pack.rs2_value, pred_correct: 0};
+            // bruh
+        end
+
+        if(execute_store) begin
+            next_num_entries++;
+
+            fu_pack = entries[head];
+            data_ready = '1;
+
+            Dmem_addr = entries[head].result;
+            Dmem_store_data = {32'b0, entries[head].rs2_value};
+            Dmem_size = MEM_SIZE'(is_pack.decoded_vals.decoded_vals.inst.r.funct3[1:0]);
+
+            next_entries[head] = '0;
+        end
+    end
+
+
+    always_ff @(posedge clock) begin
+        if(reset) begin
+            head <= 0;
+            tail <= 0;
+            entries <= 0;
+            num_entries <= 0;
+        end else begin
+            head <= next_head;
+            tail <= next_tail;
+            entries <= next_entries;
+            num_entries <= next_num_entries;
+        end
+    end
+
+    `ifdef DEBUG
+        `ifndef DC
+            always @(posedge clock) begin #2;
+                $display("====== STORE QUEUE ======");
+                $display("num_entries: %02d", next_num_entries);
+            end
+        `endif
+    `endif
+endmodule

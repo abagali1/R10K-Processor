@@ -54,6 +54,7 @@ module cpu (
         output ROB_PACKET               [`ROB_SZ-1:0]                       debug_rob_entries,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_head,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_tail,
+        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_num_entries,
 
         output CHECKPOINT               [`BRANCH_PRED_SZ-1:0]               debug_bs_entries,
         output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_free_entries,
@@ -68,9 +69,13 @@ module cpu (
         output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_done,
         output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_rd_en,
 
-        output ISSUE_PACKET             [`NUM_FU_ALU-1:0]                   debug_issued_alu_pack, 
+        output ISSUE_PACKET             [`NUM_FU_ALU-1:0]                   debug_issued_alu_pack,
         output ISSUE_PACKET             [`NUM_FU_MULT-1:0]                  debug_issued_mult_pack,
-        output ISSUE_PACKET                                                 debug_issued_br_pack
+        output ISSUE_PACKET                                                 debug_issued_br_pack,
+
+        output logic                    [$clog2(`SQ_SZ)-1:0]                debug_sq_head,
+        output logic                    [$clog2(`SQ_SZ)-1:0]                debug_sq_tail,
+        output logic                    [$clog2(`SQ_SZ+1)-1:0]              debug_sq_open
     `endif
 );
 
@@ -116,15 +121,16 @@ module cpu (
     logic [$clog2(`N+1)-1:0] num_dis;
     // dispatch helpers
     REG_IDX      [`N-1:0] dis_r1_idx;
-    REG_IDX      [`N-1:0] dis_r2_idx;       
+    REG_IDX      [`N-1:0] dis_r2_idx;
     REG_IDX      [`N-1:0] dis_dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
     PHYS_REG_IDX [`N-1:0] dis_free_reg;  // comes from the free list
     logic        [`N-1:0] dis_incoming_valid;
+    logic        [$clog2(`N+1)-1:0] num_store_dispatched; // # of dispatched isntructions are stores
 
 
     // output of RS
     logic        [$clog2(`N+1)-1:0]     rs_open;
-    RS_PACKET    [`NUM_FU_ALU-1:0]      issued_alu; 
+    RS_PACKET    [`NUM_FU_ALU-1:0]      issued_alu;
     RS_PACKET    [`NUM_FU_MULT-1:0]     issued_mult;
     RS_PACKET    [`NUM_FU_LD-1:0]       issued_ld;
     RS_PACKET    [`NUM_FU_STORE-1:0]    issued_store;
@@ -132,9 +138,15 @@ module cpu (
 
 
     // output of ROB
-    logic [$clog2(`N+1)-1:0] rob_open, num_retired; 
+    logic [$clog2(`N+1)-1:0] rob_open, num_retired;
     ROB_PACKET [`N-1:0] retiring_data; // rob entry packet, but want register vals to update architectural map table + free list
     logic [$clog2(`ROB_SZ)-1:0] rob_tail;
+
+    // SQ Vars
+    logic start_store;
+    logic [$clog2(`SQ_SZ)-1:0] sq_head, sq_tail;
+    logic [$clog2(`SQ_SZ+1)-1:0] sq_open;
+
     // commit helpers
     FREE_LIST_PACKET [`N-1:0] retiring_t_old;
 
@@ -172,13 +184,13 @@ module cpu (
 
 
     // out of issue
-    logic          [`NUM_FU_ALU-1:0]        alu_rd_en; 
+    logic          [`NUM_FU_ALU-1:0]        alu_rd_en;
     logic          [`NUM_FU_MULT-1:0]       mult_rd_en;
     logic          [`NUM_FU_LD-1:0]         ld_rd_en;
     logic          [`NUM_FU_STORE-1:0]      st_rd_en;
     logic                                   br_rd_en;
 
-    ISSUE_PACKET   [`NUM_FU_ALU-1:0]        issued_alu_pack; 
+    ISSUE_PACKET   [`NUM_FU_ALU-1:0]        issued_alu_pack;
     ISSUE_PACKET   [`NUM_FU_MULT-1:0]       issued_mult_pack;
     ISSUE_PACKET   [`NUM_FU_LD-1:0]         issued_ld_pack;
     ISSUE_PACKET   [`NUM_FU_STORE-1:0]      issued_st_pack;
@@ -212,10 +224,8 @@ module cpu (
     logic [`NUM_FU_STORE-1:0] st_done;
 
     assign ld_fu_out = '0;
-    assign st_fu_out = '0;
 
     assign ld_done = '0;
-    assign st_done = '0;
 
     `ifdef DEBUG
         assign debug_dis_insts = dis_insts;
@@ -228,6 +238,10 @@ module cpu (
         assign debug_issued_alu_pack = issued_alu_pack;
         assign debug_issued_mult_pack = issued_mult_pack;
         assign debug_issued_br_pack = issued_br_pack;
+
+        assign debug_sq_head = sq_head;
+        assign debug_sq_tail = sq_tail;
+        assign debug_sq_open = sq_open;
     `endif
 
 
@@ -258,7 +272,8 @@ module cpu (
         .insts(ib_insts),
         .bs_full(br_full),
 
-        .num_dispatch(num_dis), 
+        .num_dispatch(num_dis),
+        .num_store_dispatched(num_store_dispatched),
         .out_insts(dis_insts)
 
         `ifdef DEBUG
@@ -288,7 +303,7 @@ module cpu (
 
     map_table im_the_map (
         .clock(clock),
-        .reset(reset), 
+        .reset(reset),
 
         .r1_idx(dis_r1_idx),
         .r2_idx(dis_r2_idx),
@@ -325,6 +340,8 @@ module cpu (
 
         .cdb_in(cdb_entries),
 
+        .sq_head_in(sq_head),
+
         // ebr logic
         .rem_b_id(br_fu_out.decoded_vals.b_id),
         .br_task(br_task),
@@ -339,7 +356,7 @@ module cpu (
         .num_accept(num_dis),
 
         // output packets directly to FUs (they all are pipelined)
-        .issued_alu(issued_alu), 
+        .issued_alu(issued_alu),
         .issued_mult(issued_mult),
         .issued_ld(issued_ld),
         .issued_store(issued_store),
@@ -360,7 +377,7 @@ module cpu (
     );
 
     rob robert (
-        .clock(clock), 
+        .clock(clock),
         .reset(reset),
 
         .wr_data(dis_insts),
@@ -376,13 +393,15 @@ module cpu (
         .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
         .open_entries(rob_open), // number of open entires AFTER retirement
         .num_retired(num_retired),
-        .out_tail(rob_tail)
+        .out_tail(rob_tail),
+        .start_store(start_store)
 
         `ifdef DEBUG
         ,   .debug_data(cdb_wr_data),
             .debug_entries(debug_rob_entries),
             .debug_head(debug_rob_head),
-            .debug_tail(debug_rob_tail)
+            .debug_tail(debug_rob_tail),
+            .debug_num_entries(debug_rob_num_entries)
         `endif
     );
     assign retired_insts = retiring_data;
@@ -390,8 +409,8 @@ module cpu (
     cdb cbd (
         .clock(clock),
         .reset(reset),
-        .fu_done({st_done, ld_done, mult_done, alu_done}), 
-        .wr_data({st_fu_out, ld_fu_out, mult_fu_out, alu_fu_out}), 
+        .fu_done({st_done, ld_done, mult_done, alu_done}),
+        .wr_data({st_fu_out, ld_fu_out, mult_fu_out, alu_fu_out}),
         .entries(cdb_entries),
         .stall_sig(cdb_stall_sig)
 
@@ -413,12 +432,13 @@ module cpu (
         .in_mt(out_mt),
         .in_fl_head(fl_head_ptr),
         .in_rob_tail(rob_tail), // CHECK size don't match up
-    
+        .in_sq_tail(sq_tail),
+
         .cdb_in(cdb_entries),
-    
+
         .br_task(br_task), // not defined here. in main sysdefs
         .rem_b_id(br_fu_out.decoded_vals.b_id), // b_id to remove
-    
+
         .assigned_b_id(assigned_b_id), // CHECK added
         .cp_out(cp_out),
         .full(br_full)
@@ -435,12 +455,12 @@ module cpu (
         .reset(reset),
 
         .read_idx_1(reg_idx_1),
-        .read_idx_2(reg_idx_2), 
+        .read_idx_2(reg_idx_2),
         .write_idx(cdb_p_reg_idx),
         .write_en(cdb_valid),
         .write_data(cdb_wr_data),
 
-        .read_out_1(reg_data_1), 
+        .read_out_1(reg_data_1),
         .read_out_2(reg_data_2)
     );
 
@@ -453,7 +473,7 @@ module cpu (
     always_comb begin
         for (int i = 0; i < `N; i++) begin
             dis_r1_idx[i] = dis_insts[i].reg1;
-            dis_r2_idx[i] = dis_insts[i].reg2;       
+            dis_r2_idx[i] = dis_insts[i].reg2;
             dis_dest_reg_idx[i] = dis_insts[i].dest_reg_idx; // dest_regs that are getting mapped to a new phys_reg from free_list
             dis_free_reg[i] = fl_reg[i].reg_idx;  // comes from the free list
             dis_incoming_valid[i] = dis_insts[i].valid;
@@ -473,19 +493,19 @@ module cpu (
         .reg_data_1(reg_data_1),
         .reg_data_2(reg_data_2),
 
-        .issued_alu(issued_alu), 
+        .issued_alu(issued_alu),
         .issued_mult(issued_mult),
         .issued_ld(issued_ld),
         .issued_st(issued_store),
         .issued_br(issued_br),
 
-        .alu_rd_en(alu_rd_en), 
+        .alu_rd_en(alu_rd_en),
         .mult_rd_en(mult_rd_en),
         .ld_rd_en(ld_rd_en),
         .st_rd_en(st_rd_en),
         .br_rd_en(br_rd_en),
 
-        .issued_alu_pack(issued_alu_pack), 
+        .issued_alu_pack(issued_alu_pack),
         .issued_mult_pack(issued_mult_pack),
         .issued_ld_pack(issued_ld_pack),
         .issued_st_pack(issued_st_pack),
@@ -504,7 +524,7 @@ module cpu (
     generate
         for (genvar i = 0; i < `NUM_FU_ALU; i++) begin
             alu what_the (
-                .clock(clock), 
+                .clock(clock),
                 .reset(reset),
                 .is_pack(issued_alu_pack[i]),
                 .stall(cdb_stall_sig[i]),
@@ -518,11 +538,11 @@ module cpu (
             );
         end
     endgenerate
-    
+
     generate
         for (genvar i = 0; i < `NUM_FU_MULT; i++) begin
             mult what_the_fck (
-                .clock(clock), 
+                .clock(clock),
                 .reset(reset),
                 .is_pack(issued_mult_pack[i]),
                 .stall(cdb_stall_sig[`NUM_FU_ALU + i]),
@@ -535,7 +555,7 @@ module cpu (
     endgenerate
 
     branch_fu what_the_duck (
-        .clock(clock), 
+        .clock(clock),
         .reset(reset),
         .is_pack(issued_br_pack),
         .rd_en(br_rd_en),
@@ -546,6 +566,31 @@ module cpu (
         .fu_pack(br_fu_out),
         .br_task(br_task),
         .data_ready(br_done)
+    );
+
+    sq storey (
+        .clock(clock),
+        .reset(reset),
+
+        .num_store_dispatched(num_store_dispatched),
+
+        .is_pack(issued_st_pack),
+        .rd_en(st_rd_en),
+
+        .start_store(start_store),
+
+        .dm_stalled('0),
+
+        .br_en(br_task == SQUASH),
+        .br_tail(cp_out.sq_tail),
+
+        .open_entries(sq_open),
+
+        .fu_pack(st_fu_out[0]),
+        .data_ready(st_done),
+
+        .sq_head(sq_head),
+        .sq_tail(sq_tail)
     );
 
 

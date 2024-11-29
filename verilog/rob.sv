@@ -25,14 +25,16 @@ module rob #(
     output ROB_PACKET                           [N-1:0]                 retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
     output logic                                [$clog2(N+1)-1:0]       open_entries, // number of open entires AFTER retirement
     output logic                                [$clog2(N+1)-1:0]       num_retired,
-    output logic                                [$clog2(DEPTH)-1:0]     out_tail
+    output logic                                [$clog2(DEPTH)-1:0]     out_tail,
+    output logic                                                        start_store
 
 
     `ifdef DEBUG
     ,   input  DATA                             [N-1:0]                 debug_data,
         output ROB_PACKET                       [DEPTH-1:0]             debug_entries,
         output logic                            [$clog2(DEPTH)-1:0]     debug_head,
-        output logic                            [$clog2(DEPTH)-1:0]     debug_tail
+        output logic                            [$clog2(DEPTH)-1:0]     debug_tail,
+        output logic                            [$clog2(DEPTH)-1:0]     debug_num_entries
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -58,8 +60,9 @@ module rob #(
         next_head = head;
         retiring_data = '0;
         num_retired = '0;
-        next_num_entries = num_entries; // TODO: doesnt reflect EBR
+        next_num_entries = num_entries;
         next_entries = entries;
+        start_store = '0;
 
         // Dependent for-loop to retire instructions. 
         // We must retire instructions first in order to accept the highest # of incoming instructions
@@ -69,6 +72,11 @@ module rob #(
                 next_entries[(head+i) % DEPTH] = '0;
                 next_head = (((head+i) % DEPTH) + 1) % DEPTH;
                 num_retired++;
+
+                if(retiring_data[i].wr_mem) begin
+                    start_store = retiring_data[i].wr_mem;
+                    break;
+                end
             end else begin
                 break;
             end
@@ -106,9 +114,12 @@ module rob #(
                 next_entries[(tail+j) % DEPTH].dest_reg_idx = wr_data[j].dest_reg_idx;
                 next_entries[(tail+j) % DEPTH].halt = wr_data[j].halt;
                 //next_entries[(tail+j) % DEPTH].valid = wr_data[j].valid;
-                next_entries[(tail+j) % DEPTH].complete = 0;
+                next_entries[(tail+j) % DEPTH].complete = wr_data[j].wr_mem;
                 next_entries[(tail+j) % DEPTH].t = t[j];
                 next_entries[(tail+j) % DEPTH].t_old = t_old[j];
+
+                next_entries[(tail+j) % DEPTH].wr_mem = wr_data[j].wr_mem;
+
                 `ifdef DEBUG
                     next_entries[(tail+j) % DEPTH].data = '0;
                 `endif
@@ -130,16 +141,17 @@ module rob #(
             if (br_tail <= tail) begin
                 next_num_entries = num_entries - num_retired - (tail - br_tail);
             end else begin
-                next_num_entries = num_entries - num_retired - (`ROB_SZ - (br_tail - tail));
+                next_num_entries = num_entries - num_retired - (DEPTH - (br_tail - tail));
             end
         end else begin
             next_num_entries = num_entries - num_retired + num_accept;
         end
-        
+
         `ifdef DEBUG
             debug_entries = entries;
             debug_head = head;
             debug_tail = tail;
+            debug_num_entries = num_entries;
         `endif
     end
 

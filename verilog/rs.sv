@@ -30,9 +30,11 @@ module rs #(
     input logic                     [`NUM_FU_MULT-1:0]                                  fu_mult_busy,
     input logic                     [`NUM_FU_LD-1:0]                                    fu_ld_busy,
     input logic                     [`NUM_FU_STORE-1:0]                                 fu_store_busy,
-    input logic                     [`NUM_FU_BR-1:0]                                    fu_br_busy, 
+    input logic                     [`NUM_FU_BR-1:0]                                    fu_br_busy,
 
     input logic                     [$clog2(N+1)-1:0]                                   num_accept,
+
+    input logic                     [$clog2(`SQ_SZ)-1:0]                                sq_head_in,
 
     // output packets directly to FUs (they all are pipelined)
     output RS_PACKET                [`NUM_FU_ALU-1:0]                                   issued_alu, 
@@ -272,16 +274,19 @@ module rs #(
             if (next_entries[i].decoded_vals.valid & next_entries[i].t1.ready & next_entries[i].t2.ready) begin
                 if (next_entries[i].decoded_vals.fu_type == ALU_INST) begin
                     alu_req[i] = 1;
-                end 
+                end
                 if (next_entries[i].decoded_vals.fu_type == MULT_INST) begin
                     mult_req[i] = 1;
-                end 
+                end
                 if (next_entries[i].decoded_vals.fu_type == LD_INST) begin
-                    ld_req[i] = 1;
-                end 
+                    if(next_entries[i].decoded_vals.sq_tail == sq_head_in || next_entries[i].ld_ready) begin
+                        ld_req[i] = 1;
+                        next_entries[i].ld_ready = 1;
+                    end
+                end
                 if (next_entries[i].decoded_vals.fu_type == STORE_INST) begin
                     store_req[i] = 1;
-                end  
+                end
                 if (next_entries[i].decoded_vals.fu_type == BR_INST) begin
                     br_req[i] = 1;
                 end
@@ -350,6 +355,7 @@ module rs #(
                         next_entries[j].t2 = t2_in[i];
                         next_entries[j].b_mask = next_b_mask;
                         next_entries[j].b_id = (i == 0) ? b_id : '0;
+                        next_entries[j].ld_ready = '0;
 
                         next_open_spots[j] = 0;
                     end

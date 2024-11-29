@@ -32,10 +32,11 @@ module decode #(
             id_packet[i].reg2 = (id_packet[i].opb_select == OPB_IS_RS2 && !id_packet[i].halt || id_packet[i].cond_branch) ?  insts[i].inst.r.rs2 : 0;
             id_packet[i].dest_reg_idx = (has_dest_reg[i]) ? insts[i].inst.r.rd : `ZERO_REG;
             id_packet[i].pred_taken = insts[i].pred_taken;
+            id_packet[i].sq_tail = 0;
         end
     end
-    
-   
+
+
 
     // Instantiate the instruction decoder
     generate

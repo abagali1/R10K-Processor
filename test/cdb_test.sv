@@ -22,7 +22,7 @@ module cdb_tb ();
     FU_PACKET     [NUM_FU-1:0]  wr_data;
 
     CDB_PACKET    [N-1:0]       entries;
-    logic         [NUM_FU-1:0]  stall_sig;   
+    logic         [NUM_FU-1:0]  stall_sig;
 
     `ifdef DEBUG
         logic [NUM_FU-1:0] debug_cdb_gnt;

@@ -28,7 +28,7 @@
 // `define DEBUG_RS '1
 
 // superscalar width
-`define N 2
+`define N 6
 `define CDB_SZ `N // This MUST match your superscalar width
 
 // sizes
@@ -41,13 +41,14 @@
 // worry about these later
 `define BRANCH_PRED_SZ 4
 `define LSQ_SZ xx
+`define SQ_SZ 3
 `define INST_BUFF_DEPTH 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
 `define NUM_FU_ALU 4
 `define NUM_FU_MULT 2
-`define NUM_FU_LD 2
-`define NUM_FU_STORE 2
+`define NUM_FU_LD 1
+`define NUM_FU_STORE 1
 `define NUM_FU_BR 1
 `define NUM_FUS `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE + `NUM_FU_BR
 
@@ -345,6 +346,7 @@ typedef struct packed {
     MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] rec_mt;
     logic [$clog2(`ROB_SZ+1)-1:0] fl_head;
     logic [$clog2(`ROB_SZ)-1:0] rob_tail;
+    logic [$clog2(`SQ_SZ)-1:0] sq_tail;
 } CHECKPOINT;
 
 /* END */
@@ -396,6 +398,8 @@ typedef struct packed {
     logic    illegal;       // Is this instruction illegal?
     logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
     logic    pred_taken;
+
+    logic [$clog2(`SQ_SZ)-1:0] sq_tail;
 } DECODED_PACKET;
 
 typedef struct packed {
@@ -407,6 +411,8 @@ typedef struct packed {
     MAP_TABLE_PACKET t2;
     BR_MASK b_id;
     BR_MASK b_mask;
+
+    logic ld_ready;
     /* END */
 } RS_PACKET;
 
@@ -421,6 +427,7 @@ typedef struct packed {
     RS_PACKET decoded_vals;
 
     DATA result;
+    DATA rs2_value;
     logic pred_correct;
 } FU_PACKET;
 
@@ -487,6 +494,8 @@ typedef struct packed {
     PHYS_REG_IDX    t_old; // look up t_old in arch map table to get arch reg and update to t on retire
     logic           complete;
     logic           valid;
+
+    logic           wr_mem;
     `ifdef DEBUG
     DATA            data;
     `endif
