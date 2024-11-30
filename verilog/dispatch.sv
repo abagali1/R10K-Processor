@@ -14,7 +14,7 @@ module dispatch #(
     input logic             [$clog2(N+1)-1:0]           rob_open,
     input logic             [$clog2(N+1)-1:0]           rs_open,
     input logic             [$clog2(N+1)-1:0]           sq_open,
-    input logic             [$clog2(`SQ_SZ-1):0]        sq_tail_in,
+    input logic             [$clog2(`SQ_SZ)-1:0]        sq_tail_in,
     input INST_PACKET       [N-1:0]                     insts,
     input logic                                         bs_full,
 

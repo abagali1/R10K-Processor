@@ -29,7 +29,6 @@ module rs #(
     input logic                     [`NUM_FU_ALU-1:0]                                   fu_alu_busy,
     input logic                     [`NUM_FU_MULT-1:0]                                  fu_mult_busy,
     input logic                     [`NUM_FU_LD-1:0]                                    fu_ld_busy,
-    input logic                     [`NUM_FU_STORE-1:0]                                 fu_store_busy,
     input logic                     [`NUM_FU_BR-1:0]                                    fu_br_busy,
 
     input logic                     [$clog2(N+1)-1:0]                                   num_accept,
@@ -40,7 +39,7 @@ module rs #(
     output RS_PACKET                [`NUM_FU_ALU-1:0]                                   issued_alu, 
     output RS_PACKET                [`NUM_FU_MULT-1:0]                                  issued_mult,
     output RS_PACKET                [`NUM_FU_LD-1:0]                                    issued_ld,
-    output RS_PACKET                [`NUM_FU_STORE-1:0]                                 issued_store,
+    output RS_PACKET                [`SQ_SZ-1:0]                                        issued_store,
     output RS_PACKET                [`NUM_FU_BR-1:0]                                    issued_br,
 
     output logic                    [$clog2(N+1)-1:0]                                   open_entries
@@ -93,14 +92,14 @@ module rs #(
     logic [`NUM_FU_ALU-1:0][DEPTH-1:0]      alu_issued_bus;
     logic [`NUM_FU_MULT-1:0][DEPTH-1:0]     mult_issued_bus;
     logic [`NUM_FU_LD-1:0][DEPTH-1:0]       ld_issued_bus;
-    logic [`NUM_FU_STORE-1:0][DEPTH-1:0]    store_issued_bus;
+    logic [`SQ_SZ-1:0][DEPTH-1:0]           store_issued_bus;
     logic [`NUM_FU_BR-1:0][DEPTH-1:0]       br_issued_bus;
 
     // Number issued per FU
     logic [$clog2(`NUM_FU_ALU+1)-1:0]       num_alu_issued;
     logic [$clog2(`NUM_FU_MULT+1)-1:0]      num_mult_issued;
     logic [$clog2(`NUM_FU_LD+1)-1:0]        num_ld_issued;
-    logic [$clog2(`NUM_FU_STORE+1)-1:0]     num_store_issued;
+    logic [$clog2(`SQ_SZ+1)-1:0]            num_store_issued;
     logic [$clog2(`NUM_FU_BR+1)-1:0]        num_br_issued;
 
     BR_MASK b_mask, next_b_mask;
@@ -173,11 +172,11 @@ module rs #(
 
     rs_psel #(
         .DEPTH(DEPTH),
-        .NUM_FU(`NUM_FU_STORE)
+        .NUM_FU(`SQ_SZ)
     )
     store_psel (
         .inst_req(store_req),
-        .fu_req(~fu_store_busy),
+        .fu_req('1),
         .num_issued(num_store_issued),
         .fu_issued_insts(store_issued_bus),
         .all_issued_insts(all_issued_store)
@@ -326,7 +325,7 @@ module rs #(
             end
         end
 
-        for(int i=0;i<`NUM_FU_STORE;i++) begin
+        for(int i=0;i<`SQ_SZ;i++) begin
             for(int j=0;j<DEPTH;j++) begin
                 if(store_issued_bus[i][j]) begin
                     issued_store[i] = next_entries[j];

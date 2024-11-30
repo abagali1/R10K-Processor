@@ -13,19 +13,19 @@ module issue #(
     input RS_PACKET       [`NUM_FU_ALU-1:0]        issued_alu, 
     input RS_PACKET       [`NUM_FU_MULT-1:0]       issued_mult,
     input RS_PACKET       [`NUM_FU_LD-1:0]         issued_ld,
-    input RS_PACKET       [`NUM_FU_STORE-1:0]      issued_st,
+    input RS_PACKET       [`SQ_SZ-1:0]             issued_st,
     input RS_PACKET                                issued_br,
 
     output logic          [`NUM_FU_ALU-1:0]        alu_rd_en, 
     output logic          [`NUM_FU_MULT-1:0]       mult_rd_en,
     output logic          [`NUM_FU_LD-1:0]         ld_rd_en,
-    output logic          [`NUM_FU_STORE-1:0]      st_rd_en,
+    output logic          [`SQ_SZ-1:0]             st_rd_en,
     output logic                                   br_rd_en,
 
     output ISSUE_PACKET   [`NUM_FU_ALU-1:0]        issued_alu_pack, 
     output ISSUE_PACKET   [`NUM_FU_MULT-1:0]       issued_mult_pack,
     output ISSUE_PACKET   [`NUM_FU_LD-1:0]         issued_ld_pack,
-    output ISSUE_PACKET   [`NUM_FU_STORE-1:0]      issued_st_pack,
+    output ISSUE_PACKET   [`SQ_SZ-1:0]             issued_st_pack,
     output ISSUE_PACKET                            issued_br_pack,
 
     output PHYS_REG_IDX   [NUM_FU-1:0]             reg_idx_1,
@@ -44,9 +44,9 @@ module issue #(
     PHYS_REG_IDX [`NUM_FU_LD-1:0]       ld_reg_1, ld_reg_2;
     ISSUE_PACKET [`NUM_FU_LD-1:0]       issued_ld_pack_temp;
 
-    logic        [`NUM_FU_STORE-1:0]    st_rd_en_vals;
-    PHYS_REG_IDX [`NUM_FU_STORE-1:0]    st_reg_1, st_reg_2;
-    ISSUE_PACKET [`NUM_FU_STORE-1:0]    issued_st_pack_temp;
+    logic        [`SQ_SZ-1:0]           st_rd_en_vals;
+    PHYS_REG_IDX [`SQ_SZ-1:0]           st_reg_1, st_reg_2;
+    ISSUE_PACKET [`SQ_SZ-1:0]           issued_st_pack_temp;
 
     logic                               br_rd_en_vals;
     PHYS_REG_IDX                        br_reg_1, br_reg_2;
@@ -123,7 +123,7 @@ module issue #(
     // store issuing signals
     always_comb begin
         st_rd_en_vals = '0;
-        for (int i = 0; i <`NUM_FU_STORE; i++) begin
+        for (int i = 0; i <`SQ_SZ; i++) begin
             st_rd_en_vals[i] = issued_st[i].decoded_vals.valid;
             st_reg_1[i] = issued_st[i].t1.reg_idx;
             st_reg_2[i] = issued_st[i].t2.reg_idx;
@@ -202,7 +202,7 @@ module issue #(
         end
 
         // STORE
-        for (int s = 0; s < `NUM_FU_STORE; s++) begin
+        for (int s = 0; s < `SQ_SZ; s++) begin
             issued_st_pack_temp[s].decoded_vals = issued_st[s];
             issued_st_pack_temp[s].rs1_value = reg_data_1[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s];
             issued_st_pack_temp[s].rs2_value = reg_data_2[(`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD) + s];
@@ -210,8 +210,8 @@ module issue #(
 
         // BR
         issued_br_pack_temp.decoded_vals = issued_br;
-        issued_br_pack_temp.rs1_value = reg_data_1[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
-        issued_br_pack_temp.rs2_value = reg_data_2[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE];
+        issued_br_pack_temp.rs1_value = reg_data_1[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `SQ_SZ];
+        issued_br_pack_temp.rs2_value = reg_data_2[`NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `SQ_SZ];
     end
 
 
