@@ -111,6 +111,7 @@ module testbench;
         ISSUE_PACKET            [`NUM_FU_ALU-1:0]                           debug_issued_alu_pack;
         ISSUE_PACKET            [`NUM_FU_MULT-1:0]                          debug_issued_mult_pack;
         ISSUE_PACKET                                                        debug_issued_br_pack;
+        ISSUE_PACKET            [`NUM_FU_STORE-1:0]                         debug_issued_st_pack;
 
         logic                   [$clog2(`SQ_SZ)-1:0]                        debug_sq_head;
         logic                   [$clog2(`SQ_SZ)-1:0]                        debug_sq_tail;
@@ -186,6 +187,7 @@ module testbench;
             .debug_issued_alu_pack(debug_issued_alu_pack),
             .debug_issued_mult_pack(debug_issued_mult_pack),
             .debug_issued_br_pack(debug_issued_br_pack),
+            .debug_issued_st_pack(debug_issued_st_pack),
 
             .debug_sq_head(debug_sq_head),
             .debug_sq_tail(debug_sq_tail),
@@ -617,6 +619,19 @@ module testbench;
                     debug_issued_br_pack.decoded_vals.decoded_vals.NPC,
                     debug_issued_br_pack.rs1_value,
                     debug_issued_br_pack.rs2_value);
+
+        $display("ST packets");
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
+        for (int i = 0; i < `NUM_FU_STORE; i++) begin
+            $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
+                    i,
+                    debug_issued_st_pack[i].decoded_vals.decoded_vals.valid,
+                    debug_issued_st_pack[i].decoded_vals.decoded_vals.inst,
+                    debug_issued_st_pack[i].decoded_vals.decoded_vals.PC,
+                    debug_issued_st_pack[i].decoded_vals.decoded_vals.NPC,
+                    debug_issued_st_pack[i].rs1_value,
+                    debug_issued_st_pack[i].rs2_value);
+        end
     endfunction
 
 
