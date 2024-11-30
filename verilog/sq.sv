@@ -9,7 +9,8 @@ ASSUMPTIONS
 WORKFLOW
     DISPATCH
         - Loads/Stores record current SQ Tail (+ offset) in RS_PACKET
-            - 
+        - Stores are issued to the SQ entry saved during dispatch
+        - Loads are issued when SQ HEAD passes saved TAIL
 
     D$ MISS
         - Issue comes in, addr calced, placed in entries next cycle
@@ -48,7 +49,7 @@ module sq #(
     input logic                                                         br_en,
     input logic                         [$clog2(DEPTH)-1:0]             br_tail,
 
-    output logic                        [$clog2(DEPTH+1)-1:0]           open_entries,
+    output logic                        [$clog2(N+1)-1:0]               open_entries,
 
     output ADDR                                                         Dmem_addr,
     output MEM_BLOCK                                                    Dmem_store_data,
@@ -60,12 +61,18 @@ module sq #(
 
     output logic                        [$clog2(DEPTH)-1:0]             sq_head,
     output logic                        [$clog2(DEPTH)-1:0]             sq_tail
+
+    `ifdef DEBUG
+    ,   output FU_PACKET                [DEPTH-1:0]                     debug_entries,
+        output logic                    [$clog2(DEPTH+1)-1:0]           debug_num_entries,
+        output logic                                                    debug_execute_store
+    `endif
 );
 
 
     FU_PACKET [DEPTH-1:0] entries, next_entries;
     logic [$clog2(DEPTH)-1:0] head, next_head;
-    logic [$clog2(DEPTH)-1:0] tail, next_tail; // tail points to the last SW in queue (NOT one-past last SW)
+    logic [$clog2(DEPTH)-1:0] tail, next_tail; // tail points to one-past last SQ entry
 
     logic [$clog2(DEPTH+1)-1:0] num_entries, next_num_entries; // keeps tracks of # of ALLOCATED entries (dispatched but not issued)
 
@@ -75,12 +82,18 @@ module sq #(
         .result(addr_result)
     );
 
-    assign execute_store = start_store && !dm_stalled && num_entries > 0;
+    assign execute_store = start_store && num_entries > 0;
 
     assign open_entries = (DEPTH - num_entries + (execute_store ? 1 : 0)) > N ? N : (DEPTH - num_entries + (execute_store ? 1 : 0));
     assign sq_head = next_head;
     assign sq_tail = tail; // output next_tail so we can dispatch stores and loads in the same cycle. 
     //Stores will always be first instruction in dispatch stage
+
+    `ifdef DEBUG
+        assign debug_entries = entries;
+        assign debug_num_entries = num_entries;
+        assign debug_execute_store = execute_store;
+    `endif
 
 
     always_comb begin
@@ -98,7 +111,7 @@ module sq #(
 
 
         next_tail = (next_tail + num_store_dispatched) % DEPTH;
-        next_num_entries -= num_store_dispatched;
+        next_num_entries += num_store_dispatched;
 
         if(rd_en) begin
             next_entries[is_pack.decoded_vals.decoded_vals.sq_tail] = '{decoded_vals: is_pack.decoded_vals, result: addr_result, rs2_value: is_pack.rs2_value, pred_correct: 0};
@@ -106,16 +119,18 @@ module sq #(
         end
 
         if(execute_store) begin
-            next_num_entries++;
+            next_num_entries--;
 
-            fu_pack = entries[head];
+            fu_pack = next_entries[head];
             data_ready = '1;
 
-            Dmem_addr = entries[head].result;
-            Dmem_store_data = {32'b0, entries[head].rs2_value};
+            Dmem_addr = next_entries[head].result;
+            Dmem_store_data = {32'b0, next_entries[head].rs2_value};
             Dmem_size = MEM_SIZE'(is_pack.decoded_vals.decoded_vals.inst.r.funct3[1:0]);
 
             next_entries[head] = '0;
+
+            next_head = (head + 1) % DEPTH;
         end
     end
 
@@ -138,7 +153,7 @@ module sq #(
         `ifndef DC
             always @(posedge clock) begin #2;
                 $display("====== STORE QUEUE ======");
-                $display("num_entries: %02d", next_num_entries);
+                $display("num_entries: %02d nsd: %02d", next_num_entries, num_store_dispatched);
             end
         `endif
     `endif

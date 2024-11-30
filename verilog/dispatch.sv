@@ -81,10 +81,14 @@ module dispatch #(
                         if(sq_open - num_store_dispatched <= 0) begin
                             break;
                         end
+                        out_insts[i] = decoded_insts[i];
+                        out_insts[i].sq_tail = (sq_tail_in + num_store_dispatched) % `SQ_SZ;
                         num_store_dispatched++;
+                    end else begin
+                        out_insts[i] = decoded_insts[i];
+                        out_insts[i].sq_tail = (sq_tail_in + num_store_dispatched) % `SQ_SZ;
                     end
-                    out_insts[i] = decoded_insts[i];
-                    out_insts[i].sq_tail = (sq_tail_in + num_store_dispatched) % `SQ_SZ;
+
                 end else begin
                     out_insts[i] = decoded_insts[i];
                 end

@@ -35,6 +35,7 @@ module cpu (
 
         output DECODED_PACKET           [`N-1:0]                            debug_dis_insts,
         output logic                    [$clog2(`N+1)-1:0]                  debug_dispatch_limit,
+        output logic                    [$clog2(`N+1)-1:0]                  debug_num_store_dispatched,
 
         output FREE_LIST_PACKET         [`ROB_SZ-1:0]                       debug_fl_entries,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_head,
@@ -50,6 +51,8 @@ module cpu (
         output logic                    [`RS_SZ-1:0]                        debug_all_issued_alu,
         output logic                    [`RS_SZ-1:0]                        debug_all_issued_mult,
         output logic                    [`RS_SZ-1:0]                        debug_all_issued_br,
+        output logic                    [`RS_SZ-1:0]                        debug_all_issued_st,
+        output logic                    [`RS_SZ-1:0]                        debug_all_issued_ld,
 
         output ROB_PACKET               [`ROB_SZ-1:0]                       debug_rob_entries,
         output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_head,
@@ -75,7 +78,13 @@ module cpu (
 
         output logic                    [$clog2(`SQ_SZ)-1:0]                debug_sq_head,
         output logic                    [$clog2(`SQ_SZ)-1:0]                debug_sq_tail,
-        output logic                    [$clog2(`SQ_SZ+1)-1:0]              debug_sq_open
+        output logic                    [$clog2(`N+1)-1:0]                  debug_sq_open,
+
+        output logic                                                        debug_start_store,
+
+        output FU_PACKET                [`SQ_SZ-1:0]                        debug_sq_entries,
+        output logic                    [$clog2(`SQ_SZ+1)-1:0]               debug_sq_num_entries,
+        output logic                                                        debug_execute_store
     `endif
 );
 
@@ -145,7 +154,7 @@ module cpu (
     // SQ Vars
     logic start_store;
     logic [$clog2(`SQ_SZ)-1:0] sq_head, sq_tail;
-    logic [$clog2(`SQ_SZ+1)-1:0] sq_open;
+    logic [$clog2(`N+1)-1:0] sq_open;
 
     // commit helpers
     FREE_LIST_PACKET [`N-1:0] retiring_t_old;
@@ -242,6 +251,9 @@ module cpu (
         assign debug_sq_head = sq_head;
         assign debug_sq_tail = sq_tail;
         assign debug_sq_open = sq_open;
+
+        assign debug_num_store_dispatched = num_store_dispatched;
+        assign debug_start_store = start_store;
     `endif
 
 
@@ -270,6 +282,7 @@ module cpu (
         .rob_open(rob_open),
         .rs_open(rs_open),
         .insts(ib_insts),
+        .sq_tail_in(sq_tail),
         .bs_full(br_full),
 
         .num_dispatch(num_dis),
@@ -372,7 +385,9 @@ module cpu (
             .debug_all_issued_insts(debug_rs_all_issued_insts),
             .debug_all_issued_alu(debug_all_issued_alu),
             .debug_all_issued_mult(debug_all_issued_mult),
-            .debug_all_issued_br(debug_all_issued_br)
+            .debug_all_issued_br(debug_all_issued_br),
+            .debug_all_issued_ld(debug_all_issued_ld),
+            .debug_all_issued_st(debug_all_issued_st)
         `endif
     );
 
@@ -594,6 +609,12 @@ module cpu (
 
         .sq_head(sq_head),
         .sq_tail(sq_tail)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_sq_entries),
+            .debug_num_entries(debug_sq_num_entries),
+            .debug_execute_store(debug_execute_store)
+        `endif
     );
 
 
