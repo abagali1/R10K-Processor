@@ -12,80 +12,80 @@
 
 
 module cpu (
-    input                                                                   clock, // System clock
-    input                                                                   reset, // System reset
+    input                                                                                       clock, // System clock
+    input                                                                                       reset, // System reset
 
-    input INST_PACKET                   [7:0]                               in_insts,
-    input logic                         [3:0]                               num_input,
+    input INST_PACKET                   [7:0]                                                   in_insts,
+    input logic                         [3:0]                                                   num_input,
 
     // Note: these are assigned at the very bottom of the modulo
-    output COMMIT_PACKET                [`N-1:0]                            committed_insts,
-    output ROB_PACKET                   [`N-1:0]                            retired_insts,
+    output COMMIT_PACKET                [`N-1:0]                                                committed_insts,
+    output ROB_PACKET                   [`N-1:0]                                                retired_insts,
 
-    output logic                        [3:0]                               ib_open,
-    output ADDR                                                             NPC
+    output logic                        [3:0]                                                   ib_open,
+    output ADDR                                                                                 NPC
 
     `ifdef DEBUG
-    ,   output  logic                   [$clog2(`N+1)-1:0]                  debug_num_dispatched,
-        output  logic                   [$clog2(`N+1)-1:0]                  debug_num_retired,
+    ,   output  logic                   [$clog2(`N+1)-1:0]                                      debug_num_dispatched,
+        output  logic                   [$clog2(`N+1)-1:0]                                      debug_num_retired,
 
-        output INST_PACKET              [`INST_BUFF_DEPTH-1:0]              debug_inst_buff_entries,
-        output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_head,
-        output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]      debug_inst_buff_tail,
+        output INST_PACKET              [`INST_BUFF_DEPTH-1:0]                                  debug_inst_buff_entries,
+        output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]                          debug_inst_buff_head,
+        output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]                          debug_inst_buff_tail,
 
-        output DECODED_PACKET           [`N-1:0]                            debug_dis_insts,
-        output logic                    [$clog2(`N+1)-1:0]                  debug_dispatch_limit,
-        output logic                    [$clog2(`N+1)-1:0]                  debug_num_store_dispatched,
+        output DECODED_PACKET           [`N-1:0]                                                debug_dis_insts,
+        output logic                    [$clog2(`N+1)-1:0]                                      debug_dispatch_limit,
+        output logic                    [$clog2(`N+1)-1:0]                                      debug_num_store_dispatched,
 
-        output FREE_LIST_PACKET         [`ROB_SZ-1:0]                       debug_fl_entries,
-        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_head,
-        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_fl_tail,
+        output FREE_LIST_PACKET         [`ROB_SZ-1:0]                                           debug_fl_entries,
+        output logic                    [$clog2(`ROB_SZ)-1:0]                                   debug_fl_head,
+        output logic                    [$clog2(`ROB_SZ)-1:0]                                   debug_fl_tail,
 
-        output MAP_TABLE_PACKET         [`ARCH_REG_SZ-1:0]                  debug_mt_entries,
+        output MAP_TABLE_PACKET         [`ARCH_REG_SZ-1:0]                                      debug_mt_entries,
 
-        output RS_PACKET                [`RS_SZ-1:0]                        debug_rs_entries,
-        output logic                    [`RS_SZ-1:0]                        debug_rs_open_spots,
-        output logic                    [`RS_SZ-1:0]                        debug_rs_other_sig,
-        output logic                    [$clog2(`RS_SZ+1)-1:0]              debug_rs_open_entries,
-        output logic                    [`RS_SZ-1:0]                        debug_rs_all_issued_insts,
-        output logic                    [`RS_SZ-1:0]                        debug_all_issued_alu,
-        output logic                    [`RS_SZ-1:0]                        debug_all_issued_mult,
-        output logic                    [`RS_SZ-1:0]                        debug_all_issued_br,
-        output logic                    [`RS_SZ-1:0]                        debug_all_issued_st,
-        output logic                    [`RS_SZ-1:0]                        debug_all_issued_ld,
+        output RS_PACKET                [`RS_SZ-1:0]                                            debug_rs_entries,
+        output logic                    [`RS_SZ-1:0]                                            debug_rs_open_spots,
+        output logic                    [`RS_SZ-1:0]                                            debug_rs_other_sig,
+        output logic                    [$clog2(`RS_SZ+1)-1:0]                                  debug_rs_open_entries,
+        output logic                    [`RS_SZ-1:0]                                            debug_rs_all_issued_insts,
+        output logic                    [`RS_SZ-1:0]                                            debug_all_issued_alu,
+        output logic                    [`RS_SZ-1:0]                                            debug_all_issued_mult,
+        output logic                    [`RS_SZ-1:0]                                            debug_all_issued_br,
+        output logic                    [`RS_SZ-1:0]                                            debug_all_issued_st,
+        output logic                    [`RS_SZ-1:0]                                            debug_all_issued_ld,
 
-        output ROB_PACKET               [`ROB_SZ-1:0]                       debug_rob_entries,
-        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_head,
-        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_tail,
-        output logic                    [$clog2(`ROB_SZ)-1:0]               debug_rob_num_entries,
+        output ROB_PACKET               [`ROB_SZ-1:0]                                           debug_rob_entries,
+        output logic                    [$clog2(`ROB_SZ)-1:0]                                   debug_rob_head,
+        output logic                    [$clog2(`ROB_SZ)-1:0]                                   debug_rob_tail,
+        output logic                    [$clog2(`ROB_SZ)-1:0]                                   debug_rob_num_entries,
 
-        output CHECKPOINT               [`BRANCH_PRED_SZ-1:0]               debug_bs_entries,
-        output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_free_entries,
-        output logic                    [`BRANCH_PRED_SZ-1:0]               debug_bs_stack_gnt,
+        output CHECKPOINT               [`BRANCH_PRED_SZ-1:0]                                   debug_bs_entries,
+        output logic                    [`BRANCH_PRED_SZ-1:0]                                   debug_bs_free_entries,
+        output logic                    [`BRANCH_PRED_SZ-1:0]                                   debug_bs_stack_gnt,
 
-        output CDB_PACKET               [`N-1:0]                            debug_cdb_entries,
-        output logic                    [`NUM_FUS-`NUM_FU_BR-1:0]           debug_cdb_gnt,
-        output logic                    [`N-1:0][`NUM_FUS-`NUM_FU_BR-1:0]   debug_cdb_gnt_bus,
-        output logic                    [`NUM_FUS-`NUM_FU_BR-1:0]           debug_cdb_fu_done,
+        output CDB_PACKET               [`N-1:0]                                                debug_cdb_entries,
+        output logic                    [`NUM_FUS_CDB-1:0]                                      debug_cdb_gnt,
+        output logic                    [`N-1:0][`NUM_FUS_CDB-1:0]                              debug_cdb_gnt_bus,
+        output logic                    [`NUM_FUS_CDB-1:0]                                      debug_cdb_fu_done,
 
-        output logic                    [`NUM_FU_ALU-1:0]                   debug_alu_done,
-        output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_done,
-        output logic                    [`NUM_FU_MULT-1:0]                  debug_mult_rd_en,
+        output logic                    [`NUM_FU_ALU-1:0]                                       debug_alu_done,
+        output logic                    [`NUM_FU_MULT-1:0]                                      debug_mult_done,
+        output logic                    [`NUM_FU_MULT-1:0]                                      debug_mult_rd_en,
 
-        output ISSUE_PACKET             [`NUM_FU_ALU-1:0]                   debug_issued_alu_pack,
-        output ISSUE_PACKET             [`NUM_FU_MULT-1:0]                  debug_issued_mult_pack,
-        output ISSUE_PACKET                                                 debug_issued_br_pack,
-        output ISSUE_PACKET             [`NUM_FU_STORE-1:0]                 debug_issued_st_pack,
+        output ISSUE_PACKET             [`NUM_FU_ALU-1:0]                                       debug_issued_alu_pack,
+        output ISSUE_PACKET             [`NUM_FU_MULT-1:0]                                      debug_issued_mult_pack,
+        output ISSUE_PACKET                                                                     debug_issued_br_pack,
+        output ISSUE_PACKET             [`SQ_SZ-1:0]                                            debug_issued_st_pack,
 
-        output logic                    [$clog2(`SQ_SZ)-1:0]                debug_sq_head,
-        output logic                    [$clog2(`SQ_SZ)-1:0]                debug_sq_tail,
-        output logic                    [$clog2(`N+1)-1:0]                  debug_sq_open,
+        output logic                    [$clog2(`SQ_SZ)-1:0]                                    debug_sq_head,
+        output logic                    [$clog2(`SQ_SZ)-1:0]                                    debug_sq_tail,
+        output logic                    [$clog2(`N+1)-1:0]                                      debug_sq_open,
 
-        output logic                                                        debug_start_store,
+        output logic                                                                            debug_start_store,
 
-        output FU_PACKET                [`SQ_SZ-1:0]                        debug_sq_entries,
-        output logic                    [$clog2(`SQ_SZ+1)-1:0]               debug_sq_num_entries,
-        output logic                                                        debug_execute_store
+        output FU_PACKET                [`SQ_SZ-1:0]                                            debug_sq_entries,
+        output logic                    [$clog2(`SQ_SZ+1)-1:0]                                  debug_sq_num_entries,
+        output logic                                                                            debug_execute_store
     `endif
 );
 
@@ -143,7 +143,7 @@ module cpu (
     RS_PACKET    [`NUM_FU_ALU-1:0]      issued_alu;
     RS_PACKET    [`NUM_FU_MULT-1:0]     issued_mult;
     RS_PACKET    [`NUM_FU_LD-1:0]       issued_ld;
-    RS_PACKET    [`NUM_FU_STORE-1:0]    issued_store;
+    RS_PACKET    [`SQ_SZ-1:0]           issued_store;
     RS_PACKET                           issued_br;
 
 
@@ -175,7 +175,7 @@ module cpu (
 
     // output of cdb
     CDB_PACKET [`N-1:0] cdb_entries;
-    logic [`NUM_FUS-`NUM_FU_BR-1:0] cdb_stall_sig;
+    logic [`NUM_FUS_CDB-1:0] cdb_stall_sig;
     // cdb helpers
     REG_IDX         [`N-1:0] cdb_reg_idx;
     PHYS_REG_IDX    [`N-1:0] cdb_p_reg_idx;
@@ -197,13 +197,13 @@ module cpu (
     logic          [`NUM_FU_ALU-1:0]        alu_rd_en;
     logic          [`NUM_FU_MULT-1:0]       mult_rd_en;
     logic          [`NUM_FU_LD-1:0]         ld_rd_en;
-    logic          [`NUM_FU_STORE-1:0]      st_rd_en;
+    logic          [`SQ_SZ-1:0]             st_rd_en;
     logic                                   br_rd_en;
 
     ISSUE_PACKET   [`NUM_FU_ALU-1:0]        issued_alu_pack;
     ISSUE_PACKET   [`NUM_FU_MULT-1:0]       issued_mult_pack;
     ISSUE_PACKET   [`NUM_FU_LD-1:0]         issued_ld_pack;
-    ISSUE_PACKET   [`NUM_FU_STORE-1:0]      issued_st_pack;
+    ISSUE_PACKET   [`SQ_SZ-1:0]             issued_st_pack;
     ISSUE_PACKET                            issued_br_pack;
 
     PHYS_REG_IDX   [`NUM_FUS-1:0]           reg_idx_1, reg_idx_2;
@@ -228,10 +228,8 @@ module cpu (
     // hardcoded values
 
     FU_PACKET [`NUM_FU_LD-1:0] ld_fu_out;
-    FU_PACKET [`NUM_FU_STORE-1:0] st_fu_out;
 
     logic [`NUM_FU_LD-1:0] ld_done;
-    logic [`NUM_FU_STORE-1:0] st_done;
 
     assign ld_fu_out = '0;
 
@@ -365,7 +363,6 @@ module cpu (
         .fu_alu_busy(cdb_stall_sig[`NUM_FU_ALU-1:0]),
         .fu_mult_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT-1:`NUM_FU_ALU]),
         .fu_ld_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LD-1:`NUM_FU_ALU+`NUM_FU_MULT]),
-        .fu_store_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LD+`NUM_FU_STORE-1:`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LD]),
         .fu_br_busy(1'b0), 
 
         .num_accept(num_dis),
@@ -426,8 +423,8 @@ module cpu (
     cdb cbd (
         .clock(clock),
         .reset(reset),
-        .fu_done({st_done, ld_done, mult_done, alu_done}),
-        .wr_data({st_fu_out, ld_fu_out, mult_fu_out, alu_fu_out}),
+        .fu_done({ld_done, mult_done, alu_done}),
+        .wr_data({ld_fu_out, mult_fu_out, alu_fu_out}),
         .entries(cdb_entries),
         .stall_sig(cdb_stall_sig)
 
@@ -438,7 +435,7 @@ module cpu (
     );
 
     `ifdef DEBUG
-        assign debug_cdb_fu_done = {st_done, ld_done, mult_done, alu_done};
+        assign debug_cdb_fu_done = {ld_done, mult_done, alu_done};
     `endif
 
     br_stack pancake (
@@ -605,9 +602,6 @@ module cpu (
         .br_tail(cp_out.sq_tail),
 
         .open_entries(sq_open),
-
-        .fu_pack(st_fu_out[0]),
-        .data_ready(st_done),
 
         .sq_head(sq_head),
         .sq_tail(sq_tail)

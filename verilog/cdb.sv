@@ -21,7 +21,7 @@
 
 module cdb #(
     parameter N = `N,
-    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `NUM_FU_STORE
+    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD
 )
 (
     input logic                      clock,

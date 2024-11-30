@@ -453,4 +453,6 @@ PC 0c00:beq     | ---
 PC 0c04:jal     | ---
 PC 0c10:lui     | r21=4000    
 PC 0c14:addi    | r21=3e80    
-PC 0c18:wfi     | ---
+PC 0c18:sw      | ---
+PC 0c1c:sw      | ---
+PC 0c20:wfi     | ---

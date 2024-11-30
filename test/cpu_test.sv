@@ -62,66 +62,66 @@ module testbench;
     logic [63:0] unified_memory [`MEM_64BIT_LINES-1:0];
 
     `ifdef DEBUG
-        logic                   [$clog2(`N+1)-1:0]                          debug_num_dispatched;
-        DECODED_PACKET          [`N-1:0]                                    debug_dis_insts;
-        logic                   [$clog2(`N+1)-1:0]                          debug_num_retired;
+        logic                   [$clog2(`N+1)-1:0]                                          debug_num_dispatched;
+        DECODED_PACKET          [`N-1:0]                                                    debug_dis_insts;
+        logic                   [$clog2(`N+1)-1:0]                                          debug_num_retired;
 
-        logic                   [$clog2(`N+1)-1:0]                          debug_dispatch_limit;
-        logic                   [$clog2(`N+1)-1:0]                          debug_num_store_dispatched;
+        logic                   [$clog2(`N+1)-1:0]                                          debug_dispatch_limit;
+        logic                   [$clog2(`N+1)-1:0]                                          debug_num_store_dispatched;
 
-        INST_PACKET             [`INST_BUFF_DEPTH-1:0]                      debug_inst_buff_entries;
-        logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]              debug_inst_buff_head;
-        logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]              debug_inst_buff_tail;
+        INST_PACKET             [`INST_BUFF_DEPTH-1:0]                                      debug_inst_buff_entries;
+        logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]                              debug_inst_buff_head;
+        logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]                              debug_inst_buff_tail;
 
-        FREE_LIST_PACKET        [`ROB_SZ-1:0]                               debug_fl_entries;
-        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_fl_head;
-        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_fl_tail;
+        FREE_LIST_PACKET        [`ROB_SZ-1:0]                                               debug_fl_entries;
+        logic                   [$clog2(`ROB_SZ)-1:0]                                       debug_fl_head;
+        logic                   [$clog2(`ROB_SZ)-1:0]                                       debug_fl_tail;
 
-        MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                          debug_mt_entries;
+        MAP_TABLE_PACKET        [`ARCH_REG_SZ-1:0]                                          debug_mt_entries;
 
-        RS_PACKET               [`RS_SZ-1:0]                                debug_rs_entries;
-        logic                   [`RS_SZ-1:0]                                debug_rs_open_spots;
-        logic                   [`RS_SZ-1:0]                                debug_rs_other_sig;
-        logic                   [$clog2(`RS_SZ+1)-1:0]                      debug_rs_open_entries;
-        logic                   [`RS_SZ-1:0]                                debug_rs_all_issued_insts;
-        logic                   [`RS_SZ-1:0]                                debug_all_issued_alu;
-        logic                   [`RS_SZ-1:0]                                debug_all_issued_mult;
-        logic                   [`RS_SZ-1:0]                                debug_all_issued_br;
-        logic                   [`RS_SZ-1:0]                                debug_all_issued_ld;
-        logic                   [`RS_SZ-1:0]                                debug_all_issued_st;
+        RS_PACKET               [`RS_SZ-1:0]                                                debug_rs_entries;
+        logic                   [`RS_SZ-1:0]                                                debug_rs_open_spots;
+        logic                   [`RS_SZ-1:0]                                                debug_rs_other_sig;
+        logic                   [$clog2(`RS_SZ+1)-1:0]                                      debug_rs_open_entries;
+        logic                   [`RS_SZ-1:0]                                                debug_rs_all_issued_insts;
+        logic                   [`RS_SZ-1:0]                                                debug_all_issued_alu;
+        logic                   [`RS_SZ-1:0]                                                debug_all_issued_mult;
+        logic                   [`RS_SZ-1:0]                                                debug_all_issued_br;
+        logic                   [`RS_SZ-1:0]                                                debug_all_issued_ld;
+        logic                   [`RS_SZ-1:0]                                                debug_all_issued_st;
 
-        ROB_PACKET              [`ROB_SZ-1:0]                               debug_rob_entries;
-        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_head;
-        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_tail;
-        logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_num_entries;
+        ROB_PACKET              [`ROB_SZ-1:0]                                               debug_rob_entries;
+        logic                   [$clog2(`ROB_SZ)-1:0]                                       debug_rob_head;
+        logic                   [$clog2(`ROB_SZ)-1:0]                                       debug_rob_tail;
+        logic                   [$clog2(`ROB_SZ)-1:0]                                       debug_rob_num_entries;
 
-        CHECKPOINT              [`BRANCH_PRED_SZ-1:0]                       debug_bs_entries;
-        logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_free_entries;
-        logic                   [`BRANCH_PRED_SZ-1:0]                       debug_bs_stack_gnt;
+        CHECKPOINT              [`BRANCH_PRED_SZ-1:0]                                       debug_bs_entries;
+        logic                   [`BRANCH_PRED_SZ-1:0]                                       debug_bs_free_entries;
+        logic                   [`BRANCH_PRED_SZ-1:0]                                       debug_bs_stack_gnt;
 
-        CDB_PACKET              [`N-1:0]                                    debug_cdb_entries;
-        logic                   [`NUM_FUS-`NUM_FU_BR-1:0]                   debug_cdb_gnt;
-        logic                   [`N-1:0][`NUM_FUS-`NUM_FU_BR-1:0]           debug_cdb_gnt_bus;
-        logic                   [`NUM_FUS-`NUM_FU_BR-1:0]                   debug_cdb_fu_done;
+        CDB_PACKET              [`N-1:0]                                                    debug_cdb_entries;
+        logic                   [`NUM_FUS_CDB-1:0]                                          debug_cdb_gnt;
+        logic                   [`N-1:0][`NUM_FUS_CDB-1:0]                                  debug_cdb_gnt_bus;
+        logic                   [`NUM_FUS_CDB-1:0]                                          debug_cdb_fu_done;
 
-        logic                   [`NUM_FU_ALU-1:0]                           debug_alu_done;
-        logic                   [`NUM_FU_MULT-1:0]                          debug_mult_done;
-        logic                   [`NUM_FU_MULT-1:0]                          debug_mult_rd_en;
+        logic                   [`NUM_FU_ALU-1:0]                                           debug_alu_done;
+        logic                   [`NUM_FU_MULT-1:0]                                          debug_mult_done;
+        logic                   [`NUM_FU_MULT-1:0]                                          debug_mult_rd_en;
 
-        ISSUE_PACKET            [`NUM_FU_ALU-1:0]                           debug_issued_alu_pack;
-        ISSUE_PACKET            [`NUM_FU_MULT-1:0]                          debug_issued_mult_pack;
-        ISSUE_PACKET                                                        debug_issued_br_pack;
-        ISSUE_PACKET            [`NUM_FU_STORE-1:0]                         debug_issued_st_pack;
+        ISSUE_PACKET            [`NUM_FU_ALU-1:0]                                           debug_issued_alu_pack;
+        ISSUE_PACKET            [`NUM_FU_MULT-1:0]                                          debug_issued_mult_pack;
+        ISSUE_PACKET                                                                        debug_issued_br_pack;
+        ISSUE_PACKET            [`SQ_SZ-1:0]                                                debug_issued_st_pack;
 
-        logic                   [$clog2(`SQ_SZ)-1:0]                        debug_sq_head;
-        logic                   [$clog2(`SQ_SZ)-1:0]                        debug_sq_tail;
-        logic                   [$clog2(`N+1)-1:0]                          debug_sq_open;
+        logic                   [$clog2(`SQ_SZ)-1:0]                                        debug_sq_head;
+        logic                   [$clog2(`SQ_SZ)-1:0]                                        debug_sq_tail;
+        logic                   [$clog2(`N+1)-1:0]                                          debug_sq_open;
 
-        logic                                                               debug_start_store;
+        logic                                                                               debug_start_store;
 
-        FU_PACKET               [`SQ_SZ-1:0]                                debug_sq_entries;
-        logic                   [$clog2(`SQ_SZ+1)-1:0]                       debug_sq_num_entries;
-        logic                                                               debug_execute_store;
+        FU_PACKET               [`SQ_SZ-1:0]                                                debug_sq_entries;
+        logic                   [$clog2(`SQ_SZ+1)-1:0]                                      debug_sq_num_entries;
+        logic                                                                               debug_execute_store;
     `endif
 
 
@@ -622,7 +622,7 @@ module testbench;
 
         $display("ST packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
-        for (int i = 0; i < `NUM_FU_STORE; i++) begin
+        for (int i = 0; i < `SQ_SZ; i++) begin
             $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
                     i,
                     debug_issued_st_pack[i].decoded_vals.decoded_vals.valid,
