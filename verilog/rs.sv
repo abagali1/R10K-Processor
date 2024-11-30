@@ -70,7 +70,9 @@ module rs #(
 
         output logic                [DEPTH-1:0]                                         debug_all_issued_alu,
         output logic                [DEPTH-1:0]                                         debug_all_issued_mult,
-        output logic                [DEPTH-1:0]                                         debug_all_issued_br
+        output logic                [DEPTH-1:0]                                         debug_all_issued_br,
+        output logic                [DEPTH-1:0]                                         debug_all_issued_st,
+        output logic                [DEPTH-1:0]                                         debug_all_issued_ld
     `endif
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
@@ -232,6 +234,8 @@ module rs #(
             debug_all_issued_alu = all_issued_alu;
             debug_all_issued_mult = all_issued_mult;
             debug_all_issued_br = all_issued_br;
+            debug_all_issued_st = all_issued_store;
+            debug_all_issued_ld = all_issued_ld;
         `endif
 
         // Branch mask logic

@@ -67,6 +67,7 @@ module testbench;
         logic                   [$clog2(`N+1)-1:0]                          debug_num_retired;
 
         logic                   [$clog2(`N+1)-1:0]                          debug_dispatch_limit;
+        logic                   [$clog2(`N+1)-1:0]                          debug_num_store_dispatched;
 
         INST_PACKET             [`INST_BUFF_DEPTH-1:0]                      debug_inst_buff_entries;
         logic                   [$clog2(`INST_BUFF_DEPTH)-1:0]              debug_inst_buff_head;
@@ -86,6 +87,8 @@ module testbench;
         logic                   [`RS_SZ-1:0]                                debug_all_issued_alu;
         logic                   [`RS_SZ-1:0]                                debug_all_issued_mult;
         logic                   [`RS_SZ-1:0]                                debug_all_issued_br;
+        logic                   [`RS_SZ-1:0]                                debug_all_issued_ld;
+        logic                   [`RS_SZ-1:0]                                debug_all_issued_st;
 
         ROB_PACKET              [`ROB_SZ-1:0]                               debug_rob_entries;
         logic                   [$clog2(`ROB_SZ)-1:0]                       debug_rob_head;
@@ -111,7 +114,13 @@ module testbench;
 
         logic                   [$clog2(`SQ_SZ)-1:0]                        debug_sq_head;
         logic                   [$clog2(`SQ_SZ)-1:0]                        debug_sq_tail;
-        logic                   [$clog2(`SQ_SZ+1)-1:0]                      debug_sq_open;
+        logic                   [$clog2(`N+1)-1:0]                          debug_sq_open;
+
+        logic                                                               debug_start_store;
+
+        FU_PACKET               [`SQ_SZ-1:0]                                debug_sq_entries;
+        logic                   [$clog2(`SQ_SZ+1)-1:0]                       debug_sq_num_entries;
+        logic                                                               debug_execute_store;
     `endif
 
 
@@ -136,6 +145,7 @@ module testbench;
 
             .debug_dis_insts(debug_dis_insts),
             .debug_dispatch_limit(debug_dispatch_limit),
+            .debug_num_store_dispatched(debug_num_store_dispatched),
 
             .debug_fl_entries(debug_fl_entries),
             .debug_fl_head(debug_fl_head),
@@ -152,6 +162,8 @@ module testbench;
             .debug_all_issued_alu(debug_all_issued_alu),
             .debug_all_issued_mult(debug_all_issued_mult),
             .debug_all_issued_br(debug_all_issued_br),
+            .debug_all_issued_ld(debug_all_issued_ld),
+            .debug_all_issued_st(debug_all_issued_st),
 
             .debug_rob_entries(debug_rob_entries),
             .debug_rob_head(debug_rob_head),
@@ -177,7 +189,13 @@ module testbench;
 
             .debug_sq_head(debug_sq_head),
             .debug_sq_tail(debug_sq_tail),
-            .debug_sq_open(debug_sq_open)
+            .debug_sq_open(debug_sq_open),
+
+            .debug_start_store(debug_start_store),
+
+            .debug_sq_entries(debug_sq_entries),
+            .debug_sq_num_entries(debug_sq_num_entries),
+            .debug_execute_store(debug_execute_store)
         `endif
     );
 
@@ -433,7 +451,7 @@ module testbench;
 
     // dispatch
     function void print_dispatch();
-        $display("\nDispatch (Limit: %02d) (SQ Open: %02d) (SQ Tail: %02d)", debug_dispatch_limit, debug_sq_open, debug_sq_tail);
+        $display("\nDispatch (Limit: %02d) (SQ Open: %02d) (SQ Tail: %02d) (num_store_dis: %02d)", debug_dispatch_limit, debug_sq_open, debug_sq_tail, debug_num_store_dispatched);
         $display("#\t| valid |    inst    |   PC   |   NPC  |");
         for (int i = 0; i < `N; i++) begin
             $write("%02d\t|   %d   | %08x   | %05x  | %05x  |\n", 
@@ -448,7 +466,7 @@ module testbench;
 
     // rob
     function void print_rob();
-        $display("\nReorder Buffer (ROB) (%02d)", debug_rob_num_entries);
+        $display("\nReorder Buffer (ROB) (%02d) (Start Store: %b)", debug_rob_num_entries, debug_start_store);
         $display("Status | #  |     PC     |  dest_reg   | halt | complete |    t   | t_old  |");
         for (int i = 0; i < `ROB_SZ; i++) begin
             string status = "";
@@ -474,12 +492,32 @@ module testbench;
         end
     endfunction
 
+
+    function void print_sq();
+        $display("\nStore Queue (%02d) (Execute Store: %b)", debug_sq_num_entries, debug_execute_store);
+        $display("Status | #  |    PC");
+        for(int i=0;i<`SQ_SZ;i++) begin
+            string status = "";
+            if (i == debug_sq_tail && i== debug_sq_head)
+                status = "HT"; 
+            else if (i == debug_sq_head) 
+                status = "HEAD"; 
+            else if (i == debug_sq_tail)
+                status = "TAIL"; 
+            else
+                status = "";
+            $display("%-6s | %02d | 0x%05x", status, i, debug_sq_entries[i].decoded_vals.decoded_vals.PC);
+        end
+
+
+    endfunction
+
     // rs
     function void print_rs();
-        $display("\nReservation Station");
-        $display("#  | valid |  PC   |  NPC  |fu_type| t |t1 |t2 |b_id|b_mask| sq tail|alu issued|mult issued|br issued|");
+        $display("\nReservation Station (SQ Head: %02d)", debug_sq_head);
+        $display("#  | valid |  PC   |  NPC  |fu_type| t |t1 |t2 |b_id|b_mask| sq tail|alu issued|mult issued|br issued|ld issued|st issued|");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
-            $display("%02d |  %d    |0x%05x|0x%05x|  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |", 
+            $display("%02d |  %d    |0x%05x|0x%05x|  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |     %d   |     %d   |", 
                         i,
                         debug_rs_entries[i].decoded_vals.valid,
                         debug_rs_entries[i].decoded_vals.PC,
@@ -495,7 +533,9 @@ module testbench;
                         debug_rs_entries[i].decoded_vals.sq_tail,
                         debug_all_issued_alu[i],
                         debug_all_issued_mult[i],
-                        debug_all_issued_br[i]
+                        debug_all_issued_br[i],
+                        debug_all_issued_ld[i],
+                        debug_all_issued_st[i]
                         );
         end
     endfunction
@@ -630,6 +670,7 @@ module testbench;
 
         print_inst_buff();
         print_dispatch();
+        print_sq();
         print_rob();
         $display("N is ", `N);
         $display("\nALU Data Ready: %b", debug_alu_done);
