@@ -10,11 +10,16 @@ module mult (
     input               clock, 
     input               reset,
     input ISSUE_PACKET  is_pack,
+
+    input BR_TASK rem_br_task,
+    input BR_MASK rem_b_id, 
+
     input logic         stall,
     input logic         rd_in,
 
     output FU_PACKET    fu_pack,
     output logic        data_ready
+    //output logic        full
 );
     logic [`MULT_STAGES-2:0] internal_dones;
     logic [(64*(`MULT_STAGES-1))-1:0] internal_sums, internal_mcands, internal_mpliers;
@@ -28,6 +33,7 @@ module mult (
     assign rs2 = is_pack.rs2_value;
 
     logic done;
+    //assign full = (packets != '0);
 
     // keep track of each instruction's is_pack
     RS_PACKET [`MULT_STAGES-1:0] packets, next_packets;
@@ -68,14 +74,28 @@ module mult (
 
     always_comb begin 
         input_packet = (rd_in ? is_pack.decoded_vals : '0);
-        next_packets = {packets[`MULT_STAGES-2:0], input_packet};
+        next_packets = stall ? packets : {packets[`MULT_STAGES-2:0], input_packet};
+
+        if (rem_br_task == CLEAR) begin
+            for (int i = 0; i < `MULT_STAGES; i++) begin
+                if ((next_packets[i].b_mask & rem_b_id) != 0) begin
+                    next_packets[i].b_mask ^= rem_b_id;
+                end
+            end
+        end
+
+        if (rem_br_task == SQUASH) begin
+            for (int i = 0; i < `MULT_STAGES; i++) begin
+                if ((next_packets[i].b_mask & rem_b_id) != 0) begin
+                    next_packets[i] = '0;
+                end
+            end
+        end
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin 
             packets <= '0;
-        end else if (stall) begin
-            packets <= packets;
         end else begin
             packets <= next_packets;
         end

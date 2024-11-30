@@ -548,6 +548,9 @@ module cpu (
                 .stall(cdb_stall_sig[`NUM_FU_ALU + i]),
                 .rd_in(mult_rd_en[i]),
 
+                .rem_br_task(br_task),
+                .rem_b_id(br_fu_out.decoded_vals.b_id),
+
                 .fu_pack(mult_fu_out[i]),
                 .data_ready(mult_done[i])
             );
