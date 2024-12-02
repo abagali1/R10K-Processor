@@ -103,7 +103,7 @@ module testbench;
         logic                   [`NUM_FUS_CDB-1:0]                                          debug_cdb_gnt;
         logic                   [`N-1:0][`NUM_FUS_CDB-1:0]                                  debug_cdb_gnt_bus;
         logic                   [`NUM_FUS_CDB-1:0]                                          debug_cdb_fu_done;
-        logic                   [`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:0]                       debug_cdb_stall_sig;
+        logic                   [`NUM_FUS_CDB-1:0]                                          debug_cdb_stall_sig;
 
         logic                   [`NUM_FU_ALU-1:0]                                           debug_alu_done;
         logic                   [`NUM_FU_MULT-1:0]                                          debug_mult_done;
@@ -132,7 +132,7 @@ module testbench;
         logic                   [`LD_SZ-1:0]                                                debug_ld_freed_spots;
 
         MSHR                                                                                debug_mshr;
-        CACHE_TAG               [`DCACHE_LINES-1:0]                                         debug_dcache_tags;
+        DCACHE_TAG               [`DCACHE_LINES-1:0]                                        debug_dcache_tags;
     `endif
 
 
@@ -755,9 +755,9 @@ module testbench;
         print_issue();
         $display("\n");
 
-        if(clock_count > 950) begin
-            $finish;
-        end
+        // if(clock_count > 950) begin
+        //     $finish;
+        // end
     endfunction
 
 
