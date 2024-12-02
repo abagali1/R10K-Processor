@@ -104,7 +104,7 @@ module cpu (
         output logic                    [`LD_SZ-1:0]                                            debug_ld_freed_spots,
 
         output MSHR                                                                             debug_mshr,
-        output CACHE_TAG                [`DCACHE_LINES-1:0]                                     debug_dcache_tags
+        output DCACHE_TAG                [`DCACHE_LINES-1:0]                                     debug_dcache_tags
     `endif
 );
 
@@ -699,7 +699,7 @@ module cpu (
 
     //////////////////////////////////////////////////
     //                                              //
-    //                 data memory            Dcache_ld_out      //
+    //                 data memory                  //
     //                                              //
     //////////////////////////////////////////////////
 
@@ -739,6 +739,10 @@ module cpu (
 
         // To load and store units
         .stall(mshr_stall)
+
+        `ifdef DEBUG
+        ,   .debug_mshr(debug_mshr)
+        `endif
     );
 
     dcache cashay (
@@ -759,6 +763,10 @@ module cpu (
         .Dcache_data_out(Dcache_data_out), // this is for cache hit on a load inst 
         .Dcache_hit_out(Dcache_hit_out), // When valid is high
         .Dcache_addr_out(Dcache_addr_out)  // addr goes to the load unit for a load inst, and mem for a store inst
+
+        `ifdef DEBUG
+        ,   .debug_dcache_tags(debug_dcache_tags)
+        `endif
     );
 
     

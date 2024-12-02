@@ -132,7 +132,7 @@ module testbench;
         logic                   [`LD_SZ-1:0]                                                debug_ld_freed_spots;
 
         MSHR                                                                                debug_mshr;
-        CACHE_TAG               [`DCACHE_LINES-1:0]                                         debug_dcache_tags;
+        DCACHE_TAG               [`DCACHE_LINES-1:0]                                         debug_dcache_tags;
     `endif
 
 
