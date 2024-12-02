@@ -287,7 +287,9 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/decode.sv \
 			  verilog/decoder.sv \
 			  verilog/sq.sv \
-			  verilog/load_fu.sv
+			  verilog/load_fu.sv \
+			  verilog/dcache.sv \
+			  verilog/mshr.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
 build/cpu.syn.simv: $(CPU_TESTBENCH)

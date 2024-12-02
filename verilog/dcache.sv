@@ -1,7 +1,6 @@
 // dcache name: cashay
 
 `include "verilog/sys_defs.svh"
-`include "verilog/memDP.sv"
 
 module dcache (
     input clock,
@@ -13,12 +12,13 @@ module dcache (
     input MEM_SIZE  st_size,
     input DATA      in_data,
 
-    input logic     mshr2cache_wr,
+    input logic     mshr2Dcache_wr,
     input MEM_BLOCK mem2Dcache_data,
 
     // To load unit stage
-    output MEM_BLOCK Dcache_data_out, // this is for cache hit on a load inst (miss data will come from mshr)
-    output logic     Dcache_valid_out, // When valid is high
+    output logic     Dcache_ld_out,
+    output MEM_BLOCK Dcache_data_out, // this is for load inst and store inst
+    output logic     Dcache_hit_out, // When valid is high
     output ADDR      Dcache_addr_out  // addr goes to the load unit for a load inst, and mem for a store inst
 
     `ifdef DEBUG
@@ -49,7 +49,7 @@ module dcache (
         .re   (1'b1),
         .raddr(current_index),
         .rdata(rd_cache_data),
-        .we   (mshr2cache_wr || ((Dcache_valid_out || mshr2cache_wr) && is_store)),
+        .we   (mshr2Dcache_wr || ((Dcache_hit_out || mshr2Dcache_wr) && is_store)),
         .waddr(current_index),
         .wdata(wr_cache_data)
     );
@@ -59,13 +59,15 @@ module dcache (
 
     assign {current_tag, current_index} = proc2Dcache_addr[15:3];
 
-    assign Dcache_valid_out =  dcache_tags[current_index].valid &&
+    assign Dcache_hit_out =  dcache_tags[current_index].valid &&
                               (dcache_tags[current_index].tags == current_tag);
 
+    assign Dcache_ld_out = (Dcache_hit_out && !is_store) || (mshr2Dcache_wr && !is_store); 
+
     always_comb begin
-        Dcache_data_out = (mshr2cache_wr) ? mem2Dcache_data : rd_cache_data;
+        Dcache_data_out = (mshr2Dcache_wr) ? mem2Dcache_data : rd_cache_data;
         Dcache_addr_out = {proc2Dcache_addr[31:3], 3'b0};
-        if ((Dcache_valid_out || mshr2cache_wr) && is_store) begin
+        if ((Dcache_hit_out || mshr2Dcache_wr) && is_store) begin
             if (st_size == BYTE) begin
                 wr_cache_data.byte_level[proc2Dcache_addr[2:0]] = in_data;
             end
@@ -85,7 +87,7 @@ module dcache (
         if (reset) begin
             dcache_tags      <= '0; // Set all cache tags and valid bits to 0
         end else begin
-            if (mshr2cache_wr) begin
+            if (mshr2Dcache_wr) begin
                 dcache_tags[current_index].tags  <= current_tag;
                 dcache_tags[current_index].valid <= 1'b1;
             end
