@@ -95,7 +95,8 @@ module cpu (
         output logic                    [`LD_SZ-1:0]                                            debug_ld_issued_entry,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_freed_spots,
 
-        output MSHR                                                                             debug_mshr
+        output MSHR                                                                             debug_mshr,
+        output CACHE_TAG                [`DCACHE_LINES-1:0]                                     debug_dcache_tags
     `endif
 );
 
@@ -463,7 +464,7 @@ module cpu (
         .dis_inst(dis_insts[0]),
         .in_mt(out_mt),
         .in_fl_head(fl_head_ptr),
-        .in_rob_tail(rob_tail), // CHECK size don't match up
+        .in_rob_tail(rob_tail),
         .in_sq_tail(sq_tail),
 
         .cdb_in(cdb_entries),
@@ -471,7 +472,7 @@ module cpu (
         .br_task(br_task), // not defined here. in main sysdefs
         .rem_b_id(br_fu_out.decoded_vals.b_id), // b_id to remove
 
-        .assigned_b_id(assigned_b_id), // CHECK added
+        .assigned_b_id(assigned_b_id),
         .cp_out(cp_out),
         .full(br_full)
 

@@ -131,7 +131,8 @@ module testbench;
         logic                   [`LD_SZ-1:0]                                                debug_ld_issued_entry;
         logic                   [`LD_SZ-1:0]                                                debug_ld_freed_spots;
 
-        MSHR                                                                             debug_mshr;
+        MSHR                                                                                debug_mshr;
+        CACHE_TAG               [`DCACHE_LINES-1:0]                                         debug_dcache_tags;
     `endif
 
 
@@ -215,7 +216,10 @@ module testbench;
             .debug_ld_ready_spots(debug_ld_ready_spots),
             .debug_ld_alloc_spot(debug_ld_alloc_spot),
             .debug_ld_issued_entry(debug_ld_issued_entry),
-            .debug_ld_freed_spots(debug_ld_freed_spots)
+            .debug_ld_freed_spots(debug_ld_freed_spots),
+
+            .debug_mshr(debug_mshr),
+            .debug_dcache_tags(debug_dcache_tags)
         `endif
     );
 
@@ -691,13 +695,33 @@ module testbench;
 
     // mshr
     function void print_mshr();
-
+        $display("\nMSHR");
+        $display("state       | addr           | data           | mem_tag  | store size | is_store |");
+        $display("%-12s | 0x%08x     | 0x%08x     | %02d       | %02d         | %d",
+            (debug_mshr.state == NONE) ? "NONE" :
+            (debug_mshr.state == WAITING_FOR_LOAD_DATA) ? "WAIT_FOR_LOAD" : "uhh",
+            debug_mshr.addr,
+            debug_mshr.data,
+            debug_mshr.mem_tag,
+            debug_mshr.st_size,
+            debug_mshr.is_store
+        );
     endfunction
 
     // dcache
-    function void print_dcache();
+    // function void print_dcache();
+    //     $display("\nDcache");
+    //     $display("Index |   Valid   |      Tag       |      Data       |");
 
-    endfunction
+    //     for (int i = 0; i < `DCACHE_LINES; i++) begin
+    //         $display("%4d  |     %b     |  0x%08x   | %64h",
+    //             i,
+    //             debug_dcache_tags[i].valid,
+    //             debug_dcache_tags[i].tags,
+    //             // accessing the actual data
+    //         );
+    //     end
+    // endfunction
 
     function void dump_state();
         $display("--------------");

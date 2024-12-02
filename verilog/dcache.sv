@@ -20,6 +20,10 @@ module dcache (
     output MEM_BLOCK Dcache_data_out, // this is for cache hit on a load inst (miss data will come from mshr)
     output logic     Dcache_valid_out, // When valid is high
     output ADDR      Dcache_addr_out  // addr goes to the load unit for a load inst, and mem for a store inst
+
+    `ifdef DEBUG
+    ,   output DCACHE_TAG [`DCACHE_LINES-1:0] debug_dcache_tags
+    `endif
 );
 
     // Note: cache tags, not memory tags
