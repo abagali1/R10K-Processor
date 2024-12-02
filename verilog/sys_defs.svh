@@ -326,6 +326,13 @@ typedef enum logic [1:0] {
     SQUASH
 } BR_TASK;
 
+typedef enum logic [1:0] {
+    STRONG_NT,
+    NT,
+    T,
+    STRONG_T
+} TWO_BIT_COUNTER;
+
 typedef struct packed {
     PHYS_REG_IDX reg_idx;
     logic valid; // POST MILESTONE 2: DO WE NEED THIS
