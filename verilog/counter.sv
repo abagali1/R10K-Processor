@@ -15,11 +15,11 @@ module counter (
 
     always_comb begin
         case (state)
-            STRONG_NT:  pred = 0
-            NT:         pred = 0
-            T:          pred = 1
-            STRONG_T:   pred = 1
-            default:    pred = 0
+            STRONG_NT:  pred = 0;
+            NT:         pred = 0;
+            T:          pred = 1;
+            STRONG_T:   pred = 1;
+            default:    pred = 0;
         endcase
     end
 
@@ -28,11 +28,11 @@ module counter (
 
         if (wr_en) begin
             case (state)
-                STRONG_NT:  next_state = taken ? NT : STRONG_NT
-                NT:         next_state = taken ? T : STRONG_NT
-                T:          next_state = taken ? STRONG_T : NT
-                STRONG_T:   next_state = taken ? STRONG_T : T
-                default:    next_state = STRONG_NT
+                STRONG_NT:  next_state = taken ? NT : STRONG_NT;
+                NT:         next_state = taken ? T : STRONG_NT;
+                T:          next_state = taken ? STRONG_T : NT;
+                STRONG_T:   next_state = taken ? STRONG_T : T;
+                default:    next_state = STRONG_NT;
             endcase
         end
     end
