@@ -132,7 +132,11 @@ module testbench;
         logic                   [`LD_SZ-1:0]                                                debug_ld_freed_spots;
 
         MSHR                                                                                debug_mshr;
-        DCACHE_TAG               [`DCACHE_LINES-1:0]                                         debug_dcache_tags;
+        DCACHE_TAG               [`DCACHE_LINES-1:0]                                        debug_dcache_tags;
+
+        logic                                                                               debug_Dcache_ld_out;
+        ADDR                                                                                debug_Dcache_addr_out;
+        logic                                                                               debug_mshr2cache_wr;
     `endif
 
 
@@ -219,7 +223,11 @@ module testbench;
             .debug_ld_freed_spots(debug_ld_freed_spots),
 
             .debug_mshr(debug_mshr),
-            .debug_dcache_tags(debug_dcache_tags)
+            .debug_dcache_tags(debug_dcache_tags),
+
+            .debug_Dcache_ld_out(debug_Dcache_ld_out),
+            .debug_Dcache_addr_out(debug_Dcache_addr_out),
+            .debug_mshr2cache_wr(debug_mshr2cache_wr)
         `endif
     );
 
@@ -535,7 +543,8 @@ module testbench;
     endfunction
 
     function void print_ld();
-        $display("\nLoad Unit (Rd_en: %b)", debug_ld_rd_en);
+        $display("\nLoad Unit (Rd_en: %b) (Dcache_ld_out: %b) (mshr2cache_wr: %b)", debug_ld_rd_en, debug_Dcache_ld_out, debug_mshr2cache_wr);
+        $display("Dcache Addr Out: 0x%05x", debug_Dcache_addr_out);
         $display("#  |    PC   |Target Addr| Result | State | Open? | Ready? | Alloc? | Issued? | Freed?");
         for(int i=0;i<`LD_SZ;i++) begin
             $display("%02d | 0x%05x | 0x%05x   | 0x%05x|   %d   |   %b   |   %b    |   %b    |    %b    |   %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_freed_spots[i]);

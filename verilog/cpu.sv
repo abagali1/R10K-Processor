@@ -103,8 +103,12 @@ module cpu (
         output logic                    [`LD_SZ-1:0]                                            debug_ld_issued_entry,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_freed_spots,
 
+        output logic                                                                            debug_Dcache_ld_out,
+        output ADDR                                                                             debug_Dcache_addr_out,
+        output logic                                                                            debug_mshr2cache_wr,
+
         output MSHR                                                                             debug_mshr,
-        output DCACHE_TAG                [`DCACHE_LINES-1:0]                                     debug_dcache_tags
+        output DCACHE_TAG                [`DCACHE_LINES-1:0]                                    debug_dcache_tags
     `endif
 );
 
@@ -297,6 +301,11 @@ module cpu (
         assign debug_start_store = start_store;
 
         assign debug_ld_rd_en = ld_rd_en;
+
+        assign debug_Dcache_data_out = Dcache_data_out;
+        assign debug_Dcache_addr_out = Dcache_addr_out;
+        assign debug_Dcache_ld_out = Dcache_ld_out;
+        assign debug_mshr2cache_wr = mshr2cache_wr;
     `endif
 
 
@@ -708,7 +717,7 @@ module cpu (
     assign st_size = mshr2cache_wr ? mshr2cache_st_size : Dmem_size;
     assign in_data = mshr2cache_wr ? mshr2cache_data : Dmem_store_data;
     assign proc2Dcache_addr = mshr2cache_wr ? mshr2cache_addr : Dmem_addr;
-    assign proc2mem_addr = Dcache_data_out;
+    assign proc2mem_addr = Dcache_addr_out;
     assign proc2mem_data = Dcache_data_out;
 
     mshr miss_human_resources (
@@ -749,13 +758,13 @@ module cpu (
         .clock(clock),
         .reset(reset),
 
-        .proc2Dcache_addr(proc2Dcache_addr),
+        .proc2Dcache_addr(proc2cache_addr),
 
         .is_store(is_store),
         .st_size(st_size),
         .in_data(in_data),
 
-        .mshr2Dcache_wr(mshr2Dcache_wr),
+        .mshr2Dcache_wr(mshr2cache_wr),
         .mem2Dcache_data(mem2proc_data),
 
         // To load unit stage
