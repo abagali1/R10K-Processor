@@ -121,17 +121,6 @@ module load_fu #(
                 end
             end
 
-
-            // CDB Accepted Packet
-            if(!cdb_stall[i] && next_entries[i].ld_state == DATA_READY) begin
-                next_entries[i] = '0;
-
-                spots_freed[i] = '1;
-                next_open_spots[i] = '1;
-                next_ready_spots[i] = '0;
-            end
-
-
             // Memory transaction completed
             if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3]) begin
                 // aligned result
@@ -155,6 +144,15 @@ module load_fu #(
             if(next_entries[i].ld_state == DATA_READY) begin
                 fu_pack[i] = next_entries[i];
                 data_ready[i] = '1;
+            end
+
+            // CDB Accepted Packet
+            if(!cdb_stall[i] && next_entries[i].ld_state == DATA_READY) begin
+                next_entries[i] = '0;
+
+                spots_freed[i] = '1;
+                next_open_spots[i] = '1;
+                next_ready_spots[i] = '0;
             end
 
             // Read in new issued packet
