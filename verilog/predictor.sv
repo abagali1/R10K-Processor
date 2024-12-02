@@ -13,17 +13,16 @@ module predictor #(
 
     input logic                             wr_en,
     input logic                             wr_taken,
-    input ADDR                              wr_pc,
-    input logic     [$clog2(DEPTH)-1:0]     wr_bhr,
+    input logic     [$clog2(DEPTH)-1:0]     wr_index,
 
+    output logic    [$clog2(DEPTH)-1:0]     out_index,
     output logic                            pred
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
-    logic [LOG_DEPTH-1:0] rd_index, wr_index;
 
     assign rd_index = rd_pc[LOG_DEPTH-1:0] ^ rd_bhr;
-    assign wr_index = wr_pc[LOG_DEPTH-1:0] ^ wr_bhr;
+    assign out_index = rd_index;
 
     logic [DEPTH-1:0] bht_taken;
     logic [DEPTH-1:0] bht_wr_en;
