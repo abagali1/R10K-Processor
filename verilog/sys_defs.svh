@@ -41,7 +41,8 @@
 // worry about these later
 `define BRANCH_PRED_SZ 4
 `define LSQ_SZ xx
-`define SQ_SZ 32
+`define SQ_SZ 3
+`define LD_SZ 1
 `define INST_BUFF_DEPTH 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
@@ -50,7 +51,7 @@
 `define NUM_FU_LD 1
 `define NUM_FU_STORE 1
 `define NUM_FU_BR 1
-`define NUM_FUS_CDB `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD
+`define NUM_FUS_CDB `NUM_FU_ALU + `NUM_FU_MULT + `LD_SZ
 `define NUM_FUS `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `SQ_SZ + `NUM_FU_BR
 
 // number of mult stages (2, 4) (you likely don't need 8)
@@ -424,12 +425,22 @@ typedef struct packed {
     DATA rs2_value; // reg B value
 } ISSUE_PACKET;
 
+typedef enum logic [1:0] {
+    READY_TO_ISSUE, // waiting for DM to be ready
+    WAITING_FOR_DATA, // DM transaction in flight
+    DATA_READY // waiting for CDB to be ready
+} LOAD_STATE;
+
 typedef struct packed {
     RS_PACKET decoded_vals;
 
     DATA result;
-    DATA rs2_value;
+
     logic pred_correct;
+
+    DATA target_addr;
+    DATA rs2_value;
+    LOAD_STATE ld_state;
 } FU_PACKET;
 
 /**

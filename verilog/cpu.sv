@@ -67,6 +67,7 @@ module cpu (
         output logic                    [`NUM_FUS_CDB-1:0]                                      debug_cdb_gnt,
         output logic                    [`N-1:0][`NUM_FUS_CDB-1:0]                              debug_cdb_gnt_bus,
         output logic                    [`NUM_FUS_CDB-1:0]                                      debug_cdb_fu_done,
+        output logic                    [`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:0]                   debug_cdb_stall_sig,
 
         output logic                    [`NUM_FU_ALU-1:0]                                       debug_alu_done,
         output logic                    [`NUM_FU_MULT-1:0]                                      debug_mult_done,
@@ -85,7 +86,14 @@ module cpu (
 
         output FU_PACKET                [`SQ_SZ-1:0]                                            debug_sq_entries,
         output logic                    [$clog2(`SQ_SZ+1)-1:0]                                  debug_sq_num_entries,
-        output logic                                                                            debug_execute_store
+
+        output logic                    [`NUM_FU_LD-1:0]                                        debug_ld_rd_en,
+        output FU_PACKET                [`LD_SZ-1:0]                                            debug_ld_entries,
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_open_spots,
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_ready_spots,
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_alloc_spot,
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_issued_entry,
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_freed_spots
     `endif
 );
 
@@ -144,6 +152,7 @@ module cpu (
     RS_PACKET    [`NUM_FU_MULT-1:0]     issued_mult;
     RS_PACKET    [`NUM_FU_LD-1:0]       issued_ld;
     RS_PACKET    [`SQ_SZ-1:0]           issued_store;
+    PHYS_REG_IDX [`SQ_SZ-1:0]           issued_store_t;
     RS_PACKET                           issued_br;
 
 
@@ -218,6 +227,12 @@ module cpu (
     FU_PACKET [`NUM_FU_MULT-1:0] mult_fu_out;
     logic     [`NUM_FU_MULT-1:0] mult_done;
 
+    logic ld_full, start_load;
+    FU_PACKET [`LD_SZ-1:0] ld_fu_out;
+    logic [`LD_SZ-1:0] ld_done;
+    // assign ld_done = '0;
+    // assign ld_fu_out = '0;
+
 
     // output of branch fu
     FU_PACKET br_fu_out;
@@ -226,20 +241,15 @@ module cpu (
 
 
     // hardcoded values
-
-    FU_PACKET [`NUM_FU_LD-1:0] ld_fu_out;
-
-    logic [`NUM_FU_LD-1:0] ld_done;
-
-    assign ld_fu_out = '0;
-
-    assign ld_done = '0;
+    logic dm_stalled;
+    assign dm_stalled = '0;
 
     `ifdef DEBUG
         assign debug_dis_insts = dis_insts;
         assign debug_num_dispatched = num_dis;
         assign debug_num_retired = num_retired;
         assign debug_cdb_entries = cdb_entries;
+        assign debug_cdb_stall_sig = cdb_stall_sig;
         assign debug_alu_done = alu_done;
         assign debug_mult_done = mult_done;
         assign debug_mult_rd_en = mult_rd_en;
@@ -254,6 +264,8 @@ module cpu (
 
         assign debug_num_store_dispatched = num_store_dispatched;
         assign debug_start_store = start_store;
+
+        assign debug_ld_rd_en = ld_rd_en;
     `endif
 
 
@@ -362,8 +374,8 @@ module cpu (
         // busy bits from FUs to mark when available to issue
         .fu_alu_busy(cdb_stall_sig[`NUM_FU_ALU-1:0]),
         .fu_mult_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT-1:`NUM_FU_ALU]),
-        .fu_ld_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`NUM_FU_LD-1:`NUM_FU_ALU+`NUM_FU_MULT]),
-        .fu_br_busy(1'b0), 
+        .fu_ld_busy(ld_full),
+        .fu_br_busy(1'b0),
 
         .num_accept(num_dis),
 
@@ -373,6 +385,8 @@ module cpu (
         .issued_ld(issued_ld),
         .issued_store(issued_store),
         .issued_br(issued_br),
+
+        .issued_store_t(issued_store_t),
 
         .open_entries(rs_open)
 
@@ -399,10 +413,13 @@ module cpu (
         .t_old(t_old_data),
 
         .complete_t(cdb_p_reg_idx), // comes from the CDB
+        .store_complete_t(issued_store_t),
         .br_complete_t(br_fu_out.decoded_vals.t.reg_idx),
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
         .br_tail(cp_out.rob_tail),
         .br_en(br_done & ~br_fu_out.pred_correct),
+        .dm_stalled(dm_stalled),
+        .cdb_wr_data(cdb_wr_data),
 
         .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
         .open_entries(rob_open), // number of open entires AFTER retirement
@@ -411,8 +428,7 @@ module cpu (
         .start_store(start_store)
 
         `ifdef DEBUG
-        ,   .debug_data(cdb_wr_data),
-            .debug_entries(debug_rob_entries),
+        ,   .debug_entries(debug_rob_entries),
             .debug_head(debug_rob_head),
             .debug_tail(debug_rob_tail),
             .debug_num_entries(debug_rob_num_entries)
@@ -585,6 +601,42 @@ module cpu (
         .data_ready(br_done)
     );
 
+    load_fu loud (
+        .clock(clock),
+        .reset(reset),
+
+        .is_pack(issued_ld_pack),
+        .rd_en(ld_rd_en),
+
+        .Dmem_data_ready('0),
+        .Dmem_base_addr('0),
+        .Dmem_load_data('0),
+
+        .rem_br_task(br_task),
+        .rem_b_id(br_fu_out.decoded_vals.b_id),
+
+        .dm_stalled(dm_stalled),
+        .start_store(start_store),
+
+        .cdb_stall(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:`NUM_FU_ALU+`NUM_FU_MULT]),
+        .full(ld_full),
+
+        .start_load(start_load),
+        // .Dmem_addr(),
+
+        .fu_pack(ld_fu_out),
+        .data_ready(ld_done)
+
+        `ifdef DEBUG
+        ,   .debug_entries(debug_ld_entries),
+            .debug_open_spots(debug_ld_open_spots),
+            .debug_ready_spots(debug_ld_ready_spots),
+            .debug_alloc_spot(debug_ld_alloc_spot),
+            .debug_issued_entry(debug_ld_issued_entry),
+            .debug_freed_spots(debug_ld_freed_spots)
+        `endif
+    );
+
     sq storey (
         .clock(clock),
         .reset(reset),
@@ -596,8 +648,6 @@ module cpu (
 
         .start_store(start_store),
 
-        .dm_stalled('0),
-
         .br_en(br_task == SQUASH),
         .br_tail(cp_out.sq_tail),
 
@@ -608,8 +658,7 @@ module cpu (
 
         `ifdef DEBUG
         ,   .debug_entries(debug_sq_entries),
-            .debug_num_entries(debug_sq_num_entries),
-            .debug_execute_store(debug_execute_store)
+            .debug_num_entries(debug_sq_num_entries)
         `endif
     );
 

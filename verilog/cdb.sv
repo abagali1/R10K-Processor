@@ -21,21 +21,21 @@
 
 module cdb #(
     parameter N = `N,
-    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD
+    parameter NUM_FU = `NUM_FU_ALU + `NUM_FU_MULT + `LD_SZ
 )
 (
-    input logic                      clock,
-    input logic                      reset,
+    input logic                                         clock,
+    input logic                                         reset,
 
-    input logic         [NUM_FU-1:0] fu_done,
-    input FU_PACKET     [NUM_FU-1:0] wr_data,
+    input logic         [NUM_FU-1:0]                    fu_done,
+    input FU_PACKET     [NUM_FU-1:0]                    wr_data,
 
-    output CDB_PACKET   [N-1:0]      entries,
-    output logic        [NUM_FU-1:0] stall_sig
+    output CDB_PACKET   [N-1:0]                         entries,
+    output logic        [NUM_FU-1:0]                    stall_sig
 
     `ifdef DEBUG
-    ,   output logic [NUM_FU-1:0] debug_cdb_gnt,
-        output logic [N-1:0][NUM_FU-1:0] debug_cdb_gnt_bus
+    ,   output logic    [NUM_FU-1:0]                    debug_cdb_gnt,
+        output logic    [N-1:0][NUM_FU-1:0]             debug_cdb_gnt_bus
     `endif
 );
 
