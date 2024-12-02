@@ -13,7 +13,7 @@ module fetch #(
     input logic                     ibuff_open,
 
     input MEM_TAG                   mem_transaction_tag,
-    input logic                     mem_transaction_started,
+    input logic                     mem_transaction_handshake,
     input MEM_TAG                   mem_data_tag,
     input DATA                      mem_data,
 
@@ -23,42 +23,48 @@ module fetch #(
     output INST_PACKET [N-1:0]      out_insts,
     output logic [$clog2(N)-1:0]    num_insts
 );
+    typedef enum logic [1:0] {FETCH, PREFETCH, STALL} STATE;
+
+    STATE state, next_state;
     INST_PACKET [N-1:0] next_out_insts;
     logic [$clog2(N)-1:0] next_num_insts;
 
     // 16 possible transaction tags from memory (1 based indexing as 0 is unused)
     ADDR [`NUM_MEM_TAGS-1:0] mshr_data, next_mshr_data;
-    logic [`NUM_MEM_TAGS-1:0] mshr_valid, next_mshr_valid;
+    logic [`NUM_MEM_TAGS-1:0] mshr_valid, next_mshr_valid, 
+    logic [`NUM_MEM_TAGS-1:0] mshr_speculative, next_mshr_speculative;
+    
     ADDR next_mem_addr, prefetch_target;
     DATA cache_write_data;
     logic cache_write_en;
+    logic mem_transaction_started;
 
-    assign mem_en = ~(&next_mshr_valid);
+    assign mshr_full = &next_mshr_valid
+    assign mem_en = ~mshr_full & ~icache_valid;
 
-    // calculate prefetch target
-        // Q: how can we check multiple cache entries to find the next item not in the cache?
-        // perhaps return this from cache based on previous cache search?
-        // when the branch predictor predicts taken, how do we update this value
-            // i dont think we need to squash prefetched mem requests, as they could still
-            // be useful in the cache if we mispredict
-
-    // TODO: needs review? maybe i'm missing an edge case...
     // if there is a branch, prefetch_target = target
     // if the icache isn't valid, prefetch_target = next_miss_addr
     // otherwise, prefetch_target = current_fetch_addr + 8 (next instruction)
     always_comb begin
-        prefetch_target = br_en ? target :
-                         ~icache_valid ? next_miss_addr :
-                         current_fetch_addr + 8;
+        prefetch_target =   (state == FETCH) ? target : 
+                            (state == PREFETCH) ? prefetch_target + 8 :
+                            (state == STALL) ? prefetch_target : '0;
+        next_state = (state == FETCH) ? PREFETCH :
+                     (state == PREFETCH & mshr_full & icache_valid) ? STALL :
+                     ()
     end
 
-    // check cache validity and make request
     always_comb begin
-        next_mem_addr = mem_addr;
-        if (~icache_valid_out) begin
-            next_mem_addr = prefetch_target;
-        end
+        next_state == state;
+        if (state == FETCH) begin
+            next_state = PREFETCH
+        end 
     end
+
+    // cache backlog
+        // N-1 tags * num mem entries entries
+        // stores most recent trans tag
+        // clears all backlogs with trans tag matchin incoming data tag
 
     // update mshr when transaction tag recieved
     always_comb begin
@@ -95,8 +101,6 @@ module fetch #(
 
         next_out_insts = '0;
         next_num_insts = '0;
-        // Q: how do we know if data from MSHR is still fetching? do we need to add a separate bit for ready or not?
-        // or is it that when its done fetching data, we evict it, so things in MSHR are only ever fetching?
         if (ibuff_open) begin
             // grab mshr data
             for (int i = 0; i < 2 && next_num_insts < N; i++) begin
@@ -122,9 +126,6 @@ module fetch #(
         end
     end
 
-    
-
-    // Q: does cache need to have be N-way read?
     // icache icache_0 (
     //     // inputs
     //     .clock                      (clock),
@@ -139,11 +140,13 @@ module fetch #(
 
     always_ff @(posedge clock) begin
         if (reset || br_en) begin
-            out_insts       <= '0;
-            num_insts       <= '0;
-            mshr_data       <= '0;
-            mshr_valid      <= '0;
-            mem_addr        <= '0;
+            state            <= FETCH;
+            out_insts        <= '0;
+            num_insts        <= '0;
+            mshr_data        <= '0;
+            mshr_valid       <= '0;
+            mem_addr         <= '0;
+            mshr_speculative <= (br_en & ~reset) ? mshr_valid : '0;
         end else begin
             out_insts       <= next_out_insts;
             num_insts       <= next_num_insts;
@@ -156,3 +159,15 @@ module fetch #(
         end
     end
 endmodule
+
+
+
+
+// prefetch
+// i cache hit - return
+// i cache miss - create mshr - send data request
+// constantly check if data return transaction tag is equal to a transaction tag in mshr - if it is:
+// COALESCE
+// if mshr addr == target addr, return data to fetch then put in cache
+// else just put in cache
+// 
