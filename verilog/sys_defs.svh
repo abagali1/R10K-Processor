@@ -37,6 +37,7 @@
 `define ARCH_REG_SZ 32
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
+`define BRANCH_HISTORY_TABLE_SIZE 256
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
