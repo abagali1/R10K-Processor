@@ -1,7 +1,7 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
 
-module counter (
+module counter(
     input               clock, 
     input               reset,
 

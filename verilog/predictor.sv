@@ -1,8 +1,9 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
+`include "counter.sv"
 
 module predictor #(
-    parameter DEPTH = `BRANCH_HISTORY_TABLE_SIZE;
+    parameter DEPTH = `BRANCH_HISTORY_TABLE_SIZE
 )
 (
     input               clock, 

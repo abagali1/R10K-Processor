@@ -17,7 +17,7 @@ module counter_tb();
         .reset(reset),
         .wr_en(wr_en),
         .taken(taken),
-        .pred(pred),
+        .pred(pred)
     );
 
     always begin
@@ -27,6 +27,7 @@ module counter_tb();
 
     initial begin
         $display("\nStart Testbench");
+        $finish;
     end
 
 endmodule
