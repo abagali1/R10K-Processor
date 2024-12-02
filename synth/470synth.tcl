@@ -120,7 +120,7 @@ set reset_name reset
 set hdlin_ff_always_sync_set_reset "true"
 
 # Set some flags to suppress warnings that are safe to ignore in 470
-suppress_message "VER-130" ;# warns on delays in non-blocking assignment
+suppress_message "VER-130 VER-318 ELAB-311" ;# warns on delays in non-blocking assignment
 set suppress_errors "UID-401 OPT-1206 OPT-1207 OPT-12"
 
 #############################################
