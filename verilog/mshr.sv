@@ -10,11 +10,10 @@ module mshr (
     input   logic       is_store,
 
     // From Dcache
-    input   logic       Dcache_valid,
+    input   logic       Dcache_hit,
 
     // From memory
     input   MEM_TAG     mem2proc_transaction_tag, // Should be zero unless there is a response
-    input   MEM_BLOCK   mem2proc_data,
     input   MEM_TAG     mem2proc_data_tag,
 
     // To memory
@@ -22,6 +21,7 @@ module mshr (
 
     // To cache
     output  ADDR        mshr2cache_addr,
+    output  DATA        mshr2cache_data,
     output  MEM_SIZE    mshr2cache_st_size,
     output  logic       mshr2cache_is_store,
     output  logic       mshr2cache_wr,
@@ -45,7 +45,7 @@ module mshr (
         mshr2cache_wr = 0;
 
         if (mshr.state == NONE) begin
-            if (!Dcache_valid) begin // make request directly to cashay and see what she says
+            if (!Dcache_hit) begin // make request directly to cashay and see what she says
                 proc2mem_command = MEM_LOAD;
 
                 next_mshr.state = WAITING_FOR_LOAD_DATA;
@@ -66,6 +66,7 @@ module mshr (
                     proc2mem_command = MEM_STORE;
                     mshr2cache_st_size = mshr.st_size;
                     mshr2cache_is_store = mshr.is_store;
+                    mshr2cache_data = mshr.data;
                 end
             end
         end

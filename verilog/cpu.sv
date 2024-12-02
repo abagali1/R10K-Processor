@@ -18,6 +18,14 @@ module cpu (
     input INST_PACKET                   [7:0]                                                   in_insts,
     input logic                         [3:0]                                                   num_input,
 
+    input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
+    input MEM_BLOCK mem2proc_data,            // Data coming back from memory
+    input MEM_TAG   mem2proc_data_tag,        // Tag for which transaction data is for
+
+    output MEM_COMMAND proc2mem_command, // Command sent to memory
+    output ADDR        proc2mem_addr,    // Address sent to memory
+    output MEM_BLOCK   proc2mem_data,    // Data sent to memory
+
     // Note: these are assigned at the very bottom of the modulo
     output COMMIT_PACKET                [`N-1:0]                                                committed_insts,
     output ROB_PACKET                   [`N-1:0]                                                retired_insts,
@@ -163,15 +171,16 @@ module cpu (
     logic [$clog2(`N+1)-1:0] rob_open, num_retired;
     ROB_PACKET [`N-1:0] retiring_data; // rob entry packet, but want register vals to update architectural map table + free list
     logic [$clog2(`ROB_SZ)-1:0] rob_tail;
-
-    // SQ Vars
     logic start_store;
-    logic [$clog2(`SQ_SZ)-1:0] sq_head, sq_tail;
-    logic [$clog2(`N+1)-1:0] sq_open;
-
     // commit helpers
     FREE_LIST_PACKET [`N-1:0] retiring_t_old;
 
+    // output of SQ
+    logic [$clog2(`SQ_SZ)-1:0] sq_head, sq_tail;
+    logic [$clog2(`N+1)-1:0] sq_open;
+    ADDR Dmem_st_addr, Dmem_ld_addr, Dmem_addr;
+    DATA Dmem_store_data;
+    MEM_SIZE Dmem_size;
 
     // output of MT
     PHYS_REG_IDX             [`N-1:0]             t_old_data;
@@ -241,6 +250,25 @@ module cpu (
     FU_PACKET br_fu_out;
     BR_TASK   br_task;
     logic     br_done;
+
+    // output of dcache
+    MEM_BLOCK Dcache_data_out; // this is for cache hit on a load inst (miss data will come from mshr)
+    logic     Dcache_hit_out; // When valid is high
+    ADDR      Dcache_addr_out;
+    logic     Dcache_ld_out; 
+    // helpers for dcache
+    logic is_store;
+    MEM_SIZE st_size;
+    DATA in_data;
+    ADDR proc2Dcache_addr;
+
+    // output of mshr
+    ADDR        mshr2cache_addr;
+    DATA        mshr2cache_data;
+    MEM_SIZE    mshr2cache_st_size;
+    logic       mshr2cache_is_store;
+    logic       mshr2cache_wr;
+    logic       mshr_stall;
 
 
     // hardcoded values
@@ -611,9 +639,9 @@ module cpu (
         .is_pack(issued_ld_pack),
         .rd_en(ld_rd_en),
 
-        .Dmem_data_ready('0),
-        .Dmem_base_addr('0),
-        .Dmem_load_data('0),
+        .Dmem_data_ready(Dcache_ld_out),
+        .Dmem_base_addr(Dcache_addr_out),
+        .Dmem_load_data(Dcache_data_out),
 
         .rem_br_task(br_task),
         .rem_b_id(br_fu_out.decoded_vals.b_id),
@@ -625,7 +653,7 @@ module cpu (
         .full(ld_full),
 
         .start_load(start_load),
-        // .Dmem_addr(),
+        .Dmem_addr(Dmem_ld_addr),
 
         .fu_pack(ld_fu_out),
         .data_ready(ld_done)
@@ -656,6 +684,10 @@ module cpu (
 
         .open_entries(sq_open),
 
+        .Dmem_addr(Dmem_st_addr),
+        .Dmem_store_data(Dmem_store_data),
+        .Dmem_size(Dmem_size),
+
         .sq_head(sq_head),
         .sq_tail(sq_tail)
 
@@ -665,6 +697,71 @@ module cpu (
         `endif
     );
 
+    //////////////////////////////////////////////////
+    //                                              //
+    //                 data memory            Dcache_ld_out      //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    assign Dmem_addr = start_store ? Dmem_st_addr : Dmem_ld_addr;
+    assign is_store = mshr2cache_wr ? mshr2cache_is_store : start_store;
+    assign st_size = mshr2cache_wr ? mshr2cache_st_size : Dmem_size;
+    assign in_data = mshr2cache_wr ? mshr2cache_data : Dmem_store_data;
+    assign proc2Dcache_addr = mshr2cache_wr ? mshr2cache_addr : Dmem_addr;
+    assign proc2mem_addr = Dcache_data_out;
+    assign proc2mem_data = Dcache_data_out;
+
+    mshr miss_human_resources (
+        .clock(clock),
+        .reset(reset),
+
+        .in_addr(Dmem_addr),
+        .in_data(Dmem_store_data),
+        .st_size(Dmem_size),
+        .is_store(start_store),
+
+        // From Dcache
+        .Dcache_hit(Dcache_hit_out),
+
+        // From memory
+        .mem2proc_transaction_tag(mem2proc_transaction_tag), // Should be zero unless there is a response
+        .mem2proc_data_tag(mem2proc_data_tag),
+
+        // To memory
+        .proc2mem_command(proc2mem_command),
+
+        // To cache
+        .mshr2cache_addr(mshr2cache_addr),
+        .mshr2cache_data(mshr2cache_data),
+        .mshr2cache_st_size(mshr2cache_st_size),
+        .mshr2cache_is_store(mshr2cache_is_store),
+        .mshr2cache_wr(mshr2cache_wr),
+
+        // To load and store units
+        .stall(mshr_stall)
+    );
+
+    dcache cashay (
+        .clock(clock),
+        .reset(reset),
+
+        .proc2Dcache_addr(proc2Dcache_addr),
+
+        .is_store(is_store),
+        .st_size(st_size),
+        .in_data(in_data),
+
+        .mshr2Dcache_wr(mshr2Dcache_wr),
+        .mem2Dcache_data(mem2proc_data),
+
+        // To load unit stage
+        .Dcache_ld_out(Dcache_ld_out),
+        .Dcache_data_out(Dcache_data_out), // this is for cache hit on a load inst 
+        .Dcache_hit_out(Dcache_hit_out), // When valid is high
+        .Dcache_addr_out(Dcache_addr_out)  // addr goes to the load unit for a load inst, and mem for a store inst
+    );
+
+    
 
     //////////////////////////////////////////////////
     //                                              //
