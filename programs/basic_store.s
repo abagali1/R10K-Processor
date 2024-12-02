@@ -16,4 +16,6 @@ nop
 nop
 sw x4, 0(x3)
 sw x4, 0(x3)
+nop
+sw x4, 0(x3)
 wfi

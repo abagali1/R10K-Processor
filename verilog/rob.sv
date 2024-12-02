@@ -16,11 +16,15 @@ module rob #(
     input PHYS_REG_IDX                          [N-1:0]                 t,
     input PHYS_REG_IDX                          [N-1:0]                 t_old,
 
-    input PHYS_REG_IDX                          [N-1:0]                 complete_t, // comes from the FU
+    input PHYS_REG_IDX                          [N-1:0]                 complete_t, // comes from the CDB
+    input PHYS_REG_IDX                          [`SQ_SZ-1:0]            store_complete_t,
     input PHYS_REG_IDX                                                  br_complete_t,
     input                                       [$clog2(N+1)-1:0]       num_accept, // input signal from min block, dependent on open_entries 
     input logic                                 [$clog2(DEPTH)-1:0]     br_tail,
     input logic                                                         br_en,
+    input logic                                                         dm_stalled,
+
+    input  DATA                                 [N-1:0]                 cdb_wr_data,
 
     output ROB_PACKET                           [N-1:0]                 retiring_data, // rob entry packet, but want register vals to update architectural map table + free list
     output logic                                [$clog2(N+1)-1:0]       open_entries, // number of open entires AFTER retirement
@@ -30,8 +34,7 @@ module rob #(
 
 
     `ifdef DEBUG
-    ,   input  DATA                             [N-1:0]                 debug_data,
-        output ROB_PACKET                       [DEPTH-1:0]             debug_entries,
+    ,   output ROB_PACKET                       [DEPTH-1:0]             debug_entries,
         output logic                            [$clog2(DEPTH)-1:0]     debug_head,
         output logic                            [$clog2(DEPTH)-1:0]     debug_tail,
         output logic                            [$clog2(DEPTH)-1:0]     debug_num_entries
@@ -68,28 +71,35 @@ module rob #(
         // We must retire instructions first in order to accept the highest # of incoming instructions
         for (int i = 0; i < N; ++i) begin
             if ((num_entries == DEPTH || ((head+i) % DEPTH) != tail) && entries[(head+i) % DEPTH].complete) begin
+                if(entries[(head + i) % DEPTH].wr_mem) begin
+                    if(dm_stalled || start_store == 1) begin
+                        break;
+                    end
+                    start_store = '1;
+                end
                 retiring_data[i] = entries[(head+i) % DEPTH];
                 next_entries[(head+i) % DEPTH] = '0;
                 next_head = (((head+i) % DEPTH) + 1) % DEPTH;
                 num_retired++;
-
-                if(retiring_data[i].wr_mem) begin
-                    start_store = retiring_data[i].wr_mem;
-                    break;
-                end
             end else begin
                 break;
             end
         end
 
-        for (int j = 0; j < N; j++) begin
-            for(int k=0; k < DEPTH; ++k) begin
-                if(entries[k].t == complete_t[j] || entries[k].t == br_complete_t) begin
-                    next_entries[k].complete = 'b1;
-                    `ifdef DEBUG
-                        next_entries[k].data = debug_data[j];
-                    `endif
+        for(int k=0;k < DEPTH;k++) begin
+            for(int j=0;j<N;j++) begin
+                if(entries[k].t == complete_t[j]) begin
+                    next_entries[k].complete = '1;
+                    next_entries[k].data = cdb_wr_data[j];
                 end
+            end
+            for(int i=0;i<`SQ_SZ;i++) begin
+                if(entries[k].t == store_complete_t[i]) begin
+                    next_entries[k].complete = '1;
+                end
+            end
+            if(entries[k].t == br_complete_t) begin
+                next_entries[k].complete = '1;
             end
         end
 
@@ -114,7 +124,7 @@ module rob #(
                 next_entries[(tail+j) % DEPTH].dest_reg_idx = wr_data[j].dest_reg_idx;
                 next_entries[(tail+j) % DEPTH].halt = wr_data[j].halt;
                 //next_entries[(tail+j) % DEPTH].valid = wr_data[j].valid;
-                next_entries[(tail+j) % DEPTH].complete = wr_data[j].wr_mem;
+                next_entries[(tail+j) % DEPTH].complete = 0;
                 next_entries[(tail+j) % DEPTH].t = t[j];
                 next_entries[(tail+j) % DEPTH].t_old = t_old[j];
 

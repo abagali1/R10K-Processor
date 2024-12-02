@@ -37,14 +37,11 @@ module sq #(
     input                               [$clog2(N+1)-1:0]               num_store_dispatched,
 
     // Issue, append store to queue
-    input ISSUE_PACKET                  [`SQ_SZ-1:0]                    is_pack,
-    input logic                         [`SQ_SZ-1:0]                    rd_en,
+    input ISSUE_PACKET                  [DEPTH-1:0]                     is_pack,
+    input logic                         [DEPTH-1:0]                     rd_en,
 
     // Set HIGH by ROB when store is retired, send store to memory
     input logic                                                         start_store,
-
-    // Data Memory system serving another request
-    input logic                                                         dm_stalled,
 
     input logic                                                         br_en,
     input logic                         [$clog2(DEPTH)-1:0]             br_tail,
@@ -52,7 +49,7 @@ module sq #(
     output logic                        [$clog2(N+1)-1:0]               open_entries,
 
     output ADDR                                                         Dmem_addr,
-    output MEM_BLOCK                                                    Dmem_store_data,
+    output DATA                                                         Dmem_store_data,
     output MEM_SIZE                                                     Dmem_size,
 
     output logic                        [$clog2(DEPTH)-1:0]             sq_head,
@@ -60,8 +57,7 @@ module sq #(
 
     `ifdef DEBUG
     ,   output FU_PACKET                [DEPTH-1:0]                     debug_entries,
-        output logic                    [$clog2(DEPTH+1)-1:0]           debug_num_entries,
-        output logic                                                    debug_execute_store
+        output logic                    [$clog2(DEPTH+1)-1:0]           debug_num_entries
     `endif
 );
 
@@ -72,11 +68,11 @@ module sq #(
 
     logic [$clog2(DEPTH+1)-1:0] num_entries, next_num_entries; // keeps tracks of # of ALLOCATED entries (dispatched but not issued)
 
-    DATA [`SQ_SZ-1:0] addr_result;
+    DATA [DEPTH-1:0] addr_result;
 
     generate
         genvar i;
-        for(i=0;i<`SQ_SZ;i++) begin
+        for(i=0;i<DEPTH;i++) begin
             basic_adder addr_calcer(
                 .is_pack(is_pack[i]),
                 .result(addr_result[i])
@@ -84,9 +80,7 @@ module sq #(
         end
     endgenerate
 
-    assign execute_store = start_store && num_entries > 0;
-
-    assign open_entries = (DEPTH - num_entries + (execute_store ? 1 : 0)) > N ? N : (DEPTH - num_entries + (execute_store ? 1 : 0));
+    assign open_entries = (DEPTH - num_entries + (start_store ? 1 : 0)) > N ? N : (DEPTH - num_entries + (start_store ? 1 : 0));
     assign sq_head = next_head;
     assign sq_tail = tail; // output next_tail so we can dispatch stores and loads in the same cycle. 
     //Stores will always be first instruction in dispatch stage
@@ -94,7 +88,6 @@ module sq #(
     `ifdef DEBUG
         assign debug_entries = entries;
         assign debug_num_entries = num_entries;
-        assign debug_execute_store = execute_store;
     `endif
 
 
@@ -111,18 +104,18 @@ module sq #(
         next_tail = (next_tail + num_store_dispatched) % DEPTH;
         next_num_entries += num_store_dispatched;
 
-        for(int i=0;i<`SQ_SZ;i++) begin
+        for(int i=0;i<DEPTH;i++) begin
             if(rd_en[i]) begin
-                next_entries[is_pack[i].decoded_vals.decoded_vals.sq_tail] = '{decoded_vals: is_pack[i].decoded_vals, result: addr_result[i], rs2_value: is_pack[i].rs2_value, pred_correct: 0};
+                next_entries[is_pack[i].decoded_vals.decoded_vals.sq_tail] = '{decoded_vals: is_pack[i].decoded_vals, target_addr: addr_result[i], rs2_value: is_pack[i].rs2_value, pred_correct: 0, ld_state: 0, result: 0};
                 // bruh
             end
         end
 
-        if(execute_store) begin
+        if(start_store) begin
             next_num_entries--;
 
-            Dmem_addr = next_entries[head].result;
-            Dmem_store_data = {32'b0, next_entries[head].rs2_value};
+            Dmem_addr = next_entries[head].target_addr;
+            Dmem_store_data = next_entries[head].rs2_value;
             Dmem_size = MEM_SIZE'(next_entries[head].decoded_vals.decoded_vals.inst.r.funct3[1:0]);
 
             next_entries[head] = '0;

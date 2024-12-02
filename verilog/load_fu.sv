@@ -1,0 +1,201 @@
+`include "sys_defs.svh"
+/*
+ASSUMPTIONS
+    - RS will only issue 1 load at a time
+*/
+
+module load_fu #(
+    parameter DEPTH=`LD_SZ
+)(
+    input                                                           clock,
+    input                                                           reset,
+
+    input ISSUE_PACKET                                              is_pack,
+    input logic                                                     rd_en,
+
+    input logic                                                     Dmem_data_ready,
+    input ADDR                                                      Dmem_base_addr,
+    input MEM_BLOCK                                                 Dmem_load_data,
+
+    input BR_TASK                                                   rem_br_task,
+    input BR_MASK                                                   rem_b_id,
+
+    input logic                                                     dm_stalled,
+    input logic                                                     start_store,
+
+    input logic                         [DEPTH-1:0]                 cdb_stall,
+
+    output logic                                                    full,
+
+    output logic                                                    start_load,
+    output ADDR                                                     Dmem_addr,
+
+    output FU_PACKET                    [DEPTH-1:0]                 fu_pack,
+    output logic                        [DEPTH-1:0]                 data_ready
+
+    `ifdef DEBUG
+    ,   output FU_PACKET                [DEPTH-1:0]                 debug_entries,
+        output logic                    [DEPTH-1:0]                 debug_open_spots,
+        output logic                    [DEPTH-1:0]                 debug_ready_spots,
+        output logic                    [DEPTH-1:0]                 debug_alloc_spot,
+        output logic                    [DEPTH-1:0]                 debug_issued_entry,
+        output logic                    [DEPTH-1:0]                 debug_freed_spots
+    `endif
+);
+
+    FU_PACKET [DEPTH-1:0] entries, next_entries;
+    logic [DEPTH-1:0] open_spots, next_open_spots;
+    logic [DEPTH-1:0] ready_spots, next_ready_spots;
+
+    DATA addr_result;
+    basic_adder addr_calc(
+        .is_pack(is_pack),
+        .result(addr_result)
+    );
+
+    // psel to read in new packet
+    logic [DEPTH-1:0] alloc_spot;
+    psel_gen #(
+        .WIDTH(DEPTH),
+        .REQS(1)
+    ) allocator(
+        .req(open_spots),
+        .gnt(alloc_spot),
+        .gnt_bus(),
+        .empty()
+    );
+
+    // psel to start transaction
+    logic [DEPTH-1:0] issued_entry;
+    psel_gen #(
+        .WIDTH(DEPTH),
+        .REQS(1)
+    ) issuer(
+        .req(ready_spots),
+        .gnt(issued_entry),
+        .gnt_bus(),
+        .empty()
+    );
+
+    logic [DEPTH-1:0] spots_freed;
+    assign full = (open_spots | spots_freed) == '0;
+
+    `ifdef DEBUG
+        assign debug_entries = entries;
+        assign debug_open_spots = open_spots;
+        assign debug_ready_spots = ready_spots;
+        assign debug_alloc_spot = alloc_spot;
+        assign debug_issued_entry = issued_entry;
+        assign debug_freed_spots = spots_freed;
+    `endif
+
+    always_comb begin
+        next_entries = entries;
+        next_open_spots = open_spots;
+        next_ready_spots = ready_spots;
+
+        spots_freed = '0;
+
+        start_load = '0;
+        Dmem_addr = '0;
+
+        fu_pack = '0;
+        data_ready = '0;
+
+        for(int i=0;i<DEPTH;i++) begin
+            // EBR
+            if((entries[i].decoded_vals.b_mask & rem_b_id) != '0) begin
+                if(rem_br_task == SQUASH) begin
+                    next_entries[i] = '0;
+
+                    spots_freed[i] = '1;
+                    next_open_spots[i] = '1;
+                    next_ready_spots[i] = '0;
+                end
+                if(rem_br_task == CLEAR) begin
+                    next_entries[i].decoded_vals.b_mask = '0;
+
+                    spots_freed[i] = '0;
+                    next_open_spots[i] = '0;
+                    next_ready_spots[i] = '0;
+                end
+            end
+
+
+            // CDB Accepted Packet
+            if(!cdb_stall[i] && next_entries[i].ld_state == DATA_READY) begin
+                next_entries[i] = '0;
+
+                spots_freed[i] = '1;
+                next_open_spots[i] = '1;
+                next_ready_spots[i] = '0;
+            end
+
+
+            // Memory transaction completed
+            if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3]) begin
+                // aligned result
+                case(MEM_SIZE'(next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[1:0]))
+                    BYTE: next_entries[i].result = {24'b0, Dmem_load_data.byte_level[entries[i].target_addr[2:0]]};
+                    HALF: next_entries[i].result = {16'b0, Dmem_load_data.half_level[entries[i].target_addr[2:1]]};
+                    WORD: next_entries[i].result = Dmem_load_data.word_level[entries[i].target_addr[2]];
+                    DOUBLE: next_entries[i].result = Dmem_load_data.dbbl_level;
+                    default: next_entries[i].result = 64'hbadddada;
+                endcase
+
+                next_entries[i].ld_state = DATA_READY;
+
+                spots_freed[i] = '0;
+                next_open_spots[i] = '0;
+                next_ready_spots[i] = '0;
+            end
+
+
+            // Send to CDB
+            if(next_entries[i].ld_state == DATA_READY) begin
+                fu_pack[i] = next_entries[i];
+                data_ready[i] = '1;
+            end
+
+            // Read in new issued packet
+            if(rd_en && alloc_spot[i]) begin
+                next_entries[i] = '{
+                    decoded_vals: is_pack.decoded_vals,
+                    target_addr: addr_result,
+                    result: 0,
+                    ld_state: READY_TO_ISSUE,
+                    rs2_value: is_pack.rs2_value,
+                    pred_correct: 0
+                };
+                spots_freed[i] = '0;
+                next_open_spots[i] = '0;
+                next_ready_spots[i] = '1;
+            end
+
+            if(!dm_stalled && !start_store && issued_entry[i]) begin
+                start_load = 1;
+                Dmem_addr = {entries[i].target_addr[31:3], 3'b0};
+
+                next_entries[i].ld_state = WAITING_FOR_DATA;
+
+                spots_freed[i] = '0;
+                next_open_spots[i] = '0;
+                next_ready_spots[i] = '0;
+            end
+        end
+
+        next_open_spots |= spots_freed;
+    end
+
+    always_ff @(posedge clock) begin
+        if(reset) begin
+            entries <= '0;
+            open_spots <= '1;
+            ready_spots <= '0;
+        end else begin
+            entries <= next_entries;
+            open_spots <= next_open_spots;
+            ready_spots <= next_ready_spots;
+        end
+    end
+endmodule;

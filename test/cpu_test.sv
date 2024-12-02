@@ -103,6 +103,7 @@ module testbench;
         logic                   [`NUM_FUS_CDB-1:0]                                          debug_cdb_gnt;
         logic                   [`N-1:0][`NUM_FUS_CDB-1:0]                                  debug_cdb_gnt_bus;
         logic                   [`NUM_FUS_CDB-1:0]                                          debug_cdb_fu_done;
+        logic                   [`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:0]                       debug_cdb_stall_sig;
 
         logic                   [`NUM_FU_ALU-1:0]                                           debug_alu_done;
         logic                   [`NUM_FU_MULT-1:0]                                          debug_mult_done;
@@ -121,7 +122,14 @@ module testbench;
 
         FU_PACKET               [`SQ_SZ-1:0]                                                debug_sq_entries;
         logic                   [$clog2(`SQ_SZ+1)-1:0]                                      debug_sq_num_entries;
-        logic                                                                               debug_execute_store;
+
+        logic                   [`NUM_FU_LD-1:0]                                            debug_ld_rd_en;
+        FU_PACKET               [`LD_SZ-1:0]                                                debug_ld_entries;
+        logic                   [`LD_SZ-1:0]                                                debug_ld_open_spots;
+        logic                   [`LD_SZ-1:0]                                                debug_ld_ready_spots;
+        logic                   [`LD_SZ-1:0]                                                debug_ld_alloc_spot;
+        logic                   [`LD_SZ-1:0]                                                debug_ld_issued_entry;
+        logic                   [`LD_SZ-1:0]                                                debug_ld_freed_spots;
     `endif
 
 
@@ -175,6 +183,7 @@ module testbench;
             .debug_bs_free_entries(debug_bs_free_entries),
             .debug_bs_stack_gnt(debug_bs_stack_gnt),
 
+            .debug_cdb_stall_sig(debug_cdb_stall_sig),
             .debug_cdb_entries(debug_cdb_entries),
             .debug_cdb_gnt(debug_cdb_gnt),
             .debug_cdb_gnt_bus(debug_cdb_gnt_bus),
@@ -197,7 +206,14 @@ module testbench;
 
             .debug_sq_entries(debug_sq_entries),
             .debug_sq_num_entries(debug_sq_num_entries),
-            .debug_execute_store(debug_execute_store)
+
+            .debug_ld_rd_en(debug_ld_rd_en),
+            .debug_ld_entries(debug_ld_entries),
+            .debug_ld_open_spots(debug_ld_open_spots),
+            .debug_ld_ready_spots(debug_ld_ready_spots),
+            .debug_ld_alloc_spot(debug_ld_alloc_spot),
+            .debug_ld_issued_entry(debug_ld_issued_entry),
+            .debug_ld_freed_spots(debug_ld_freed_spots)
         `endif
     );
 
@@ -496,8 +512,8 @@ module testbench;
 
 
     function void print_sq();
-        $display("\nStore Queue (%02d) (Execute Store: %b)", debug_sq_num_entries, debug_execute_store);
-        $display("Status | #  |    PC");
+        $display("\nStore Queue (%02d) (Execute Store: %b)", debug_sq_num_entries, debug_start_store);
+        $display("Status | #  |    PC   | Target Addr ");
         for(int i=0;i<`SQ_SZ;i++) begin
             string status = "";
             if (i == debug_sq_tail && i== debug_sq_head)
@@ -508,10 +524,16 @@ module testbench;
                 status = "TAIL"; 
             else
                 status = "";
-            $display("%-6s | %02d | 0x%05x", status, i, debug_sq_entries[i].decoded_vals.decoded_vals.PC);
+            $display("%-6s | %02d | 0x%05x | 0x%05x", status, i, debug_sq_entries[i].decoded_vals.decoded_vals.PC, debug_sq_entries[i].target_addr);
         end
+    endfunction
 
-
+    function void print_ld();
+        $display("\nLoad Unit (Rd_en: %b)", debug_ld_rd_en);
+        $display("#  |    PC   |Target Addr| Result | State | Open? | Ready? | Alloc? | Issued? | Freed?");
+        for(int i=0;i<`LD_SZ;i++) begin
+            $display("%02d | 0x%05x | 0x%05x   | 0x%05x|   %d   |   %b   |   %b    |   %b    |    %b    |   %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_freed_spots[i]);
+        end
     endfunction
 
     // rs
@@ -677,6 +699,7 @@ module testbench;
     function void dump_state();
         $display("--------------");
         $display("Clock #%02d, NPC: %x, num_dispatched: %02d , num_issued: %02d, num_retired: %02d", clock_count, NPC, debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
+        $display("CDB Stall Sig %b", debug_cdb_stall_sig);
         $display("PCs Retired");
         for(int i=0;i<debug_num_retired;i++) begin
             $display("%02d: 0x%05x", i, retired_insts[i].PC);
@@ -686,6 +709,7 @@ module testbench;
         print_inst_buff();
         print_dispatch();
         print_sq();
+        print_ld();
         print_rob();
         $display("N is ", `N);
         $display("\nALU Data Ready: %b", debug_alu_done);
@@ -704,9 +728,9 @@ module testbench;
         print_issue();
         $display("\n");
 
-        // if(clock_count > 950) begin
-        //     $finish;
-        // end
+        if(clock_count > 950) begin
+            $finish;
+        end
     endfunction
 
 

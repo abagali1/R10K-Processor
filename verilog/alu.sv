@@ -75,7 +75,7 @@ module alu (
             fu_pack         <= fu_pack;
         end else if (rd_in) begin
             data_ready  <= 1;
-            fu_pack         <= '{result: result, decoded_vals: out, pred_correct: 0, rs2_value: 0};
+            fu_pack         <= '{result: result, decoded_vals: out, pred_correct: 0, rs2_value: 0, ld_state: 0, target_addr: 0};
 ;
         end else begin
             data_ready  <= '0;

@@ -107,6 +107,10 @@ module mult (
     assign fu_pack.result = (func_out == M_MUL) ? product[31:0] : product[63:32];
     // populate the rest of fu_pack using the final element of orig_packets
     assign fu_pack.decoded_vals = packets[`MULT_STAGES-1];
+    assign fu_pack.pred_correct = '0;
+    assign fu_pack.target_addr = '0;
+    assign fu_pack.rs2_value = '0;
+    assign fu_pack.ld_state = '0;
 
     // `ifdef DEBUG
     //     `ifndef DC

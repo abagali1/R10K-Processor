@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack alu addr_calc regfile memDP issue branch_fu decoder sq
+MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack alu addr_calc regfile memDP issue branch_fu decoder sq load_fu
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
 
@@ -246,6 +246,11 @@ build/rob.simv: $(ROB_FILES)
 build/rob.cov: $(ROB_FILES)
 synth/rob.vg: $(ROB_FILES)
 
+LOAD_FU_FILES = verilog/sys_defs.svh verilog/psel_gen.sv
+build/load_fu.simv: $(LOAD_FU_FILES)
+build/load_fu.cov: $(LOAD_FU_FILES)
+build/load_fu.vg: $(LOAD_FU_FILES)
+
 #################################
 # ---- Main CPU Definition ---- #
 #################################
@@ -281,7 +286,8 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/mult.sv \
 			  verilog/decode.sv \
 			  verilog/decoder.sv \
-			  verilog/sq.sv
+			  verilog/sq.sv \
+			  verilog/load_fu.sv
 
 build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
 build/cpu.syn.simv: $(CPU_TESTBENCH)

@@ -1,5 +1,5 @@
 module rs_psel #(
-    parameter DEPTH, 
+    parameter DEPTH,
     parameter NUM_FU
 )
 (
