@@ -37,12 +37,13 @@ module mshr (
     MSHR mshr, next_mshr;
 
     assign stall = (mshr.state != NONE);
+    assign mshr2cache_wr = mshr.state == WAITING_FOR_LOAD_DATA && mshr.mem_tag !=0 && mem2proc_data_tag == mshr.mem_tag;
 
     always_comb begin
         next_mshr = mshr;
 
         proc2mem_command = MEM_NONE;
-        mshr2cache_wr = 0;
+        // mshr2cache_wr = 0;
 
         if (mshr.state == NONE) begin
             if (!Dcache_hit) begin // make request directly to cashay and see what she says
@@ -59,7 +60,7 @@ module mshr (
             if (mem2proc_data_tag == mshr.mem_tag && mshr.mem_tag != 0) begin
                 next_mshr = '0;
 
-                mshr2cache_wr = 1;
+                // mshr2cache_wr = 1;
                 mshr2cache_addr = mshr.addr;
 
                 if (mshr.is_store) begin

@@ -39,6 +39,14 @@ module testbench;
     string out_outfile, cpi_outfile, writeback_outfile;//, pipeline_outfile;
     int out_fileno, cpi_fileno, wb_fileno; // verilog uses integer file handles with $fopen and $fclose
 
+
+    MEM_COMMAND proc2mem_command;
+    ADDR        proc2mem_addr;
+    MEM_BLOCK   proc2mem_data;
+    MEM_TAG     mem2proc_transaction_tag;
+    MEM_BLOCK   mem2proc_data;
+    MEM_TAG     mem2proc_data_tag;
+
     // variables used in the testbench
     logic        clock;
     logic        reset;
@@ -146,6 +154,16 @@ module testbench;
         .reset(reset),
         .in_insts(in_insts),
         .num_input(num_input),
+
+        .mem2proc_transaction_tag (mem2proc_transaction_tag),
+        .mem2proc_data            (mem2proc_data),
+        .mem2proc_data_tag        (mem2proc_data_tag),
+
+        // Outputs
+        .proc2mem_command (proc2mem_command),
+        .proc2mem_addr    (proc2mem_addr),
+        .proc2mem_data    (proc2mem_data),
+
         .committed_insts(committed_insts),
         .retired_insts(retired_insts),
         .ib_open(ib_open),
@@ -229,6 +247,19 @@ module testbench;
             .debug_Dcache_addr_out(debug_Dcache_addr_out),
             .debug_mshr2cache_wr(debug_mshr2cache_wr)
         `endif
+    );
+
+    mem memory (
+        // Inputs
+        .clock            (clock),
+        .proc2mem_command (proc2mem_command),
+        .proc2mem_addr    (proc2mem_addr),
+        .proc2mem_data    (proc2mem_data),
+
+        // Outputs
+        .mem2proc_transaction_tag (mem2proc_transaction_tag),
+        .mem2proc_data            (mem2proc_data),
+        .mem2proc_data_tag        (mem2proc_data_tag)
     );
 
     // Generate System Clock
@@ -544,7 +575,7 @@ module testbench;
 
     function void print_ld();
         $display("\nLoad Unit (Rd_en: %b) (Dcache_ld_out: %b) (mshr2cache_wr: %b)", debug_ld_rd_en, debug_Dcache_ld_out, debug_mshr2cache_wr);
-        $display("Dcache Addr Out: 0x%05x", debug_Dcache_addr_out);
+        $display("Dcache Addr Out: 0h%05x", debug_Dcache_addr_out);
         $display("#  |    PC   |Target Addr| Result | State | Open? | Ready? | Alloc? | Issued? | Freed?");
         for(int i=0;i<`LD_SZ;i++) begin
             $display("%02d |  %05x  |   %05x   | %05x  |   %d   |   %b   |   %b    |   %b    |    %b    |   %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_freed_spots[i]);
@@ -621,7 +652,7 @@ module testbench;
         $display("ALU packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
-            $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
+            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
                     i,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.inst,
@@ -634,7 +665,7 @@ module testbench;
         $display("MULT packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
         for (int i = 0; i < `NUM_FU_MULT; i++) begin
-            $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
+            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
                     i,
                     debug_issued_mult_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_mult_pack[i].decoded_vals.decoded_vals.inst,
@@ -645,7 +676,7 @@ module testbench;
         end
         $display("BR packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
-        $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
+        $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
                     0,
                     debug_issued_br_pack.decoded_vals.decoded_vals.valid,
                     debug_issued_br_pack.decoded_vals.decoded_vals.inst,
@@ -657,7 +688,7 @@ module testbench;
         $display("ST packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
         for (int i = 0; i < `SQ_SZ; i++) begin
-            $display("%02d |  %d    |  %08x  |  0x%08x |  0x%08x |  %08x      |  %08x      |", 
+            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
                     i,
                     debug_issued_st_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_st_pack[i].decoded_vals.decoded_vals.inst,
@@ -706,7 +737,7 @@ module testbench;
     function void print_mshr();
         $display("\nMSHR");
         $display("state       | addr           | data           | mem_tag  | store size | is_store |");
-        $display("%-12s | 0x%08x     | 0x%08x     | %02d       | %02d         | %d",
+        $display("%-12s | 0h%08x     | 0h%08x     | %02d       | %02d         | %d",
             (debug_mshr.state == NONE) ? "NONE" :
             (debug_mshr.state == WAITING_FOR_LOAD_DATA) ? "WAIT_FOR_LOAD" : "uhh",
             debug_mshr.addr,
@@ -723,7 +754,7 @@ module testbench;
     //     $display("Index |   Valid   |      Tag       |      Data       |");
 
     //     for (int i = 0; i < `DCACHE_LINES; i++) begin
-    //         $display("%4d  |     %b     |  0x%08x   | %64h",
+    //         $display("%4d  |     %b     |  0h%08x   | %64h",
     //             i,
     //             debug_dcache_tags[i].valid,
     //             debug_dcache_tags[i].tags,
@@ -738,7 +769,7 @@ module testbench;
         $display("CDB Stall Sig %b", debug_cdb_stall_sig);
         $display("PCs Retired");
         for(int i=0;i<debug_num_retired;i++) begin
-            $display("%02d: 0x%05x", i, retired_insts[i].PC);
+            $display("%02d: 0h%05x", i, retired_insts[i].PC);
         end
         $display("\n");
 
