@@ -9,7 +9,7 @@ module fetch #(
     input logic                     reset,
 
     input ADDR                      target,
-    input logic                     br_en,
+    input logic                     br_en,  // taken or squashed, whenever target chanegs
     input logic                     ibuff_open,
 
     input MEM_TAG                   mem_transaction_tag,
@@ -20,8 +20,8 @@ module fetch #(
     output logic                    mem_en,
     output ADDR                     mem_addr,
 
-    output INST_PACKET [N-1:0]      out_insts,
-    output logic [$clog2(N)-1:0]    num_insts
+    output INST_PACKET [3:0]        out_insts,
+    output logic [1:0]              num_insts
 );
     typedef enum logic [1:0] {FETCH, PREFETCH, STALL} STATE;
 
@@ -32,14 +32,13 @@ module fetch #(
     // 16 possible transaction tags from memory (1 based indexing as 0 is unused)
     ADDR [`NUM_MEM_TAGS-1:0] mshr_data, next_mshr_data;
     logic [`NUM_MEM_TAGS-1:0] mshr_valid, next_mshr_valid, 
-    logic [`NUM_MEM_TAGS-1:0] mshr_speculative, next_mshr_speculative;
     
-    ADDR next_mem_addr, prefetch_target;
+    ADDR next_mem_addr, cache_target, prefetch_target, prev_prefetch_target;
     DATA cache_write_data;
     logic cache_write_en;
     logic mem_transaction_started;
 
-    assign mshr_full = &next_mshr_valid
+    assign mshr_full = &next_mshr_valid;
     assign mem_en = ~mshr_full & ~icache_valid;
 
     // if there is a branch, prefetch_target = target
@@ -47,45 +46,45 @@ module fetch #(
     // otherwise, prefetch_target = current_fetch_addr + 8 (next instruction)
     always_comb begin
         prefetch_target =   (state == FETCH) ? target : 
-                            (state == PREFETCH) ? prefetch_target + 8 :
-                            (state == STALL) ? prefetch_target : '0;
+                            (state == PREFETCH) ? prev_prefetch_target + 8 :
+                            (state == STALL) ? prev_prefetch_target : '0;
         next_state = (state == FETCH) ? PREFETCH :
-                     (state == PREFETCH & mshr_full & icache_valid) ? STALL :
-                     ()
+                     (state == PREFETCH & mshr_full & ~icache_valid) ? STALL :
+                     (state == STALL & ~mshr_full) ? PREFETCH : state;
+        next_mem_addr = (state == FETCH | mem_transaction_handshake) ? prefetch_target : mem_addr;
     end
-
-    always_comb begin
-        next_state == state;
-        if (state == FETCH) begin
-            next_state = PREFETCH
-        end 
-    end
-
-    // cache backlog
-        // N-1 tags * num mem entries entries
-        // stores most recent trans tag
-        // clears all backlogs with trans tag matchin incoming data tag
-
-    // update mshr when transaction tag recieved
-    always_comb begin
-        next_mshr_data = mshr_data;
-        if (mem_transaction_started) begin
-            next_mshr_data[mem_transaction_tag] = mem_addr;
-            next_mshr_valid[mem_transaction_tag] = 1;
-        end
-    end
-
-    // check for mshr eviction and cache updates
+    
     always_comb begin
         cache_write_en = '0;
         cache_write_data = '0;
-        if (mem_data_tag != 0 && mshr_valid[mem_data_tag]) begin
+        next_out_insts = '0;
+        next_mshr_data = mshr_data;
+        cache_target = prefetch_target;
+
+        // check for mshr eviction and cache updates
+        if (mem_data_tag != 0 & mshr_valid[mem_data_tag]) begin
             cache_write_en = 1;
             cache_write_data = mem_data;
+            cache_target = next_mshr_data[mem_data_tag];
             next_mshr_data[mem_data_tag] = '0;
             next_mshr_valid[mem_data_tag] = '0;
-            // this logic writes to cache but doesn't put data in out_insts
-            // this is because we retrieve two insts from memory with every request
+        end
+
+        // update mshr when transaction tag recieved
+        if (mem_transaction_handshake) begin
+            next_mshr_data[mem_transaction_tag] = mem_addr;
+            next_mshr_valid[mem_transaction_tag] = 1;
+        end
+
+        // perform coalescing logic
+        // TODO rohan -- this 1:0 type notation prob isn't right if target is odd
+        if (cache_write_en) begin
+            next_out_insts[1:0] = cache_write_data;
+            if (cache_valid) begin
+                next_out_insts[3:0] = cache_read_data;
+            end
+        end else if (cache_valid) begin
+            next_out_insts[1:0] = cache_read_data;
         end
     end
 
@@ -130,32 +129,32 @@ module fetch #(
     //     // inputs
     //     .clock                      (clock),
     //     .reset                      (reset),
-    //     .proc2Icache_addr           (prefetch_target),
+    //     .proc2Icache_addr           (cache_target),
     //     .write_en                   (cache_write_en),
     //     .write_data                 (cache_write_data),
     //     // outputs
-    //     .Icache_data_out            (icache_out),
-    //     .Icache_valid_out           (icache_valid)
+    //     .Icache_data_out            (cache_read_data),
+    //     .Icache_valid_out           (cache_valid)
     // );
 
     always_ff @(posedge clock) begin
         if (reset || br_en) begin
-            state            <= FETCH;
-            out_insts        <= '0;
-            num_insts        <= '0;
-            mshr_data        <= '0;
-            mshr_valid       <= '0;
-            mem_addr         <= '0;
-            mshr_speculative <= (br_en & ~reset) ? mshr_valid : '0;
+            state                <= FETCH;
+            out_insts            <= '0;
+            num_insts            <= '0;
+            mshr_data            <= '0;
+            mshr_valid           <= '0;
+            mem_addr             <= '0;
+            prev_prefetch_target <= '0;
         end else begin
-            out_insts       <= next_out_insts;
-            num_insts       <= next_num_insts;
+            state                <= next_state;
+            out_insts            <= next_out_insts;
+            num_insts            <= next_num_insts;
             // TODO: ^^ handle ibuff_open in always comb
-            mshr_data       <= next_mshr_data;
-            mshr_valid      <= next_mshr_valid;
-            if (mem_en) begin
-                mem_addr    <= next_mem_addr;
-            end
+            mshr_data            <= next_mshr_data;
+            mshr_valid           <= next_mshr_valid;
+            mem_addr             <= next_mem_addr;
+            prev_prefetch_target <= prefetch_target;
         end
     end
 endmodule
