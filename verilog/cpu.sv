@@ -758,7 +758,7 @@ module cpu (
         .clock(clock),
         .reset(reset),
 
-        .proc2Dcache_addr(proc2cache_addr),
+        .proc2Dcache_addr(proc2Dcache_addr),
 
         .is_store(is_store),
         .st_size(st_size),
