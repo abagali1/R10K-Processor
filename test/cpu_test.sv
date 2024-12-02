@@ -511,7 +511,7 @@ module testbench;
             else
                 status = ""; 
 
-            $display("%-6s | %02d |  0x%05x   |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
+            $display("%-6s | %02d |   %05x    |  %02d         |  %d   |    %d     |   %02d   |   %02d   |", 
                     status, 
                     i, 
                     //debug_rob_entries[i].valid, 
@@ -538,7 +538,7 @@ module testbench;
                 status = "TAIL"; 
             else
                 status = "";
-            $display("%-6s | %02d | 0x%05x | 0x%05x", status, i, debug_sq_entries[i].decoded_vals.decoded_vals.PC, debug_sq_entries[i].target_addr);
+            $display("%-6s | %02d |  %05x  |  %05x ", status, i, debug_sq_entries[i].decoded_vals.decoded_vals.PC, debug_sq_entries[i].target_addr);
         end
     endfunction
 
@@ -547,7 +547,7 @@ module testbench;
         $display("Dcache Addr Out: 0x%05x", debug_Dcache_addr_out);
         $display("#  |    PC   |Target Addr| Result | State | Open? | Ready? | Alloc? | Issued? | Freed?");
         for(int i=0;i<`LD_SZ;i++) begin
-            $display("%02d | 0x%05x | 0x%05x   | 0x%05x|   %d   |   %b   |   %b    |   %b    |    %b    |   %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_freed_spots[i]);
+            $display("%02d |  %05x  |   %05x   | %05x  |   %d   |   %b   |   %b    |   %b    |    %b    |   %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_freed_spots[i]);
         end
     endfunction
 
@@ -556,7 +556,7 @@ module testbench;
         $display("\nReservation Station (SQ Head: %02d)", debug_sq_head);
         $display("#  | valid |  PC   |  NPC  |fu_type| t |t1 |t2 |b_id|b_mask| sq tail|alu issued|mult issued|br issued|ld issued|st issued|");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
-            $display("%02d |  %d    |0x%05x|0x%05x|  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |     %d   |     %d   |", 
+            $display("%02d |  %d    | %05x | %05x |  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |     %d   |     %d   |", 
                         i,
                         debug_rs_entries[i].decoded_vals.valid,
                         debug_rs_entries[i].decoded_vals.PC,
@@ -585,7 +585,7 @@ module testbench;
         $display("\nMap Table");
         $display("reg_idx| p_reg_idx | ready |valid |");
         for (int i = 0; i < `ARCH_REG_SZ; i++) begin
-            $display("%02d\t|  %04d     |   %1d   |   %1d  |", 
+            $display("%02d\t|   %04d    |   %1d   |   %1d  |", 
                 i, 
                 debug_mt_entries[i].reg_idx, 
                 debug_mt_entries[i].ready, 
