@@ -109,6 +109,9 @@ typedef logic [3:0] MEM_TAG;
 `define ICACHE_LINES 32
 `define ICACHE_LINE_BITS $clog2(`ICACHE_LINES)
 
+`define DCACHE_LINES 32
+`define DCACHE_LINE_BITS $clog2(`DCACHE_LINES)
+
 `define MEM_SIZE_IN_BYTES (64*1024)
 `define MEM_64BIT_LINES   (`MEM_SIZE_IN_BYTES/8)
 
@@ -139,6 +142,11 @@ typedef struct packed {
     logic [12-`ICACHE_LINE_BITS:0] tags;
     logic                          valid;
 } ICACHE_TAG;
+
+typedef struct packed {
+    logic [12-`DCACHE_LINE_BITS:0] tags;
+    logic                          valid;
+} DCACHE_TAG;
 
 ///////////////////////////////
 // ---- Exception Codes ---- //
@@ -344,12 +352,28 @@ typedef struct packed {
     logic valid;
     logic [`BRANCH_PRED_SZ-1:0] b_id;
     logic [`BRANCH_PRED_SZ-1:0] b_mask;
-    // ADDR rec_PC;
     MAP_TABLE_PACKET [`ARCH_REG_SZ-1:0] rec_mt;
     logic [$clog2(`ROB_SZ+1)-1:0] fl_head;
     logic [$clog2(`ROB_SZ)-1:0] rob_tail;
     logic [$clog2(`SQ_SZ)-1:0] sq_tail;
 } CHECKPOINT;
+
+typedef enum logic [1:0] { 
+    NONE = 0,
+    WAITING_FOR_LOAD_DATA = 1
+} MSHR_STATE;
+
+typedef struct packed {
+    MSHR_STATE state;
+
+    ADDR addr;
+    DATA data;
+
+    MEM_TAG mem_tag;
+
+    MEM_SIZE st_size;
+    logic is_store;
+} MSHR;
 
 /* END */
 
