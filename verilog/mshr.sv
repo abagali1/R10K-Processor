@@ -28,6 +28,10 @@ module mshr (
 
     // To load and store units
     output  logic       stall
+
+    `ifdef DEBUG
+    , output MSHR       debug_mshr
+    `endif
 );
  
     MSHR mshr, next_mshr;
@@ -65,6 +69,10 @@ module mshr (
                 end
             end
         end
+
+        `ifdef DEBUG
+            debug_mshr = mshr;
+        `endif
     end
 
 

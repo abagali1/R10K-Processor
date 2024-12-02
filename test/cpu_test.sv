@@ -130,6 +130,8 @@ module testbench;
         logic                   [`LD_SZ-1:0]                                                debug_ld_alloc_spot;
         logic                   [`LD_SZ-1:0]                                                debug_ld_issued_entry;
         logic                   [`LD_SZ-1:0]                                                debug_ld_freed_spots;
+
+        MSHR                                                                             debug_mshr;
     `endif
 
 
@@ -601,9 +603,6 @@ module testbench;
     endfunction
 
     // issue
-    // TODO: need to modify the issue module to give us debug outputs of all its normal outputs
-    // TODO: need to add these debug outputs to the 'if debug' in cpu_test
-    // TODO: probably also need to update issue test with these so the test doesn't break
     function void print_issue();
         $display("\nIssue Module");
         $display("ALU packets");
@@ -656,9 +655,6 @@ module testbench;
         end
     endfunction
 
-
-    // fus
-
     // branch stack
     function void print_br_stack();
         $display("\nBranch Stack");
@@ -678,7 +674,6 @@ module testbench;
     endfunction
 
     // cdb
-    // TODO uhh idk if this is pulling data correctly tbh
     function void print_cdb();
         $display("\nCDB, gnt: %b", debug_cdb_gnt);
         $display("#  |   valid |  reg_idx | p_reg_idx |   reg_val   |");
@@ -694,7 +689,15 @@ module testbench;
         end
     endfunction
 
-    // regfile
+    // mshr
+    function void print_mshr();
+
+    endfunction
+
+    // dcache
+    function void print_dcache();
+
+    endfunction
 
     function void dump_state();
         $display("--------------");

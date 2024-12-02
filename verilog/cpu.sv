@@ -93,7 +93,9 @@ module cpu (
         output logic                    [`LD_SZ-1:0]                                            debug_ld_ready_spots,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_alloc_spot,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_issued_entry,
-        output logic                    [`LD_SZ-1:0]                                            debug_ld_freed_spots
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_freed_spots,
+
+        output MSHR                                                                             debug_mshr
     `endif
 );
 
