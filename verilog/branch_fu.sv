@@ -22,9 +22,9 @@ module branch_fu (
     `endif 
 );
     ADDR target, branch_target;
-    logic taken, correct;
+    logic conditional_taken, correct;
 
-    assign br_taken = taken;
+    assign br_taken = is_pack.decoded_vals.decoded_vals.uncond_branch || conditional_taken;
 
     RS_PACKET out;
 
@@ -33,9 +33,9 @@ module branch_fu (
         out.b_mask = (rem_br_task == CLEAR) ? out.b_mask ^ rem_b_id : is_pack.decoded_vals.b_mask;
     end
 
-    assign correct = is_pack.decoded_vals.decoded_vals.pred_taken == taken; // TODO: Add target addr check
+    assign correct = is_pack.decoded_vals.decoded_vals.pred_taken == br_taken; // TODO: Add target addr check
 
-    assign target = taken ? branch_target : is_pack.decoded_vals.decoded_vals.NPC;
+    assign target = br_taken ? branch_target : is_pack.decoded_vals.decoded_vals.NPC;
 
     basic_adder branch_target_calc (
         .is_pack(is_pack),
@@ -45,13 +45,13 @@ module branch_fu (
     // Combinational logic for choosing taken
     always_comb begin
         case (is_pack.decoded_vals.decoded_vals.inst.b.funct3)
-            3'b000:  taken = signed'(is_pack.rs1_value) == signed'(is_pack.rs2_value); // BEQ
-            3'b001:  taken = signed'(is_pack.rs1_value) != signed'(is_pack.rs2_value); // BNE
-            3'b100:  taken = signed'(is_pack.rs1_value) <  signed'(is_pack.rs2_value); // BLT
-            3'b101:  taken = signed'(is_pack.rs1_value) >= signed'(is_pack.rs2_value); // BGE
-            3'b110:  taken = is_pack.rs1_value < is_pack.rs2_value;                    // BLTU
-            3'b111:  taken = is_pack.rs1_value >= is_pack.rs2_value;                   // BGEU
-            default: taken = `FALSE;
+            3'b000:  conditional_taken = signed'(is_pack.rs1_value) == signed'(is_pack.rs2_value); // BEQ
+            3'b001:  conditional_taken = signed'(is_pack.rs1_value) != signed'(is_pack.rs2_value); // BNE
+            3'b100:  conditional_taken = signed'(is_pack.rs1_value) <  signed'(is_pack.rs2_value); // BLT
+            3'b101:  conditional_taken = signed'(is_pack.rs1_value) >= signed'(is_pack.rs2_value); // BGE
+            3'b110:  conditional_taken = is_pack.rs1_value < is_pack.rs2_value;                    // BLTU
+            3'b111:  conditional_taken = is_pack.rs1_value >= is_pack.rs2_value;                   // BGEU
+            default: conditional_taken = `FALSE;
         endcase
     end
 
@@ -83,7 +83,7 @@ module branch_fu (
                 $display("  Issue Packet PC: 0x%05x", is_pack.decoded_vals.decoded_vals.PC);
                 $display("  pred: %s, b_id: %0d, b_mask: %0d, rs1_value: %0d, rs2_value: %0d", is_pack.decoded_vals.decoded_vals.pred_taken ? "T" : "NT", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs1_value, is_pack.rs2_value);
                 $display("  FU Packet Out:");
-                $display("  result: %s, branch target: %x, prediction correct: %0d, br task: %0s", taken ? "T" : "NT", fu_pack.result, correct, br_task.name());
+                $display("  result: %s, branch target: %x, prediction correct: %0d, br task: %0s", br_taken ? "T" : "NT", fu_pack.result, correct, br_task.name());
                 $display("  rem_br_task: %0s, rem_b_id: %0b, is_pack b_mask: %0b", rem_br_task, rem_b_id, is_pack.decoded_vals.b_mask);
                 // gonna let you finish this anup
             end

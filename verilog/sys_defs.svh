@@ -546,9 +546,7 @@ typedef struct packed {
     logic           valid;
 
     logic           wr_mem;
-    `ifdef DEBUG
     DATA            data;
-    `endif
 } ROB_PACKET;
 
 `endif // __SYS_DEFS_SVH__

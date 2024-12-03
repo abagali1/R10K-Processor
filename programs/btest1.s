@@ -467,6 +467,7 @@ B63:	slli	x21,	x2,	31 #
     wfi
     wfi
 end:	li	x21, data
+    sw	x30,  0(x21)
 
     wfi
     wfi

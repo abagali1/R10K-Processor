@@ -502,6 +502,7 @@ module testbench;
 
     // DEBUGGER
 
+    `ifdef DEBUG
     // inst buff
     function void print_inst_buff();
         $display("Instruction Buffer");
@@ -777,12 +778,17 @@ module testbench;
     //         );
     //     end
     // endfunction
+    `endif
 
     function void dump_state();
         $display("--------------");
-        $display("Clock #%02d, NPC: %x, num_dispatched: %02d , num_issued: %02d, num_retired: %02d", clock_count, NPC, debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
+        $display("Clock #%02d, NPC: %x", clock_count, NPC);
+        `ifdef DEBUG
+        $display("num_dispatched: %02d , num_issued: %02d, num_retired: %02d", debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
+        `endif
         $display("mem2proc TTag: %02d, DTag: %02d, Data_in: 0h%x", mem2proc_transaction_tag, mem2proc_data_tag, mem2proc_data);
         $display("CMD: %s (%b), Addr: 0h%05x, Data_out: 0h%x", proc2mem_command.name(), proc2mem_command, proc2mem_addr, proc2mem_data);
+        `ifdef DEBUG
         $display("CDB Stall Sig %b", debug_cdb_stall_sig);
         $display("PCs Retired");
         for(int i=0;i<debug_num_retired;i++) begin
@@ -813,6 +819,7 @@ module testbench;
         print_cdb();
         print_issue();
         $display("\n");
+        `endif
 
         // if(clock_count > 950) begin
         //     $finish;

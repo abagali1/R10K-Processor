@@ -85,7 +85,7 @@ module load_fu #(
         assign debug_open_spots = open_spots;
         assign debug_ready_spots = ready_spots;
         assign debug_alloc_spot = alloc_spot;
-        assign debug_issued_entry = issued_entry;
+        assign debug_issued_entry = !dm_stalled && !start_store && issued_entry;
         assign debug_freed_spots = spots_freed;
     `endif
 
