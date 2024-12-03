@@ -719,9 +719,8 @@ module cpu (
     assign st_size = mshr2cache_wr ? mshr2cache_st_size : Dmem_size;
     assign in_data = mshr2cache_wr ? mshr2cache_data : Dmem_store_data;
     assign proc2Dcache_addr = mshr2cache_wr ? mshr2cache_addr : Dmem_addr;
-    assign proc2mem_addr = 32'h100;
-    assign proc2mem_data = 32'h100;
-    assign proc2mem_command = MEM_STORE;
+    assign proc2mem_addr = Dcache_addr_out;
+    assign proc2mem_data = Dcache_data_out;
 
     mshr miss_human_resources (
         .clock(clock),
@@ -737,11 +736,11 @@ module cpu (
         .Dcache_hit(Dcache_hit_out),
 
         // From memory
-        .mem2proc_transaction_tag('0), // Should be zero unless there is a response
-        .mem2proc_data_tag('0),
+        .mem2proc_transaction_tag(mem2proc_transaction_tag), // Should be zero unless there is a response
+        .mem2proc_data_tag(mem2proc_data_tag),
 
         // To memory
-        //.proc2mem_command('0),
+        .proc2mem_command(proc2mem_command),
 
         // To cache
         .mshr2cache_addr(mshr2cache_addr),
