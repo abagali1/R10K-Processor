@@ -70,6 +70,8 @@ module testbench;
     logic [63:0] unified_memory [`MEM_64BIT_LINES-1:0];
 
     `ifdef DEBUG
+        logic                    [`BRANCH_HISTORY_REG_SZ-1:0]                               debug_bhr;
+        
         logic                   [$clog2(`N+1)-1:0]                                          debug_num_dispatched;
         DECODED_PACKET          [`N-1:0]                                                    debug_dis_insts;
         logic                   [$clog2(`N+1)-1:0]                                          debug_num_retired;
@@ -170,7 +172,9 @@ module testbench;
         .NPC(NPC)
 
         `ifdef DEBUG
-        ,   .debug_num_dispatched(debug_num_dispatched),
+        ,   .debug_bhr(debug_bhr),
+        
+            .debug_num_dispatched(debug_num_dispatched),
             .debug_num_retired(debug_num_retired),
 
             .debug_inst_buff_entries(debug_inst_buff_entries),
@@ -748,6 +752,16 @@ module testbench;
         );
     endfunction
 
+    // bhr
+    function void print_bhr();
+        $display("\nBranch History Register");
+        $display("<-Youngest   oldest->");
+        for (int i = 0; i < `BRANCH_HISTORY_REG_SZ; i++) begin
+            $write("|%0d", debug_bhr[i]);
+        end
+        $display("|");
+    endfunction
+
     // dcache
     // function void print_dcache();
     //     $display("\nDcache");
@@ -790,6 +804,7 @@ module testbench;
         print_rs();
         print_map_table();
         print_freelist();
+        print_bhr();
         print_br_stack();
         print_cdb();
         print_issue();

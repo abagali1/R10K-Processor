@@ -1,7 +1,5 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
-`include "counter.sv"
-`include "btb.sv"
 
 module predictor #(
     parameter BHR_DEPTH = `BRANCH_HISTORY_REG_SZ,
