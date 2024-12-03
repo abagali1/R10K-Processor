@@ -253,12 +253,12 @@ module testbench;
         `endif
     );
 
-    mem memory (
+    mem mem (
         // Inputs
         .clock            (clock),
-        .proc2mem_command (proc2mem_command),
         .proc2mem_addr    (proc2mem_addr),
         .proc2mem_data    (proc2mem_data),
+        .proc2mem_command (proc2mem_command),
 
         // Outputs
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
@@ -305,6 +305,7 @@ module testbench;
         $display("  %16t : Loading Unified Memory", $realtime);
         // load the compiled program's hex data into the memory module
         $readmemh(program_memory_file, unified_memory);
+        $readmemh(program_memory_file, mem.unified_memory);
         @(posedge clock);
         @(posedge clock);
         #1; // This reset is at an odd time to avoid the pos & neg clock edges
@@ -339,10 +340,11 @@ module testbench;
             end
             dump_state();
 
+
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count - 1);
             // print_stage(if_inst_dbg,     if_NPC_dbg,     {31'b0,if_valid_dbg});
-            // print_stage(if_id_inst_dbg,  if_id_NPC_dbg,  {31'b0,if_id_valid_dbg});
+            // print_stage(if_id_inst_dbg,  if_id_NPC_dbg,  {31'b0,if_id_valid_dbg});   
             // print_stage(id_ex_inst_dbg,  id_ex_NPC_dbg,  {31'b0,id_ex_valid_dbg});
             // print_stage(ex_mem_inst_dbg, ex_mem_NPC_dbg, {31'b0,ex_mem_valid_dbg});
             // print_stage(mem_wb_inst_dbg, mem_wb_NPC_dbg, {31'b0,mem_wb_valid_dbg});
@@ -391,7 +393,7 @@ module testbench;
                 $fclose(wb_fileno);
 
                 // display the final memory and status
-                //show_final_mem_and_status(error_status);
+                show_final_mem_and_status(error_status);
                 // output the final CPI
                 //output_cpi_file();
 
@@ -414,7 +416,7 @@ module testbench;
                 instr_count = instr_count + 1;
 
                 pc = committed_insts[n].NPC - 4;
-                block = unified_memory[pc[31:3]];
+                block = mem.unified_memory[pc[31:3]];
                 inst = block.word_level[pc[2]];
                 // print the committed instructions to the writeback output file
                 if (committed_insts[n].reg_idx == `ZERO_REG) begin
@@ -440,53 +442,53 @@ module testbench;
     endtask // task output_reg_writeback_and_maybe_halt
 
 
-//     // Task to output the final CPI and # of elapsed clock edges
-//     task output_cpi_file;
-//         real cpi;
-//         begin
-//             cpi = $itor(clock_count) / instr_count; // must convert int to real
-//             cpi_fileno = $fopen(cpi_outfile);
-//             $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
-//                       clock_count, instr_count, cpi);
-//             $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
-//                       clock_count * `CLOCK_PERIOD);
-//             $fclose(cpi_fileno);
-//         end
-//     endtask // task output_cpi_file
+    // // Task to output the final CPI and # of elapsed clock edges
+    // task output_cpi_file;
+    //     real cpi;
+    //     begin
+    //         cpi = $itor(clock_count) / instr_count; // must convert int to real
+    //         cpi_fileno = $fopen(cpi_outfile);
+    //         $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
+    //                   clock_count, instr_count, cpi);
+    //         $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
+    //                   clock_count * `CLOCK_PERIOD);
+    //         $fclose(cpi_fileno);
+    //     end
+    // endtask // task output_cpi_file
 
 
-//     // Show contents of Unified Memory in both hex and decimal
-//     // Also output the final processor status
-//     task show_final_mem_and_status;
-//         input EXCEPTION_CODE final_status;
-//         int showing_data;
-//         begin
-//             $fdisplay(out_fileno, "\nFinal memory state and exit status:\n");
-//             $fdisplay(out_fileno, "@@@ Unified Memory contents hex on left, decimal on right: ");
-//             $fdisplay(out_fileno, "@@@");
-//             showing_data = 0;
-//             for (int k = 0; k <= `MEM_64BIT_LINES - 1; k = k+1) begin
-//                 if (unified_memory[k] != 0) begin
-//                     $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, unified_memory[k],
-//                                                              unified_memory[k]);
-//                     showing_data = 1;
-//                 end else if (showing_data != 0) begin
-//                     $fdisplay(out_fileno, "@@@");
-//                     showing_data = 0;
-//                 end
-//             end
-//             $fdisplay(out_fileno, "@@@");
+    // Show contents of Unified Memory in both hex and decimal
+    // Also output the final processor status
+    task show_final_mem_and_status;
+        input EXCEPTION_CODE final_status;
+        int showing_data;
+        begin
+            $fdisplay(out_fileno, "\nFinal memory state and exit status:\n");
+            $fdisplay(out_fileno, "@@@ Unified Memory contents hex on left, decimal on right: ");
+            $fdisplay(out_fileno, "@@@");
+            showing_data = 0;
+            for (int k = 0; k <= `MEM_64BIT_LINES - 1; k = k+1) begin
+                if (mem.unified_memory[k] != 0) begin
+                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, mem.unified_memory[k],
+                                                             mem.unified_memory[k]);
+                    showing_data = 1;
+                end else if (showing_data != 0) begin
+                    $fdisplay(out_fileno, "@@@");
+                    showing_data = 0;
+                end
+            end
+            $fdisplay(out_fileno, "@@@");
 
-//             case (final_status)
-//                 LOAD_ACCESS_FAULT: $fdisplay(out_fileno, "@@@ System halted on memory error");
-//                 HALTED_ON_WFI:     $fdisplay(out_fileno, "@@@ System halted on WFI instruction");
-//                 ILLEGAL_INST:      $fdisplay(out_fileno, "@@@ System halted on illegal instruction");
-//                 default:           $fdisplay(out_fileno, "@@@ System halted on unknown error code %x", final_status);
-//             endcase
-//             $fdisplay(out_fileno, "@@@");
-//             $fclose(out_fileno);
-//         end
-//     endtask // task show_final_mem_and_status
+            case (final_status)
+                LOAD_ACCESS_FAULT: $fdisplay(out_fileno, "@@@ System halted on memory error");
+                HALTED_ON_WFI:     $fdisplay(out_fileno, "@@@ System halted on WFI instruction");
+                ILLEGAL_INST:      $fdisplay(out_fileno, "@@@ System halted on illegal instruction");
+                default:           $fdisplay(out_fileno, "@@@ System halted on unknown error code %x", final_status);
+            endcase
+            $fdisplay(out_fileno, "@@@");
+            $fclose(out_fileno);
+        end
+    endtask // task show_final_mem_and_status
 
 
 
@@ -740,10 +742,9 @@ module testbench;
     // mshr
     function void print_mshr();
         $display("\nMSHR");
-        $display("state       | addr           | data           | mem_tag  | store size | is_store |");
+        $display("state                 | addr           | data           | mem_tag  | store size | is_store |");
         $display("%-12s | 0h%08x     | 0h%08x     | %02d       | %02d         | %d",
-            (debug_mshr.state == NONE) ? "NONE" :
-            (debug_mshr.state == WAITING_FOR_LOAD_DATA) ? "WAIT_FOR_LOAD" : "uhh",
+            debug_mshr.state.name(),
             debug_mshr.addr,
             debug_mshr.data,
             debug_mshr.mem_tag,
@@ -780,6 +781,8 @@ module testbench;
     function void dump_state();
         $display("--------------");
         $display("Clock #%02d, NPC: %x, num_dispatched: %02d , num_issued: %02d, num_retired: %02d", clock_count, NPC, debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
+        $display("mem2proc TTag: %02d, DTag: %02d, Data_in: 0h%x", mem2proc_transaction_tag, mem2proc_data_tag, mem2proc_data);
+        $display("CMD: %s (%b), Addr: 0h%05x, Data_out: 0h%x", proc2mem_command.name(), proc2mem_command, proc2mem_addr, proc2mem_data);
         $display("CDB Stall Sig %b", debug_cdb_stall_sig);
         $display("PCs Retired");
         for(int i=0;i<debug_num_retired;i++) begin
@@ -791,6 +794,7 @@ module testbench;
         print_dispatch();
         print_sq();
         print_ld();
+        print_mshr();
         print_rob();
         $display("N is ", `N);
         $display("\nALU Data Ready: %b", debug_alu_done);
