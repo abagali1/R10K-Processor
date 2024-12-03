@@ -14,6 +14,7 @@ module bhr #(
     output logic    [DEPTH-1:0]     out_bhr
 );
     logic [DEPTH-1:0] state, next_state;
+    assign out_bhr = state;
 
     assign next_state = wr_en ? {state[DEPTH-2:0], taken}: state;
 

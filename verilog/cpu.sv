@@ -34,8 +34,9 @@ module cpu (
     output ADDR                                                                                 NPC
 
     `ifdef DEBUG
-    ,   output  logic                   [$clog2(`N+1)-1:0]                                      debug_num_dispatched,
-        output  logic                   [$clog2(`N+1)-1:0]                                      debug_num_retired,
+    ,   output logic                    [`BRANCH_HISTORY_REG_SZ-1:0]                            debug_bhr,
+        output logic                    [$clog2(`N+1)-1:0]                                      debug_num_dispatched,
+        output logic                    [$clog2(`N+1)-1:0]                                      debug_num_retired,
 
         output INST_PACKET              [`INST_BUFF_DEPTH-1:0]                                  debug_inst_buff_entries,
         output logic                    [$clog2(`INST_BUFF_DEPTH)-1:0]                          debug_inst_buff_head,
@@ -284,6 +285,7 @@ module cpu (
     assign dm_stalled = '0;
 
     `ifdef DEBUG
+        assign debug_bhr = out_bhr;
         assign debug_dis_insts = dis_insts;
         assign debug_num_dispatched = num_dis;
         assign debug_num_retired = num_retired;
