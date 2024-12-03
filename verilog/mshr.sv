@@ -16,6 +16,7 @@ module mshr (
     // From memory
     input   MEM_TAG     mem2proc_transaction_tag, // Should be zero unless there is a response
     input   MEM_TAG     mem2proc_data_tag,
+    input   MEM_BLOCK   mem2proc_data,
 
     // To memory
     output  MEM_COMMAND proc2mem_command,
@@ -23,6 +24,7 @@ module mshr (
     // To cache
     output  ADDR        mshr2cache_addr,
     output  DATA        mshr2cache_data,
+    output  MEM_BLOCK   mshr2cache_mem_block,
     output  MEM_SIZE    mshr2cache_st_size,
     output  logic       mshr2cache_is_store,
     output  logic       mshr2cache_wr,
@@ -41,19 +43,29 @@ module mshr (
 
     `ifdef DEBUG
         `ifndef DC
-            always_ff @(posedge clock) begin
+            always @(posedge clock) begin #30;
                 $display("--- mshr inputs ---");
                 $display("valid: %b", valid);
-                $display("in_addr: %d", in_addr);
-                $display("in_data: %d", in_data);
+                $display("in_addr: %x", in_addr);
+                $display("in_data: %x", in_data);
                 $display("st_size: %s", st_size.name());
                 $display("is_store: %d", is_store);
 
                 $display("Dcache_hit: %d", Dcache_hit);
                 $display("mem2proc_transaction_tag: %d", mem2proc_transaction_tag);
                 $display("mem2proc_data_tag: %d", mem2proc_data_tag);
+
+                $display("--- mshr outputs ---");
+                $display("proc2mem_command: %s", proc2mem_command.name());
+                $display("mshr2cache_addr: %x", mshr2cache_addr);
+                $display("mshr2cache_data: %x", mshr2cache_data);
+                $display("mshr2cache_st_size: %s", mshr2cache_st_size.name());
+                $display("mshr2cache_is_store: %d", mshr2cache_is_store);
+                $display("mshr2cache_wr: %d", mshr2cache_wr);
+
+
                 $display("mshr state: %s", mshr.state.name());
-                $display("--- mshr inputs ---");
+                $display("mshr stall: %b", stall);
             end
         `endif
     `endif
@@ -62,6 +74,11 @@ module mshr (
 
     always_comb begin
         next_mshr = mshr;
+        mshr2cache_st_size = '0;
+        mshr2cache_is_store = '0;
+        mshr2cache_addr = '0;
+        mshr2cache_data = '0;
+        mshr2cache_mem_block = '0;
 
         proc2mem_command = MEM_NONE;
         mshr2cache_wr = 0;
@@ -77,19 +94,24 @@ module mshr (
                 next_mshr.is_store = is_store;
                 next_mshr.st_size = st_size;
             end
-        end else begin
-            if (mem2proc_data_tag == mshr.mem_tag && mshr.mem_tag != 0) begin
-                next_mshr = '0;
+        end
+        if(mshr.state == WAITING_FOR_LOAD_DATA) begin
+            if(mem2proc_data_tag == mshr.mem_tag && mshr.mem_tag !=0) begin
+                next_mshr.state = TRANSACTION_COMPLETE;
+                next_mshr.mem_data = mem2proc_data;
+            end
+        end
+        if (mshr.state == TRANSACTION_COMPLETE) begin
+            next_mshr = '0;
+            mshr2cache_wr = 1;
+            mshr2cache_addr = mshr.addr;
+            mshr2cache_mem_block = mshr.mem_data;
 
-                mshr2cache_wr = 1;
-                mshr2cache_addr = mshr.addr;
-
-                if (mshr.is_store) begin
-                    proc2mem_command = MEM_STORE;
-                    mshr2cache_st_size = mshr.st_size;
-                    mshr2cache_is_store = mshr.is_store;
-                    mshr2cache_data = mshr.data;
-                end
+            if (mshr.is_store) begin
+                proc2mem_command = MEM_STORE;
+                mshr2cache_st_size = mshr.st_size;
+                mshr2cache_is_store = mshr.is_store;
+                mshr2cache_data = mshr.data;
             end
         end
 

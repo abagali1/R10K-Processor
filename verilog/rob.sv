@@ -70,6 +70,10 @@ module rob #(
         // We must retire instructions first in order to accept the highest # of incoming instructions
         for (int i = 0; i < N; ++i) begin
             if ((num_entries == DEPTH || ((head+i) % DEPTH) != tail) && entries[(head+i) % DEPTH].complete) begin
+                if (entries[(head + i) % DEPTH].halt && dm_stalled) begin
+                    break;
+                end
+                
                 if(entries[(head + i) % DEPTH].wr_mem) begin
                     if(dm_stalled || start_store == 1) begin
                         break;
