@@ -206,7 +206,7 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack alu addr_calc regfile memDP issue branch_fu decoder sq load_fu mshr dcache counter predictor btb bhr
+MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack alu addr_calc regfile memDP issue branch_fu decoder fetch sq load_fu mshr dcache counter predictor btb bhr
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
 
@@ -286,6 +286,8 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/mult.sv \
 			  verilog/decode.sv \
 			  verilog/decoder.sv \
+			  verilog/fetch.sv \
+			  verilog/icache.sv \
 			  verilog/sq.sv \
 			  verilog/load_fu.sv \
 			  verilog/dcache.sv \
