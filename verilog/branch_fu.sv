@@ -14,7 +14,8 @@ module branch_fu (
 
     output FU_PACKET    fu_pack, // print out all outputs
     output BR_TASK      br_task,
-    output logic        data_ready
+    output logic        data_ready,
+    output logic        br_taken
 
     `ifdef DEBUG
         , ADDR debug_branch_target
@@ -22,6 +23,8 @@ module branch_fu (
 );
     ADDR target, branch_target;
     logic taken, correct;
+
+    assign br_taken = taken;
 
     RS_PACKET out;
 
