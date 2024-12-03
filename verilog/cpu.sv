@@ -144,6 +144,8 @@ module cpu (
     //                                              //
     //////////////////////////////////////////////////
 
+    // output of bhr
+    logic [`BRANCH_HISTORY_REG_SZ-1:0] out_bhr;
 
     // output of ib
     INST_PACKET [`N-1:0] ib_insts;
@@ -254,6 +256,7 @@ module cpu (
     FU_PACKET br_fu_out;
     BR_TASK   br_task;
     logic     br_done;
+    logic     br_taken;
 
     // output of dcache
     MEM_BLOCK Dcache_data_out; // this is for cache hit on a load inst (miss data will come from mshr)
@@ -309,6 +312,15 @@ module cpu (
         assign debug_mshr2cache_wr = mshr2cache_wr;
     `endif
 
+    bhr goop (
+        .clock(clock),
+        .reset(reset),
+
+        .wr_en(br_done),
+        .taken(br_taken),
+        
+        .out_bhr(out_bhr)
+    );
 
     inst_buffer buffet (
         .clock(clock),
@@ -638,7 +650,8 @@ module cpu (
 
         .fu_pack(br_fu_out),
         .br_task(br_task),
-        .data_ready(br_done)
+        .data_ready(br_done),
+        .br_taken(br_taken)
     );
 
     load_fu loud (
