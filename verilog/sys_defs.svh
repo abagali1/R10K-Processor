@@ -37,6 +37,7 @@
 `define ARCH_REG_SZ 32
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
+`define BRANCH_HISTORY_TABLE_SIZE 256
 
 // worry about these later
 `define BRANCH_PRED_SZ 4
@@ -90,7 +91,7 @@ typedef logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] PHYS_REG_IDX;
 // processor will have to account for this effect on mem.
 // Notably, you can no longer write data without first reading.
 // TODO: uncomment this line once you've implemented your cache
-//`define CACHE_MODE
+`define CACHE_MODE
 
 // you are not allowed to change this definition for your final processor
 // the project 3 processor has a massive boost in performance just from having no mem latency
@@ -325,6 +326,13 @@ typedef enum logic [1:0] {
     CLEAR,
     SQUASH
 } BR_TASK;
+
+typedef enum logic [1:0] {
+    STRONG_NT,
+    NT,
+    T,
+    STRONG_T
+} TWO_BIT_COUNTER;
 
 typedef struct packed {
     PHYS_REG_IDX reg_idx;
