@@ -320,7 +320,7 @@ module cpu (
 
         .wr_en(br_done),
         .taken(br_taken),
-        
+
         .out_bhr(out_bhr)
     );
 
@@ -797,7 +797,6 @@ module cpu (
         `endif
     );
 
-    
 
     //////////////////////////////////////////////////
     //                                              //

@@ -26,11 +26,9 @@ module dcache (
     `endif
 );
 
-
-
     // Note: cache tags, not memory tags
-    logic [12-`DCACHE_LINE_BITS:0] current_tag,   last_tag;
-    logic [`DCACHE_LINE_BITS -1:0] current_index, last_index;
+    logic [12-`DCACHE_LINE_BITS:0] current_tag;
+    logic [`DCACHE_LINE_BITS -1:0] current_index;
     logic                          got_mem_data;
     MEM_BLOCK                      wr_cache_data;
     MEM_BLOCK                      rd_cache_data;
@@ -60,17 +58,15 @@ module dcache (
         `ifndef DC
             always @(posedge clock) begin #30;
                 $display("---- d cache inputs ----");
-                $display("  proc2Dcache_addr: %x", proc2Dcache_addr);
+                $display("  proc2Dcache_addr: %x, tag: %b, idx: %b", proc2Dcache_addr, current_tag, current_index);
                 $display("  is_store: %b, st_size: %s, in_data: %x", is_store, st_size.name(), in_data);
-                $display("  mshr2Dcache_wr: %b, mshr2Dcache_mem_block: %x", mshr2Dcache_wr, mshr2Dcache_mem_block);
+                $display("  mshr2Dcache_wr: %b, mshr2Dcache_mem_block: %x, rd_cache_data: %x", mshr2Dcache_wr, mshr2Dcache_mem_block, rd_cache_data);
                 $display("---- d cache outputs ----");
                 $display("  Dcache_ld_out: %b, Dcache_data_out: %x", Dcache_ld_out, Dcache_data_out);
-                $display("  Dcache_hit_out: %b, Dcache_addr_out: %x", Dcache_hit_out, Dcache_addr_out);      
-                $display("-------------------------");
+                $display("  Dcache_hit_out: %b, Dcache_addr_out: %x", Dcache_hit_out, Dcache_addr_out);
             end
         `endif
     `endif
-    
 
     // ---- Addresses and final outputs ---- //
 
@@ -85,15 +81,17 @@ module dcache (
     always_comb begin
         wr_cache_data = (mshr2Dcache_wr) ? mshr2Dcache_mem_block : rd_cache_data;
         Dcache_data_out = '0;
-        if ((Dcache_hit_out || mshr2Dcache_wr) && is_store) begin
-            if (st_size == BYTE) begin
-                wr_cache_data.byte_level[proc2Dcache_addr[2:0]] = in_data;
-            end
-            if (st_size == HALF) begin
-                wr_cache_data.half_level[proc2Dcache_addr[2:1]] = in_data;
-            end
-            if (st_size == WORD) begin
-                wr_cache_data.word_level[proc2Dcache_addr[2]] = in_data;
+        if ((Dcache_hit_out || mshr2Dcache_wr)) begin
+            if(is_store) begin
+                if (st_size == BYTE) begin
+                    wr_cache_data.byte_level[proc2Dcache_addr[2:0]] = in_data;
+                end
+                if (st_size == HALF) begin
+                    wr_cache_data.half_level[proc2Dcache_addr[2:1]] = in_data;
+                end
+                if (st_size == WORD) begin
+                    wr_cache_data.word_level[proc2Dcache_addr[2]] = in_data;
+                end
             end
             Dcache_data_out = wr_cache_data;
         end
