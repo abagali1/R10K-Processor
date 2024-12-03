@@ -252,9 +252,9 @@ module testbench;
     mem memory (
         // Inputs
         .clock            (clock),
-        .proc2mem_command (proc2mem_command),
-        .proc2mem_addr    (proc2mem_addr),
-        .proc2mem_data    (proc2mem_data),
+        .proc2mem_command (MEM_STORE),
+        .proc2mem_addr    (32'h100),
+        .proc2mem_data    (64'h100),
 
         // Outputs
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
@@ -335,6 +335,10 @@ module testbench;
             end
             dump_state();
 
+            $display("mem2proc_transaction_tag: %d", mem2proc_transaction_tag);
+            $display("mem2proc_data_tag: %d", mem2proc_data_tag);
+
+
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count - 1);
             // print_stage(if_inst_dbg,     if_NPC_dbg,     {31'b0,if_valid_dbg});
@@ -387,7 +391,7 @@ module testbench;
                 $fclose(wb_fileno);
 
                 // display the final memory and status
-                //show_final_mem_and_status(error_status);
+                show_final_mem_and_status(error_status);
                 // output the final CPI
                 //output_cpi_file();
 
@@ -436,53 +440,53 @@ module testbench;
     endtask // task output_reg_writeback_and_maybe_halt
 
 
-//     // Task to output the final CPI and # of elapsed clock edges
-//     task output_cpi_file;
-//         real cpi;
-//         begin
-//             cpi = $itor(clock_count) / instr_count; // must convert int to real
-//             cpi_fileno = $fopen(cpi_outfile);
-//             $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
-//                       clock_count, instr_count, cpi);
-//             $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
-//                       clock_count * `CLOCK_PERIOD);
-//             $fclose(cpi_fileno);
-//         end
-//     endtask // task output_cpi_file
+    // // Task to output the final CPI and # of elapsed clock edges
+    // task output_cpi_file;
+    //     real cpi;
+    //     begin
+    //         cpi = $itor(clock_count) / instr_count; // must convert int to real
+    //         cpi_fileno = $fopen(cpi_outfile);
+    //         $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
+    //                   clock_count, instr_count, cpi);
+    //         $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
+    //                   clock_count * `CLOCK_PERIOD);
+    //         $fclose(cpi_fileno);
+    //     end
+    // endtask // task output_cpi_file
 
 
-//     // Show contents of Unified Memory in both hex and decimal
-//     // Also output the final processor status
-//     task show_final_mem_and_status;
-//         input EXCEPTION_CODE final_status;
-//         int showing_data;
-//         begin
-//             $fdisplay(out_fileno, "\nFinal memory state and exit status:\n");
-//             $fdisplay(out_fileno, "@@@ Unified Memory contents hex on left, decimal on right: ");
-//             $fdisplay(out_fileno, "@@@");
-//             showing_data = 0;
-//             for (int k = 0; k <= `MEM_64BIT_LINES - 1; k = k+1) begin
-//                 if (unified_memory[k] != 0) begin
-//                     $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, unified_memory[k],
-//                                                              unified_memory[k]);
-//                     showing_data = 1;
-//                 end else if (showing_data != 0) begin
-//                     $fdisplay(out_fileno, "@@@");
-//                     showing_data = 0;
-//                 end
-//             end
-//             $fdisplay(out_fileno, "@@@");
+    // Show contents of Unified Memory in both hex and decimal
+    // Also output the final processor status
+    task show_final_mem_and_status;
+        input EXCEPTION_CODE final_status;
+        int showing_data;
+        begin
+            $fdisplay(out_fileno, "\nFinal memory state and exit status:\n");
+            $fdisplay(out_fileno, "@@@ Unified Memory contents hex on left, decimal on right: ");
+            $fdisplay(out_fileno, "@@@");
+            showing_data = 0;
+            for (int k = 0; k <= `MEM_64BIT_LINES - 1; k = k+1) begin
+                if (unified_memory[k] != 0) begin
+                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, unified_memory[k],
+                                                             unified_memory[k]);
+                    showing_data = 1;
+                end else if (showing_data != 0) begin
+                    $fdisplay(out_fileno, "@@@");
+                    showing_data = 0;
+                end
+            end
+            $fdisplay(out_fileno, "@@@");
 
-//             case (final_status)
-//                 LOAD_ACCESS_FAULT: $fdisplay(out_fileno, "@@@ System halted on memory error");
-//                 HALTED_ON_WFI:     $fdisplay(out_fileno, "@@@ System halted on WFI instruction");
-//                 ILLEGAL_INST:      $fdisplay(out_fileno, "@@@ System halted on illegal instruction");
-//                 default:           $fdisplay(out_fileno, "@@@ System halted on unknown error code %x", final_status);
-//             endcase
-//             $fdisplay(out_fileno, "@@@");
-//             $fclose(out_fileno);
-//         end
-//     endtask // task show_final_mem_and_status
+            case (final_status)
+                LOAD_ACCESS_FAULT: $fdisplay(out_fileno, "@@@ System halted on memory error");
+                HALTED_ON_WFI:     $fdisplay(out_fileno, "@@@ System halted on WFI instruction");
+                ILLEGAL_INST:      $fdisplay(out_fileno, "@@@ System halted on illegal instruction");
+                default:           $fdisplay(out_fileno, "@@@ System halted on unknown error code %x", final_status);
+            endcase
+            $fdisplay(out_fileno, "@@@");
+            $fclose(out_fileno);
+        end
+    endtask // task show_final_mem_and_status
 
 
 
@@ -738,8 +742,7 @@ module testbench;
         $display("\nMSHR");
         $display("state       | addr           | data           | mem_tag  | store size | is_store |");
         $display("%-12s | 0h%08x     | 0h%08x     | %02d       | %02d         | %d",
-            (debug_mshr.state == NONE) ? "NONE" :
-            (debug_mshr.state == WAITING_FOR_LOAD_DATA) ? "WAIT_FOR_LOAD" : "uhh",
+            debug_mshr.state.name(),
             debug_mshr.addr,
             debug_mshr.data,
             debug_mshr.mem_tag,
@@ -777,6 +780,7 @@ module testbench;
         print_dispatch();
         print_sq();
         print_ld();
+        print_mshr();
         print_rob();
         $display("N is ", `N);
         $display("\nALU Data Ready: %b", debug_alu_done);

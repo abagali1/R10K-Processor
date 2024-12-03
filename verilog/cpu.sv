@@ -459,7 +459,7 @@ module cpu (
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
         .br_tail(cp_out.rob_tail),
         .br_en(br_done & ~br_fu_out.pred_correct),
-        .dm_stalled(dm_stalled),
+        .dm_stalled(mshr_stall),
         .cdb_wr_data(cdb_wr_data),
 
         .retiring_data(retiring_data), // rob entry packet, but want register vals to update architectural map table + free list
@@ -656,7 +656,7 @@ module cpu (
         .rem_br_task(br_task),
         .rem_b_id(br_fu_out.decoded_vals.b_id),
 
-        .dm_stalled(dm_stalled),
+        .dm_stalled(mshr_stall),
         .start_store(start_store),
 
         .cdb_stall(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:`NUM_FU_ALU+`NUM_FU_MULT]),
@@ -719,8 +719,9 @@ module cpu (
     assign st_size = mshr2cache_wr ? mshr2cache_st_size : Dmem_size;
     assign in_data = mshr2cache_wr ? mshr2cache_data : Dmem_store_data;
     assign proc2Dcache_addr = mshr2cache_wr ? mshr2cache_addr : Dmem_addr;
-    assign proc2mem_addr = Dcache_addr_out;
-    assign proc2mem_data = Dcache_data_out;
+    assign proc2mem_addr = 32'h100;
+    assign proc2mem_data = 32'h100;
+    assign proc2mem_command = MEM_STORE;
 
     mshr miss_human_resources (
         .clock(clock),
@@ -736,11 +737,11 @@ module cpu (
         .Dcache_hit(Dcache_hit_out),
 
         // From memory
-        .mem2proc_transaction_tag(mem2proc_transaction_tag), // Should be zero unless there is a response
-        .mem2proc_data_tag(mem2proc_data_tag),
+        .mem2proc_transaction_tag('0), // Should be zero unless there is a response
+        .mem2proc_data_tag('0),
 
         // To memory
-        .proc2mem_command(proc2mem_command),
+        //.proc2mem_command('0),
 
         // To cache
         .mshr2cache_addr(mshr2cache_addr),
@@ -757,7 +758,7 @@ module cpu (
         `endif
     );
 
-    dcache cashay (
+    dcache cash_me_outside (
         .clock(clock),
         .reset(reset),
 
