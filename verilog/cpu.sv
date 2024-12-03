@@ -15,16 +15,17 @@ module cpu (
     input                                                                                       clock, // System clock
     input                                                                                       reset, // System reset
 
-    input INST_PACKET                   [7:0]                                                   in_insts,
-    input logic                         [3:0]                                                   num_input,
+    input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
+    input MEM_BLOCK mem2proc_data,            // Data coming back from memory
+    input MEM_TAG   mem2proc_data_tag,        // Tag for which transaction data is for
 
-    input MEM_TAG                                                                               mem2proc_transaction_tag, // Memory tag for current transaction
-    input MEM_BLOCK                                                                             mem2proc_data,            // Data coming back from memory
-    input MEM_TAG                                                                               mem2proc_data_tag,        // Tag for which transaction data is for
+    output MEM_COMMAND proc2mem_command, // Command sent to memory
+    output ADDR        proc2mem_addr,    // Address sent to memory
+    output MEM_BLOCK   proc2mem_data,    // Data sent to memory
+    output MEM_SIZE    proc2mem_size,    // Data size sent to memory
 
-    output MEM_COMMAND                                                                          proc2mem_command, // Command sent to memory
-    output ADDR                                                                                 proc2mem_addr,    // Address sent to memory
-    output MEM_BLOCK                                                                            proc2mem_data,    // Data sent to memory
+    input INST_PACKET                   [7:0]                               in_insts,
+    input logic                         [3:0]                               num_input,
 
     // Note: these are assigned at the very bottom of the modulo
     output COMMIT_PACKET                [`N-1:0]                                                committed_insts,
@@ -184,6 +185,7 @@ module cpu (
     RS_PACKET    [`SQ_SZ-1:0]           issued_store;
     RS_PACKET                           issued_br;
 
+    MEM_COMMAND prev_proc2mem_command;
 
     // output of ROB
     logic [$clog2(`N+1)-1:0] rob_open, num_retired;
@@ -342,6 +344,32 @@ module cpu (
         .taken(br_taken),
 
         .out_bhr(out_bhr)
+    );
+    
+    assign br_en = (br_task == SQUASH) | (br_task == CLEAR);
+    assign mem_cmd = (fetch_mem_en) ? LOAD : NOTHING;
+    assign mem2proc_transaction_handshake = (prev_proc2mem_command == LOAD) ? 1 : 0;
+
+    always_ff @(posedge clock) begin
+        prev_proc2mem_command = proc2mem_command;
+    end
+
+    fetch rufus (
+        .clock(clock),
+        .reset(reset),
+
+        .target(),
+        .br_en(br_en),
+        .ibuff_open(ib_open),
+        .mem_transaction_tag(mem2proc_transaction_tag),
+        .mem_transaction_handshake(mem2proc_transaction_handshake),
+        .mem_data_tag(mem2proc_data_tag),
+        .mem_data(mem2proc_data),
+
+        .mem_en(fetch_mem_en),
+        .mem_addr(proc2mem_addr),
+        .out_insts(in_insts),
+        .num_insts(num_input)
     );
 
     inst_buffer buffet (

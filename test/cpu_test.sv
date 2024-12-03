@@ -53,6 +53,15 @@ module testbench;
     logic [31:0] clock_count; // also used for terminating infinite loops
     logic [31:0] instr_count;
 
+    MEM_COMMAND proc2mem_command;
+    ADDR        proc2mem_addr;
+    MEM_BLOCK   proc2mem_data;
+    MEM_TAG     mem2proc_transaction_tag;
+    MEM_BLOCK   mem2proc_data;
+    MEM_TAG     mem2proc_data_tag;
+    MEM_SIZE    proc2mem_size;
+
+
     INST_PACKET   [7:0] in_insts;
     logic         [3:0] num_input;
 
@@ -62,7 +71,6 @@ module testbench;
     COMMIT_PACKET [`N-1:0] committed_insts;
 
     ROB_PACKET [`N-1:0] retired_insts;
-
 
     // DECODED_PACKET [`N-1:0] dis_insts;
 
@@ -279,12 +287,16 @@ module testbench;
         `endif
     );
 
-    mem mem (
+    // Instantiate the Data Memory
+    mem memory (
         // Inputs
         .clock            (clock),
+        .proc2mem_command (proc2mem_command),
         .proc2mem_addr    (proc2mem_addr),
         .proc2mem_data    (proc2mem_data),
-        .proc2mem_command (proc2mem_command),
+`ifndef CACHE_MODE
+        .proc2mem_size    (proc2mem_size),
+`endif
 
         // Outputs
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
@@ -331,8 +343,7 @@ module testbench;
 
         $display("  %16t : Loading Unified Memory", $realtime);
         // load the compiled program's hex data into the memory module
-        $readmemh(program_memory_file, unified_memory);
-        $readmemh(program_memory_file, mem.unified_memory);
+        $readmemh(program_memory_file, memory.unified_memory);
         @(posedge clock);
         @(posedge clock);
         #1; // This reset is at an odd time to avoid the pos & neg clock edges
@@ -360,6 +371,7 @@ module testbench;
             // Count the number of cycles and number of instructions committed
             clock_count = 0;
             instr_count = 0;
+            inst_mem_count = 0;
         end else begin
             #2; // wait a short time to avoid a clock edge
             clock_count = clock_count + 1;
@@ -384,27 +396,31 @@ module testbench;
             // print_membus({30'b0,proc2mem_command}, proc2mem_addr[31:0],
             //              proc2mem_data[63:32], proc2mem_data[31:0]);
 
-            num_input = 0;
-            for (int i = 0; i < ib_open; i++) begin
-                current = NPC + i * 4;
+            // num_input = 0;
+            // for (int i = 0; i < ib_open; i++) begin
+            //     current = NPC + i * 4;
 
-                block = unified_memory[current[31:3]];
-                in_insts[i].inst = block.word_level[current[2]];
+            //     block = unified_memory[current[31:3]];
+            //     in_insts[i].inst = block.word_level[current[2]];
+                
+            //     if (in_insts[i].inst) begin
+            //         in_insts[i].valid = 1;
+            //         in_insts[i].PC = current;
+            //         in_insts[i].NPC = current + 4;
+            //         in_insts[i].pred_taken = 0;
+            //         num_input++;
+            //     end else begin
+            //         in_insts[i].valid = 0;
+            //     end
 
-                in_insts[i].valid = 1;
-                in_insts[i].PC = current;
-                in_insts[i].NPC = current + 4;
-                in_insts[i].pred_taken = 0;
-                num_input++;
+            //     // $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
 
-                // $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
-
-                // if (in_insts[i].inst == 32'h10500073) begin
-                //     $display("halting...");
-                //     error_status = NO_ERROR;
-                //     #200 $finish;
-                // end
-            end
+            //     // if (in_insts[i].inst == 32'h10500073) begin
+            //     //     $display("halting...");
+            //     //     error_status = NO_ERROR;
+            //     //     #200 $finish;
+            //     // end
+            // end
 
             //print_custom_data();
 
