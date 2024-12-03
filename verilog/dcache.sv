@@ -26,6 +26,8 @@ module dcache (
     `endif
 );
 
+
+
     // Note: cache tags, not memory tags
     logic [12-`DCACHE_LINE_BITS:0] current_tag,   last_tag;
     logic [`DCACHE_LINE_BITS -1:0] current_index, last_index;
@@ -53,6 +55,21 @@ module dcache (
         .waddr(current_index),
         .wdata(wr_cache_data)
     );
+
+    `ifdef DEBUG
+        `ifndef DC
+            always_ff @(posedge clock) begin
+                $display("---- d cache inputs ----");
+                $display("  proc2Dcache_addr: %x", proc2Dcache_addr);
+                $display("  is_store: %b, st_size: %s, in_data: %x", is_store, st_size.name(), in_data);
+                $display("  mshr2Dcache_wr: %b, mem2Dcache_data: %x", mshr2Dcache_wr, mem2Dcache_data);
+                $display("---- d cache outputs ----");
+                $display("  Dcache_ld_out: %b, Dcache_data_out: %x", Dcache_ld_out, Dcache_data_out);
+                $display("  Dcache_hit_out: %b, Dcache_addr_out: %x", Dcache_hit_out, Dcache_addr_out);      
+                $display("-------------------------");
+            end
+        `endif
+    `endif
     
 
     // ---- Addresses and final outputs ---- //
@@ -66,7 +83,7 @@ module dcache (
     assign Dcache_addr_out = {proc2Dcache_addr[31:3], 3'b0};
 
     always_comb begin
-        Dcache_data_out = (mshr2Dcache_wr) ? mem2Dcache_data : rd_cache_data;
+        wr_cache_data = (mshr2Dcache_wr) ? mem2Dcache_data : rd_cache_data;
         if ((Dcache_hit_out || mshr2Dcache_wr) && is_store) begin
             if (st_size == BYTE) begin
                 wr_cache_data.byte_level[proc2Dcache_addr[2:0]] = in_data;

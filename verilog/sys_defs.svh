@@ -369,6 +369,7 @@ typedef struct packed {
 typedef enum logic [1:0] { 
     NONE = 0,
     WAITING_FOR_LOAD_DATA = 1
+    //STORING = 2
 } MSHR_STATE;
 
 typedef struct packed {
