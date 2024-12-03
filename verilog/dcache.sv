@@ -6,14 +6,14 @@ module dcache (
     input clock,
     input reset,
 
-    input ADDR proc2Dcache_addr,
+    input ADDR      proc2Dcache_addr,
 
     input logic     is_store,
     input MEM_SIZE  st_size,
     input DATA      in_data,
 
     input logic     mshr2Dcache_wr,
-    input MEM_BLOCK mem2Dcache_data,
+    input MEM_BLOCK mshr2Dcache_mem_block,
 
     // To load unit stage
     output logic     Dcache_ld_out,
@@ -51,18 +51,18 @@ module dcache (
         .re   (1'b1),
         .raddr(current_index),
         .rdata(rd_cache_data),
-        .we   (mshr2Dcache_wr || ((Dcache_hit_out || mshr2Dcache_wr) && is_store)),
+        .we   (mshr2Dcache_wr || (Dcache_hit_out && is_store)),
         .waddr(current_index),
         .wdata(wr_cache_data)
     );
 
     `ifdef DEBUG
         `ifndef DC
-            always_ff @(posedge clock) begin
+            always @(posedge clock) begin #30;
                 $display("---- d cache inputs ----");
                 $display("  proc2Dcache_addr: %x", proc2Dcache_addr);
                 $display("  is_store: %b, st_size: %s, in_data: %x", is_store, st_size.name(), in_data);
-                $display("  mshr2Dcache_wr: %b, mem2Dcache_data: %x", mshr2Dcache_wr, mem2Dcache_data);
+                $display("  mshr2Dcache_wr: %b, mshr2Dcache_mem_block: %x", mshr2Dcache_wr, mshr2Dcache_mem_block);
                 $display("---- d cache outputs ----");
                 $display("  Dcache_ld_out: %b, Dcache_data_out: %x", Dcache_ld_out, Dcache_data_out);
                 $display("  Dcache_hit_out: %b, Dcache_addr_out: %x", Dcache_hit_out, Dcache_addr_out);      
@@ -83,7 +83,8 @@ module dcache (
     assign Dcache_addr_out = {proc2Dcache_addr[31:3], 3'b0};
 
     always_comb begin
-        wr_cache_data = (mshr2Dcache_wr) ? mem2Dcache_data : rd_cache_data;
+        wr_cache_data = (mshr2Dcache_wr) ? mshr2Dcache_mem_block : rd_cache_data;
+        Dcache_data_out = '0;
         if ((Dcache_hit_out || mshr2Dcache_wr) && is_store) begin
             if (st_size == BYTE) begin
                 wr_cache_data.byte_level[proc2Dcache_addr[2:0]] = in_data;

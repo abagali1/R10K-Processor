@@ -18,13 +18,13 @@ module cpu (
     input INST_PACKET                   [7:0]                                                   in_insts,
     input logic                         [3:0]                                                   num_input,
 
-    input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
-    input MEM_BLOCK mem2proc_data,            // Data coming back from memory
-    input MEM_TAG   mem2proc_data_tag,        // Tag for which transaction data is for
+    input MEM_TAG                                                                               mem2proc_transaction_tag, // Memory tag for current transaction
+    input MEM_BLOCK                                                                             mem2proc_data,            // Data coming back from memory
+    input MEM_TAG                                                                               mem2proc_data_tag,        // Tag for which transaction data is for
 
-    output MEM_COMMAND proc2mem_command, // Command sent to memory
-    output ADDR        proc2mem_addr,    // Address sent to memory
-    output MEM_BLOCK   proc2mem_data,    // Data sent to memory
+    output MEM_COMMAND                                                                          proc2mem_command, // Command sent to memory
+    output ADDR                                                                                 proc2mem_addr,    // Address sent to memory
+    output MEM_BLOCK                                                                            proc2mem_data,    // Data sent to memory
 
     // Note: these are assigned at the very bottom of the modulo
     output COMMIT_PACKET                [`N-1:0]                                                committed_insts,
@@ -269,6 +269,7 @@ module cpu (
     // output of mshr
     ADDR        mshr2cache_addr;
     DATA        mshr2cache_data;
+    MEM_BLOCK   mshr2cache_mem_block;
     MEM_SIZE    mshr2cache_st_size;
     logic       mshr2cache_is_store;
     logic       mshr2cache_wr;
@@ -303,7 +304,6 @@ module cpu (
 
         assign debug_ld_rd_en = ld_rd_en;
 
-        assign debug_Dcache_data_out = Dcache_data_out;
         assign debug_Dcache_addr_out = Dcache_addr_out;
         assign debug_Dcache_ld_out = Dcache_ld_out;
         assign debug_mshr2cache_wr = mshr2cache_wr;
@@ -738,6 +738,7 @@ module cpu (
         // From memory
         .mem2proc_transaction_tag(mem2proc_transaction_tag), // Should be zero unless there is a response
         .mem2proc_data_tag(mem2proc_data_tag),
+        .mem2proc_data(mem2proc_data),
 
         // To memory
         .proc2mem_command(proc2mem_command),
@@ -745,6 +746,7 @@ module cpu (
         // To cache
         .mshr2cache_addr(mshr2cache_addr),
         .mshr2cache_data(mshr2cache_data),
+        .mshr2cache_mem_block(mshr2cache_mem_block),
         .mshr2cache_st_size(mshr2cache_st_size),
         .mshr2cache_is_store(mshr2cache_is_store),
         .mshr2cache_wr(mshr2cache_wr),
@@ -768,7 +770,7 @@ module cpu (
         .in_data(in_data),
 
         .mshr2Dcache_wr(mshr2cache_wr),
-        .mem2Dcache_data(mem2proc_data),
+        .mshr2Dcache_mem_block(mshr2cache_mem_block),
 
         // To load unit stage
         .Dcache_ld_out(Dcache_ld_out),
@@ -835,7 +837,7 @@ module cpu (
         `ifndef DC
             int cycle = 0;
             always @(posedge clock) begin
-                $display("====================== CPU ======================");
+                $display("\n====================== CPU ======================");
                 $display("@@@ Cycle %0d @@@", cycle);
                 $display("Time: %0t", $time);
                 cycle++;
