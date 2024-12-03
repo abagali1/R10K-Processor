@@ -75,7 +75,7 @@ module cpu (
         output logic                    [`NUM_FUS_CDB-1:0]                                      debug_cdb_gnt,
         output logic                    [`N-1:0][`NUM_FUS_CDB-1:0]                              debug_cdb_gnt_bus,
         output logic                    [`NUM_FUS_CDB-1:0]                                      debug_cdb_fu_done,
-        output logic                    [`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:0]                   debug_cdb_stall_sig,
+        output logic                    [`NUM_FUS_CDB-1:0]                                      debug_cdb_stall_sig,
 
         output logic                    [`NUM_FU_ALU-1:0]                                       debug_alu_done,
         output logic                    [`NUM_FU_MULT-1:0]                                      debug_mult_done,
@@ -455,7 +455,6 @@ module cpu (
 
         .complete_t(cdb_p_reg_idx), // comes from the CDB
         .store_complete_t(issued_store_t),
-        .br_complete_t(br_fu_out.decoded_vals.t.reg_idx),
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
         .br_tail(cp_out.rob_tail),
         .br_en(br_done & ~br_fu_out.pred_correct),
@@ -480,8 +479,8 @@ module cpu (
     cdb cbd (
         .clock(clock),
         .reset(reset),
-        .fu_done({ld_done, mult_done, alu_done}),
-        .wr_data({ld_fu_out, mult_fu_out, alu_fu_out}),
+        .fu_done({br_done, ld_done, mult_done, alu_done}),
+        .wr_data({br_fu_out, ld_fu_out, mult_fu_out, alu_fu_out}),
         .entries(cdb_entries),
         .stall_sig(cdb_stall_sig)
 
@@ -492,7 +491,7 @@ module cpu (
     );
 
     `ifdef DEBUG
-        assign debug_cdb_fu_done = {ld_done, mult_done, alu_done};
+        assign debug_cdb_fu_done = {br_done, ld_done, mult_done, alu_done};
     `endif
 
     br_stack pancake (
