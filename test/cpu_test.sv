@@ -249,12 +249,12 @@ module testbench;
         `endif
     );
 
-    mem memory (
+    mem mem (
         // Inputs
         .clock            (clock),
-        .proc2mem_command (MEM_STORE),
-        .proc2mem_addr    (32'h100),
-        .proc2mem_data    (64'h100),
+        .proc2mem_command (proc2mem_command),
+        .proc2mem_addr    (proc2mem_addr),
+        .proc2mem_data    (proc2mem_data),
 
         // Outputs
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
@@ -301,6 +301,7 @@ module testbench;
         $display("  %16t : Loading Unified Memory", $realtime);
         // load the compiled program's hex data into the memory module
         $readmemh(program_memory_file, unified_memory);
+        $readmemh(program_memory_file, mem.unified_memory);
         @(posedge clock);
         @(posedge clock);
         #1; // This reset is at an odd time to avoid the pos & neg clock edges
@@ -335,14 +336,11 @@ module testbench;
             end
             dump_state();
 
-            $display("mem2proc_transaction_tag: %d", mem2proc_transaction_tag);
-            $display("mem2proc_data_tag: %d", mem2proc_data_tag);
-
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count - 1);
             // print_stage(if_inst_dbg,     if_NPC_dbg,     {31'b0,if_valid_dbg});
-            // print_stage(if_id_inst_dbg,  if_id_NPC_dbg,  {31'b0,if_id_valid_dbg});
+            // print_stage(if_id_inst_dbg,  if_id_NPC_dbg,  {31'b0,if_id_valid_dbg});   
             // print_stage(id_ex_inst_dbg,  id_ex_NPC_dbg,  {31'b0,id_ex_valid_dbg});
             // print_stage(ex_mem_inst_dbg, ex_mem_NPC_dbg, {31'b0,ex_mem_valid_dbg});
             // print_stage(mem_wb_inst_dbg, mem_wb_NPC_dbg, {31'b0,mem_wb_valid_dbg});
@@ -414,7 +412,7 @@ module testbench;
                 instr_count = instr_count + 1;
 
                 pc = committed_insts[n].NPC - 4;
-                block = unified_memory[pc[31:3]];
+                block = mem.unified_memory[pc[31:3]];
                 inst = block.word_level[pc[2]];
                 // print the committed instructions to the writeback output file
                 if (committed_insts[n].reg_idx == `ZERO_REG) begin
@@ -466,9 +464,9 @@ module testbench;
             $fdisplay(out_fileno, "@@@");
             showing_data = 0;
             for (int k = 0; k <= `MEM_64BIT_LINES - 1; k = k+1) begin
-                if (unified_memory[k] != 0) begin
-                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, unified_memory[k],
-                                                             unified_memory[k]);
+                if (mem.unified_memory[k] != 0) begin
+                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, mem.unified_memory[k],
+                                                             mem.unified_memory[k]);
                     showing_data = 1;
                 end else if (showing_data != 0) begin
                     $fdisplay(out_fileno, "@@@");
