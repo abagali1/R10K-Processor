@@ -252,9 +252,9 @@ module testbench;
     mem mem (
         // Inputs
         .clock            (clock),
-        .proc2mem_command (proc2mem_command),
         .proc2mem_addr    (proc2mem_addr),
         .proc2mem_data    (proc2mem_data),
+        .proc2mem_command (proc2mem_command),
 
         // Outputs
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
@@ -738,7 +738,7 @@ module testbench;
     // mshr
     function void print_mshr();
         $display("\nMSHR");
-        $display("state       | addr           | data           | mem_tag  | store size | is_store |");
+        $display("state                 | addr           | data           | mem_tag  | store size | is_store |");
         $display("%-12s | 0h%08x     | 0h%08x     | %02d       | %02d         | %d",
             debug_mshr.state.name(),
             debug_mshr.addr,
@@ -767,6 +767,8 @@ module testbench;
     function void dump_state();
         $display("--------------");
         $display("Clock #%02d, NPC: %x, num_dispatched: %02d , num_issued: %02d, num_retired: %02d", clock_count, NPC, debug_num_dispatched, $countones(debug_rs_all_issued_insts), debug_num_retired);
+        $display("mem2proc TTag: %02d, DTag: %02d, Data_in: 0h%x", mem2proc_transaction_tag, mem2proc_data_tag, mem2proc_data);
+        $display("CMD: %s (%b), Addr: 0h%05x, Data_out: 0h%x", proc2mem_command.name(), proc2mem_command, proc2mem_addr, proc2mem_data);
         $display("CDB Stall Sig %b", debug_cdb_stall_sig);
         $display("PCs Retired");
         for(int i=0;i<debug_num_retired;i++) begin
