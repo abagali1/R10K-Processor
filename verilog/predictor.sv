@@ -1,37 +1,42 @@
 `include "sys_defs.svh"
 `include "ISA.svh"
 `include "counter.sv"
+`include "btb.sv"
 
 module predictor #(
-    parameter DEPTH = `BRANCH_HISTORY_TABLE_SIZE
+    parameter BHR_DEPTH = `BRANCH_HISTORY_REG_SZ,
+    parameter BHT_DEPTH = `BRANCH_HISTORY_TABLE_SIZE
 )
 (
-    input               clock, 
-    input               reset,
+    input                                   clock, 
+    input                                   reset,
 
-    input ADDR                              rd_pc,
-    input logic     [$clog2(DEPTH)-1:0]     rd_bhr,
+    input ADDR                              rd_pc, // pc of current branch
+    input logic     [BHR_DEPTH-1:0]         rd_bhr, // current branch history register
 
-    input logic                             wr_en,
-    input logic                             wr_taken,
-    input logic     [$clog2(DEPTH)-1:0]     wr_index,
+    input logic                             wr_en, // enabled when a branch gets resolved to update predictor
+    input logic                             wr_taken, // true if resolved branch is taken
+    input ADDR                              wr_target, // target address of a branch
+    input ADDR                              wr_pc, // pc of the branch instruction
+    input logic     [BHR_DEPTH-1:0]         wr_bhr, // branch history register of this instruction when predicted
 
-    output logic    [$clog2(DEPTH)-1:0]     out_index,
-    output logic                            pred
+    output logic                            pred_taken, // true if predictor predicts branch is taken
+    output ADDR                             pred_target // predicted target address
 );
-    localparam LOG_DEPTH = $clog2(DEPTH);
+    logic is_branch;
 
+    logic [BHR_DEPTH-1:0] rd_index, wr_index;
 
-    assign rd_index = rd_pc[LOG_DEPTH-1:0] ^ rd_bhr;
-    assign out_index = rd_index;
+    assign rd_index = rd_pc[BHR_DEPTH-1:0] ^ rd_bhr;
+    assign wr_index = wr_pc[BHR_DEPTH-1:0] ^ wr_bhr;
 
-    logic [DEPTH-1:0] bht_taken;
-    logic [DEPTH-1:0] bht_wr_en;
-    logic [DEPTH-1:0] bht_pred;
+    logic [BHT_DEPTH-1:0] bht_taken;
+    logic [BHT_DEPTH-1:0] bht_wr_en;
+    logic [BHT_DEPTH-1:0] bht_pred;
     
     generate
         genvar i;
-        for (i = 0; i < DEPTH; i++) begin
+        for (i = 0; i < BHT_DEPTH; i++) begin
             counter i_bht (
                 .clock(clock),
                 .reset(reset),
@@ -42,7 +47,18 @@ module predictor #(
         end
     endgenerate
 
-    assign pred = bht_pred[rd_index];
+    btb bibibop (
+        .clock(clock),
+        .reset(reset),
+        .rd_pc(rd_pc),
+        .wr_en(wr_en),
+        .wr_pc(wr_pc),
+        .wr_target(wr_target),
+        .is_branch(is_branch),
+        .pred_target(pred_target)
+    );
+
+    assign pred_taken = is_branch ? bht_pred[rd_index] : 0;
 
     always_comb begin
         bht_taken = '0;
