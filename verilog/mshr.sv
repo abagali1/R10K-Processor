@@ -4,6 +4,7 @@ module mshr (
     input               clock,
     input               reset,
 
+    input   logic       valid,
     input   ADDR        in_addr,
     input   DATA        in_data,
     input   MEM_SIZE    st_size,
@@ -37,16 +38,36 @@ module mshr (
     MSHR mshr, next_mshr;
 
     assign stall = (mshr.state != NONE);
-    assign mshr2cache_wr = mshr.state == WAITING_FOR_LOAD_DATA && mshr.mem_tag !=0 && mem2proc_data_tag == mshr.mem_tag;
+
+    `ifdef DEBUG
+        `ifndef DC
+            always_ff @(posedge clock) begin
+                $display("--- mshr inputs ---");
+                $display("valid: %b", valid);
+                $display("in_addr: %d", in_addr);
+                $display("in_data: %d", in_data);
+                $display("st_size: %s", st_size.name());
+                $display("is_store: %d", is_store);
+
+                $display("Dcache_hit: %d", Dcache_hit);
+                $display("mem2proc_transaction_tag: %d", mem2proc_transaction_tag);
+                $display("mem2proc_data_tag: %d", mem2proc_data_tag);
+                $display("mshr state: %s", mshr.state.name());
+                $display("--- mshr inputs ---");
+            end
+        `endif
+    `endif
+
+    //assign mshr2cache_wr = mshr.state == WAITING_FOR_LOAD_DATA;// && mshr.mem_tag !=0 && mem2proc_data_tag == mshr.mem_tag;
 
     always_comb begin
         next_mshr = mshr;
 
         proc2mem_command = MEM_NONE;
-        // mshr2cache_wr = 0;
+        mshr2cache_wr = 0;
 
         if (mshr.state == NONE) begin
-            if (!Dcache_hit) begin // make request directly to cashay and see what she says
+            if (!Dcache_hit && valid) begin // make request directly to cashay and see what she says
                 proc2mem_command = MEM_LOAD;
 
                 next_mshr.state = WAITING_FOR_LOAD_DATA;
@@ -60,7 +81,7 @@ module mshr (
             if (mem2proc_data_tag == mshr.mem_tag && mshr.mem_tag != 0) begin
                 next_mshr = '0;
 
-                // mshr2cache_wr = 1;
+                mshr2cache_wr = 1;
                 mshr2cache_addr = mshr.addr;
 
                 if (mshr.is_store) begin
@@ -80,7 +101,7 @@ module mshr (
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            mshr <= next_mshr;
+            mshr <= '0;
         end else begin
             mshr <= next_mshr;
         end

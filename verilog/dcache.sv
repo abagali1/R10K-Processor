@@ -63,10 +63,10 @@ module dcache (
                               (dcache_tags[current_index].tags == current_tag);
 
     assign Dcache_ld_out = (Dcache_hit_out && !is_store) || (mshr2Dcache_wr && !is_store); 
+    assign Dcache_addr_out = {proc2Dcache_addr[31:3], 3'b0};
 
     always_comb begin
         Dcache_data_out = (mshr2Dcache_wr) ? mem2Dcache_data : rd_cache_data;
-        Dcache_addr_out = {proc2Dcache_addr[31:3], 3'b0};
         if ((Dcache_hit_out || mshr2Dcache_wr) && is_store) begin
             if (st_size == BYTE) begin
                 wr_cache_data.byte_level[proc2Dcache_addr[2:0]] = in_data;

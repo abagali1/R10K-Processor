@@ -273,6 +273,7 @@ module cpu (
     logic       mshr2cache_is_store;
     logic       mshr2cache_wr;
     logic       mshr_stall;
+    logic       valid_mem_inst;
 
 
     // hardcoded values
@@ -712,6 +713,7 @@ module cpu (
     //                                              //
     //////////////////////////////////////////////////
 
+    assign valid_mem_inst = start_store || start_load;
     assign Dmem_addr = start_store ? Dmem_st_addr : Dmem_ld_addr;
     assign is_store = mshr2cache_wr ? mshr2cache_is_store : start_store;
     assign st_size = mshr2cache_wr ? mshr2cache_st_size : Dmem_size;
@@ -724,6 +726,7 @@ module cpu (
         .clock(clock),
         .reset(reset),
 
+        .valid(valid_mem_inst),
         .in_addr(Dmem_addr),
         .in_data(Dmem_store_data),
         .st_size(Dmem_size),
