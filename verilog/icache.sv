@@ -44,6 +44,8 @@ module icache (
 
     // From fetch stage
     input ADDR proc2Icache_addr,
+    input logic write_en,
+    input MEM_BLOCK write_data,
 
     // To memory
     output MEM_COMMAND proc2Imem_command,
@@ -51,7 +53,8 @@ module icache (
 
     // To fetch stage
     output MEM_BLOCK Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     Icache_valid_out // When valid is high
+    output logic     Icache_valid_out, // When valid is high
+    output ADDR      next_invalid_line
 );
 
     // Note: cache tags, not memory tags
@@ -63,6 +66,11 @@ module icache (
     // ---- Cache data ---- //
 
     ICACHE_TAG [`ICACHE_LINES-1:0] icache_tags;
+
+    // needed for next_invalid_line
+    logic [`ICACHE_LINE_BITS-1:0] next_invalid_index;
+    logic [12-`ICACHE_LINE_BITS:0] next_invalid_tag;
+    logic found_invalid;
 
     memDP #(
         .WIDTH     ($bits(MEM_BLOCK)),
@@ -114,6 +122,38 @@ module icache (
     // Keep sending memory requests until we receive a response tag or change addresses
     assign proc2Imem_command = (miss_outstanding && !changed_addr) ? MEM_LOAD : MEM_NONE;
     assign proc2Imem_addr    = {proc2Icache_addr[31:3],3'b0};
+
+    // find next_invalid line logic
+    always_comb begin
+        found_invalid = 0;
+        next_invalid_index = current_index;
+        next_invalid_tag = current_tag;
+
+        // start the search from the current index
+        for (int i = 0; i < `ICACHE_LINES && !found_invalid; i++) begin
+            logic [`ICACHE_LINE_BITS-1:0] search_index;
+            search_index = (current_index + i) % `ICACHE_LINES;
+            
+            if (!icache_tags[search_index].valid) begin
+                found_invalid = 1;
+                next_invalid_index = search_index;
+                // Keep same tag if in same block, otherwise increment
+                if (search_index < current_index)
+                    next_invalid_tag = current_tag + 1;
+                else
+                    next_invalid_tag = current_tag;
+            end
+        end
+
+        // If no invalid lines found, point to next block in cache
+        if (!found_invalid) begin
+            next_invalid_index = current_index;
+            next_invalid_tag = current_tag + 1;
+        end
+    end
+
+    assign next_invalid_line = {next_invalid_tag, next_invalid_index, 3'b0};
+
 
     // ---- Cache state registers ---- //
 

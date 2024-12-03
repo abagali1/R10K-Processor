@@ -1,4 +1,5 @@
 `include "sys_defs.svh"
+`include "icache.sv"
 
 module fetch #(
     parameter N = `N,
@@ -31,12 +32,22 @@ module fetch #(
 
     // 16 possible transaction tags from memory (1 based indexing as 0 is unused)
     ADDR [`NUM_MEM_TAGS-1:0] mshr_data, next_mshr_data;
-    logic [`NUM_MEM_TAGS-1:0] mshr_valid, next_mshr_valid, 
+    logic [`NUM_MEM_TAGS-1:0] mshr_valid, next_mshr_valid;
     
     ADDR next_mem_addr, cache_target, prefetch_target, prev_prefetch_target;
-    DATA cache_write_data;
+    MEM_BLOCK cache_write_data, cache_read_data;
     logic cache_write_en;
     logic mem_transaction_started;
+
+    MEM_BLOCK Icache_data_out;
+    logic     Icache_valid_out; 
+    ADDR      next_invalid_line;
+
+    logic icache_valid;
+
+    logic valid_insts;
+    logic insts_to_return;
+    
 
     assign mshr_full = &next_mshr_valid;
     assign mem_en = ~mshr_full & ~icache_valid;
@@ -76,66 +87,144 @@ module fetch #(
             next_mshr_valid[mem_transaction_tag] = 1;
         end
 
+
+        // TODO: so this needs to be kept to coalesce the mshr val with the icache vals
+        // but we need to return min(ibuff_open, valid icache insts) from icache
+        // so presumably this has to come first. 
+
         // perform coalescing logic
-        // TODO rohan -- this 1:0 type notation prob isn't right if target is odd
+        // a few cases:
+
+        // case: new memory data from mshr (indicated by cache_write_en)
         if (cache_write_en) begin
-            next_out_insts[1:0] = cache_write_data;
-            if (cache_valid) begin
-                next_out_insts[3:0] = cache_read_data;
-            end
-        end else if (cache_valid) begin
-            next_out_insts[1:0] = cache_read_data;
-        end
-    end
-
-    MEM_BLOCK mshr_data_current;
-    MEM_BLOCK cache_data_current;
-
-    // construct out_insts
-    always_comb begin
-        // Q: how to coalesce data exiting the mshr with cache hits?
-        // this is an issue because inst buffer needs to be in-order (i think)
-        // could only push ready data, and only advance prefetch target to the first non-ready instruction
-            // might necessitate refetching from cache? waste of ports but otherwise we'd need a large intermed storage solution
-
-        next_out_insts = '0;
-        next_num_insts = '0;
-        if (ibuff_open) begin
-            // grab mshr data
-            for (int i = 0; i < 2 && next_num_insts < N; i++) begin
-                if (mshr_valid_insts[i]) begin
-                    next_out_insts[next_num_insts].inst = mshr_data_current.word_level[i];
-                    next_out_insts[next_num_insts].PC = mshr_addr + (i * 4);
-                    next_out_insts[next_num_insts].valid = 1'b1;
-                    next_num_insts = next_num_insts + 1;
-                end
-            end
-
-            // grab cache data if we need more data?
-            if (next_num_insts < N && icache_valid) begin
-                for (int i = 0; i < 2 && next_num_insts < N; i++) begin
-                    if (cache_valid_insts[i]) begin
-                        next_out_insts[next_num_insts].inst = icache_out.word_level[i];
-                        next_out_insts[next_num_insts].PC = cache_addr + (i * 4);
-                        next_out_insts[next_num_insts].valid = 1'b1;
-                        next_num_insts = next_num_insts + 1;
+            if (ibuff_open) begin
+                // iterate through 4 potential returns
+                for (int i = 0; i < 4; i++) begin
+                    ADDR current = target + i * 4;
+                    // if the address is in the same block as cache_target
+                    if (current[31:3] == cache_target[31:3]) begin
+                        next_out_insts[i].inst = cache_write_data.word_level[current[2]];
+                        if (next_out_insts[i].inst) begin
+                            next_out_insts[i].valid = 1'b1;
+                            next_out_insts[i].PC = current;
+                            next_out_insts[i].NPC = current + 4;
+                            next_out_insts[i].pred_taken = 1'b0;
+                            next_num_insts = next_num_insts + 1;
+                        end
+                    end
+                    // Check if this address hits in the cache
+                    else if (icache_valid && current[31:3] == cache_target[31:3]) begin
+                        next_out_insts[i].inst = cache_read_data.word_level[current[2]];
+                        if (next_out_insts[i].inst) begin
+                            next_out_insts[i].valid = 1'b1;
+                            next_out_insts[i].PC = current;
+                            next_out_insts[i].NPC = current + 4;
+                            next_out_insts[i].pred_taken = 1'b0;
+                            next_num_insts = next_num_insts + 1;
+                        end
                     end
                 end
             end
+        end 
+        // case: cache hit
+        else if (icache_valid) begin
+            // cache hit handling
+            for (int i = 0; i < 4; i++) begin
+                ADDR current = target + i * 4;
+                // same block
+                if (current[31:3] == cache_target[31:3]) begin
+                    next_out_insts[i].inst = cache_read_data.word_level[current[2]];
+                    // if (next_out_insts[i].inst) begin
+                    //     next_out_insts[i].valid = 1'b1;
+                    //     next_out_insts[i].PC = current;
+                    //     next_out_insts[i].NPC = current + 4;
+                    //     next_out_insts[i].pred_taken = 1'b0;
+                    //     next_num_insts = next_num_insts + 1;
+                    // end
+                end
+            end
         end
+
+
+
+
+        // RETURN LOGIC TO RETURN MIN(IBUFF, VALID INSTS IN CACHE)
+
+        // counts valid instructions in current cache line
+        valid_insts = '0;
+        for (int i = 0; i < 4; i++) begin
+            logic adr = target + (i * 4);
+            if (icache_valid && (adr[31:3] == cache_target[31:3] && cache_read_data.word_level[i][31:0] != '0)) begin
+                valid_insts = valid_insts + 1;
+            end
+        end
+
+        insts_to_return = (valid_insts < ibuff_open) ? valid_insts : ibuff_open;
+
+        // output instructions up to the calculated limit
+        next_num_insts = '0;
+        for (int i = 0; i < 4 && next_num_insts < insts_to_return; i++) begin
+            ADDR current = target + (i * 4);
+            if (icache_valid && current[31:3] == cache_target[31:3]) begin
+                next_out_insts[next_num_insts].inst = cache_read_data.word_level[current[2]];
+                if (next_out_insts[next_num_insts].inst != '0) begin
+                    next_out_insts[next_num_insts].valid = 1'b1;
+                    next_out_insts[next_num_insts].PC = current;
+                    next_out_insts[next_num_insts].NPC = current + 4;
+                    next_out_insts[next_num_insts].pred_taken = 1'b0;
+                    next_num_insts = next_num_insts + 1;
+                end
+            end
+        end
+
+        // Update prefetch target to next invalid line from icache
+        prefetch_target = next_invalid_line;
     end
 
-    // icache icache_0 (
-    //     // inputs
-    //     .clock                      (clock),
-    //     .reset                      (reset),
-    //     .proc2Icache_addr           (cache_target),
-    //     .write_en                   (cache_write_en),
-    //     .write_data                 (cache_write_data),
-    //     // outputs
-    //     .Icache_data_out            (cache_read_data),
-    //     .Icache_valid_out           (cache_valid)
-    // );
+
+
+    // old next_out_insts composition - [for reference]
+    // always_comb begin
+    //     next_out_insts = '0;
+    //     next_num_insts = '0;
+
+    //     if (ibuff_open) begin
+    //         // First try MSHR data
+    //         for (int i = 0; i < 2 && next_num_insts < N; i++) begin
+    //             if (mshr_valid_insts[i]) begin
+    //                 next_out_insts[next_num_insts].inst = mshr_data_current.word_level[i];
+    //                 next_out_insts[next_num_insts].PC = mshr_write_addr + (i * 4);
+    //                 next_out_insts[next_num_insts].valid = 1'b1;
+    //                 next_num_insts = next_num_insts + 1;
+    //             end
+    //         end
+
+    //         // Then try cache data if MSHR didn't have it
+    //         if (next_num_insts < N && icache_valid) begin
+    //             for (int i = 0; i < 2 && next_num_insts < N; i++) begin
+    //                 if (!mshr_valid_insts[i]) begin
+    //                     next_out_insts[next_num_insts].inst = icache_out.word_level[i];
+    //                     next_out_insts[next_num_insts].PC = cache_target + (i * 4);
+    //                     next_out_insts[next_num_insts].valid = 1'b1;
+    //                     next_num_insts = next_num_insts + 1;
+    //                 end
+    //             end
+    //         end
+    //     end
+    // end
+
+    icache icache_0 (
+        // inputs
+        .clock                      (clock),
+        .reset                      (reset),
+        .proc2Icache_addr         (cache_target),
+        .write_en                   (cache_write_en),
+        .write_data                 (cache_write_data),
+        // outputs
+        .Icache_data_out            (cache_read_data),
+        .Icache_valid_out           (icache_valid),
+        .next_invalid_line          (next_invalid_line)
+    );
 
     always_ff @(posedge clock) begin
         if (reset || br_en) begin
@@ -161,12 +250,3 @@ endmodule
 
 
 
-
-// prefetch
-// i cache hit - return
-// i cache miss - create mshr - send data request
-// constantly check if data return transaction tag is equal to a transaction tag in mshr - if it is:
-// COALESCE
-// if mshr addr == target addr, return data to fetch then put in cache
-// else just put in cache
-// 
