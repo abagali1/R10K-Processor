@@ -18,7 +18,6 @@ module rob #(
 
     input PHYS_REG_IDX                          [N-1:0]                 complete_t, // comes from the CDB
     input PHYS_REG_IDX                          [`SQ_SZ-1:0]            store_complete_t,
-    input PHYS_REG_IDX                                                  br_complete_t,
     input                                       [$clog2(N+1)-1:0]       num_accept, // input signal from min block, dependent on open_entries 
     input logic                                 [$clog2(DEPTH)-1:0]     br_tail,
     input logic                                                         br_en,
@@ -97,9 +96,6 @@ module rob #(
                 if(entries[k].t == store_complete_t[i]) begin
                     next_entries[k].complete = '1;
                 end
-            end
-            if(entries[k].t == br_complete_t) begin
-                next_entries[k].complete = '1;
             end
         end
 
