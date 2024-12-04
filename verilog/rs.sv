@@ -259,16 +259,36 @@ module rs #(
         end
 
         // Marks entry tags as ready (parallelized)
-        for (int i = 0; i < N; i++) begin
-            if (cdb_in[i].valid) begin
-                for (int j = 0; j < DEPTH; j++) begin
-                    if (next_entries[j].decoded_vals.valid) begin
-                        if (next_entries[j].t1.reg_idx == cdb_in[i].p_reg_idx) begin
-                            next_entries[j].t1.ready = 1;
+        // for (int i = 0; i < N; i++) begin
+        //     if (cdb_in[i].valid) begin
+        //         for (int j = 0; j < DEPTH; j++) begin
+        //             if (next_entries[j].decoded_vals.valid) begin
+        //                 if (next_entries[j].t1.reg_idx == cdb_in[i].p_reg_idx) begin
+        //                     next_entries[j].t1.ready = 1;
+        //                 end
+        //                 if (next_entries[j].t2.reg_idx == cdb_in[i].p_reg_idx) begin
+        //                     next_entries[j].t2.ready = 1;
+        //                 end
+        //             end
+        //         end
+        //     end
+        // end
+
+        for(int i=0;i < DEPTH;i++) begin
+            if(next_entries[i].decoded_vals.valid) begin
+                for(int j=0;j < N;j++) begin
+                    if(cdb_in[j].valid) begin
+                        if(next_entries[i].t1.reg_idx == cdb_in[j].p_reg_idx) begin
+                            next_entries[i].t1.ready = 1;
                         end
-                        if (next_entries[j].t2.reg_idx == cdb_in[i].p_reg_idx) begin
-                            next_entries[j].t2.ready = 1;
+                        if(next_entries[i].t2.reg_idx == cdb_in[j].p_reg_idx) begin
+                            next_entries[i].t2.ready = 1;
                         end
+                    end
+                end
+                if(next_entries[i].decoded_vals.fu_type == LD_INST) begin
+                    if(next_entries[i].decoded_vals.sq_tail == sq_head_in) begin
+                        next_entries[i].ld_ready = 1;
                     end
                 end
             end
@@ -284,11 +304,8 @@ module rs #(
                 if (next_entries[i].decoded_vals.fu_type == MULT_INST) begin
                     mult_req[i] = 1;
                 end
-                if (next_entries[i].decoded_vals.fu_type == LD_INST) begin
-                    if(next_entries[i].decoded_vals.sq_tail == sq_head_in || next_entries[i].ld_ready) begin
-                        ld_req[i] = 1;
-                        next_entries[i].ld_ready = 1;
-                    end
+                if (next_entries[i].decoded_vals.fu_type == LD_INST && next_entries[i].ld_ready) begin
+                    ld_req[i] = 1;
                 end
                 if (next_entries[i].decoded_vals.fu_type == STORE_INST) begin
                     store_req[i] = 1;

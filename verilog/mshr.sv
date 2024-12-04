@@ -43,7 +43,7 @@ module mshr (
 
     `ifdef DEBUG
         `ifndef DC
-            always @(posedge clock) begin #30;
+            always @(posedge clock) begin #5;
                 $display("--- mshr inputs ---");
                 $display("valid: %b", valid);
                 $display("in_addr: %x", in_addr);

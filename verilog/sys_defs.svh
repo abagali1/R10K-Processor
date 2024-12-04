@@ -56,7 +56,7 @@
 `define NUM_FU_LD 1
 `define NUM_FU_STORE 1
 `define NUM_FU_BR 1
-`define NUM_FUS_CDB `NUM_FU_ALU + `NUM_FU_MULT + `LD_SZ + `NUM_FU_BR
+`define NUM_FUS_CDB `NUM_FU_ALU + `NUM_FU_MULT + `LD_SZ + `NUM_FU_BR // 0 0 00 0000
 `define NUM_FUS `NUM_FU_ALU + `NUM_FU_MULT + `NUM_FU_LD + `SQ_SZ + `NUM_FU_BR
 
 // number of mult stages (2, 4) (you likely don't need 8)
@@ -464,6 +464,7 @@ typedef struct packed {
 } ISSUE_PACKET;
 
 typedef enum logic [1:0] {
+    EMPTY,
     READY_TO_ISSUE, // waiting for DM to be ready
     WAITING_FOR_DATA, // DM transaction in flight
     DATA_READY // waiting for CDB to be ready

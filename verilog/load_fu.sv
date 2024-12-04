@@ -39,7 +39,8 @@ module load_fu #(
         output logic                    [DEPTH-1:0]                 debug_ready_spots,
         output logic                    [DEPTH-1:0]                 debug_alloc_spot,
         output logic                    [DEPTH-1:0]                 debug_issued_entry,
-        output logic                    [DEPTH-1:0]                 debug_freed_spots
+        output logic                    [DEPTH-1:0]                 debug_freed_spots,
+        output logic                    [DEPTH-1:0]                 debug_ld_stall_sig
     `endif
 );
 
@@ -78,15 +79,16 @@ module load_fu #(
     );
 
     logic [DEPTH-1:0] spots_freed;
-    assign full = (open_spots | spots_freed) == '0;
+    assign full = next_open_spots == '0;
 
     `ifdef DEBUG
         assign debug_entries = entries;
         assign debug_open_spots = open_spots;
         assign debug_ready_spots = ready_spots;
-        assign debug_alloc_spot = alloc_spot;
-        assign debug_issued_entry = !dm_stalled && !start_store && issued_entry;
+        assign debug_alloc_spot = rd_en ? alloc_spot : '0;
+        assign debug_issued_entry = (!dm_stalled && !start_store) ? issued_entry : '0;
         assign debug_freed_spots = spots_freed;
+        assign debug_ld_stall_sig = cdb_stall;
     `endif
 
     always_comb begin
@@ -121,40 +123,6 @@ module load_fu #(
                 end
             end
 
-            // Memory transaction completed
-            if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3]) begin
-                // aligned result
-                case(MEM_SIZE'(next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[1:0]))
-                    BYTE: next_entries[i].result = {24'b0, Dmem_load_data.byte_level[entries[i].target_addr[2:0]]};
-                    HALF: next_entries[i].result = {16'b0, Dmem_load_data.half_level[entries[i].target_addr[2:1]]};
-                    WORD: next_entries[i].result = Dmem_load_data.word_level[entries[i].target_addr[2]];
-                    DOUBLE: next_entries[i].result = Dmem_load_data.dbbl_level;
-                    default: next_entries[i].result = 64'hbadddada;
-                endcase
-
-                next_entries[i].ld_state = DATA_READY;
-
-                spots_freed[i] = '0;
-                next_open_spots[i] = '0;
-                next_ready_spots[i] = '0;
-            end
-
-
-            // Send to CDB
-            if(next_entries[i].ld_state == DATA_READY) begin
-                fu_pack[i] = next_entries[i];
-                data_ready[i] = '1;
-            end
-
-            // CDB Accepted Packet
-            if(!cdb_stall[i] && next_entries[i].ld_state == DATA_READY) begin
-                next_entries[i] = '0;
-
-                spots_freed[i] = '1;
-                next_open_spots[i] = '1;
-                next_ready_spots[i] = '0;
-            end
-
             // Read in new issued packet
             if(rd_en && alloc_spot[i]) begin
                 next_entries[i] = '{
@@ -180,9 +148,37 @@ module load_fu #(
                 next_open_spots[i] = '0;
                 next_ready_spots[i] = '0;
             end
-        end
 
-        next_open_spots |= spots_freed;
+            // Memory transaction completed
+            if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3]) begin
+                // aligned result
+                case(MEM_SIZE'(next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[1:0]))
+                    BYTE: next_entries[i].result = {24'b0, Dmem_load_data.byte_level[entries[i].target_addr[2:0]]};
+                    HALF: next_entries[i].result = {16'b0, Dmem_load_data.half_level[entries[i].target_addr[2:1]]};
+                    WORD: next_entries[i].result = Dmem_load_data.word_level[entries[i].target_addr[2]];
+                    DOUBLE: next_entries[i].result = Dmem_load_data.dbbl_level;
+                    default: next_entries[i].result = 64'hbadddada;
+                endcase
+
+                next_entries[i].ld_state = DATA_READY;
+
+                spots_freed[i] = '0;
+                next_open_spots[i] = '0;
+                next_ready_spots[i] = '0;
+
+                fu_pack[i] = next_entries[i];
+                data_ready[i] = '1;
+            end
+
+            // CDB Accepted Packet
+            if(!cdb_stall[i] && data_ready[i]) begin
+                next_entries[i] = '0;
+
+                spots_freed[i] = '1;
+                next_open_spots[i] = '1;
+                next_ready_spots[i] = '0;
+            end
+        end
     end
 
     always_ff @(posedge clock) begin
