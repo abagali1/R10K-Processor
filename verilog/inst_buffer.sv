@@ -8,9 +8,9 @@ module inst_buffer #(
     input                                           clock,
     input                                           reset,
 
-    input INST_PACKET    [DEPTH-1:0]                in_insts,
+    input INST_PACKET    [3:0]                      in_insts,
     input logic          [$clog2(N+1)-1:0]          num_dispatch,
-    input logic          [$clog2(DEPTH+1)-1:0]      num_accept,
+    input logic          [2:0]                      num_accept,
     input logic                                     br_en, // only happens when branch squashes
     
     output INST_PACKET   [N-1:0]                    dispatched_insts,
@@ -57,7 +57,7 @@ module inst_buffer #(
             end
         end
 
-        for(int j=0;j < DEPTH; ++j) begin
+        for(int j=0;j < 4; ++j) begin
             if(j < num_accept) begin
                 next_entries[(tail+j) % DEPTH] = in_insts[j];
             end

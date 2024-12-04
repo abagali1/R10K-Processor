@@ -3,55 +3,66 @@
 module fetch #(
     parameter N = `N,
     parameter NUM_MEM_TAGS = `NUM_MEM_TAGS,
-    parameter INST_BUFF_DEPTH = `INST_BUFF_DEPTH
+    parameter INST_BUFF_DEPTH = `INST_BUFF_DEPTH,
+    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE
 )
 (
     input logic                     clock,
     input logic                     reset,
 
     input ADDR                      target,
+    input logic                     arbiter_signal, // high when fetch can use memory
     input BR_TASK                   br_task,  // taken or squashed, whenever target chanegs
-    input logic [$clog2(INST_BUFF_DEPTH+1)-1:0] ibuff_open,
+    input logic [$clog2(INST_BUFF_DEPTH+1)-1:0] ibuff_open, // number of open instruction buffer entries
 
-    input MEM_TAG                   mem_transaction_tag,
-    input logic                     mem_transaction_handshake,
-    input MEM_TAG                   mem_data_tag,
-    input MEM_BLOCK                 mem_data,
+    input MEM_TAG                   mem_transaction_tag, // Memory tag for current transaction (0 = can't accept)
+    //input logic                     mem_transaction_handshake,
+    input MEM_TAG                   mem_data_tag, // Tag for finished transactions (0 = no value)
+    input MEM_BLOCK                 mem_data, // Data for a load
 
     output logic                    mem_en,
-    output ADDR                     mem_addr,
+    output ADDR                     mem_addr_out,   // address we want to read from memory
     output MEM_COMMAND              mem_command,
 
-    output INST_PACKET [INST_BUFF_DEPTH-1:0]        out_insts,
-    output logic [$clog2(INST_BUFF_DEPTH+1)-1:0]    num_insts
+    output INST_PACKET  [3:0]       out_insts, // hardcoded to 4
+    output logic        [2:0]       out_num_insts // need 3 bits to represent 4
 );
-    typedef enum logic [1:0] {FETCH, PREFETCH, STALL, DEF} STATE;
+    //typedef enum logic [1:0] {FETCH, PREFETCH, STALL, DEF} STATE;
 
-    STATE state, next_state;
-    INST_PACKET [N-1:0] next_out_insts;
-    logic [$clog2(N+1)-1:0] next_num_insts;
+    //STATE state, next_state;
+    INST_PACKET [3:0] next_out_insts;
+    logic [2:0] num_insts, next_num_insts;
+    
+    assign out_num_insts = num_insts;
 
     // 16 possible transaction tags from memory (1 based indexing as 0 is unused)
-    ADDR [`NUM_MEM_TAGS-1:0] mshr_data, next_mshr_data;
-    logic [`NUM_MEM_TAGS-1:0] mshr_valid, next_mshr_valid;
+    // this should be 15:1 (16 entries, 0 is unused = 15 entries)
+    ADDR    [NUM_MEM_TAGS:1]   mshr_data, next_mshr_data;
+    logic   [NUM_MEM_TAGS:1]   mshr_valid, next_mshr_valid;
+    logic found_in_mshr;
     
-    ADDR next_mem_addr, cache_target, prefetch_target, next_prefetch_target;
-    MEM_BLOCK cache_write_data, cache_read_data;
+    //ADDR cache_target, prefetch_target, next_prefetch_target;
+    MEM_BLOCK                           cache_write_data;
+    MEM_BLOCK   [PREFETCH_DISTANCE-1:0] cache_read_data;
+    logic       [PREFETCH_DISTANCE-1:0] icache_valid;
+
     logic cache_write_en;
-    logic mem_transaction_started;
+    //logic mem_transaction_started;
+    logic mem_done;
 
-    MEM_BLOCK Icache_data_out;
-    logic     Icache_valid_out; 
-    ADDR      next_invalid_line;
 
-    logic icache_valid;
+    //logic valid_insts;
+    logic [2:0] insts_to_return;
+    //logic br_en;
 
-    logic valid_insts;
-    logic insts_to_return;
-    logic br_en;
+    //ADDR mem_addr;
+
+    // TODO
+    assign mem_done = mem_data_tag != 0 & mshr_valid[mem_data_tag];
     
     assign mem_command = mem_en ? MEM_LOAD : MEM_NONE;
-    assign br_en = br_task == SQUASH | br_task == CLEAR;
+    //assign br_en = br_task == SQUASH | br_task == CLEAR;
+    // removed br_en, we should only clear state on a squash, a "clear" task means our prediction was correct and we should keep chugging
 
     assign mshr_full = &next_mshr_valid;
     assign mem_en = ~mshr_full & ~icache_valid;
@@ -63,10 +74,48 @@ module fetch #(
         // prefetch_target =   (state == FETCH) ? target : 
         //                     (state == PREFETCH) ? prev_prefetch_target + 8 :
         //                     (state == STALL) ? prev_prefetch_target : '0;
-        next_state = (state == FETCH) ? PREFETCH :
-                     ((state == PREFETCH) & mshr_full & ~icache_valid) ? STALL :
-                     ((state == STALL) & ~mshr_full) ? PREFETCH : FETCH;
-        next_mem_addr = (state == FETCH | mem_transaction_handshake) ? prefetch_target : mem_addr;
+        /*
+        next_state = state;
+
+        case (state)
+            FETCH:      next_state = PREFETCH;
+            PREFETCH:   next_state = mshr_full & ~icache_valid ? STALL : FETCH;
+            STALL:      next_state = mshr_full ? FETCH : PREFETCH;
+            default:    next_state = DEF;
+        endcase
+        */
+
+        //next_mem_addr = (state == FETCH | mem_transaction_handshake) ? prefetch_target : mem_addr
+        /*
+        */
+
+        // FETCHING + PREFETCHING
+        mem_addr_out = '0;
+
+        found_in_mshr = 0;
+        if (arbiter_signal & ~mshr_full) begin
+            for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+                // check if in icache first
+                if (~icache_valid[i]) begin
+                    // check in mhr
+                    for (int j = 1; j <= NUM_MEM_TAGS; j++) begin
+                        if (mshr_data[j][31:3] == target[31:3]) begin
+                            found_in_mshr = 1;
+                            break;
+                        end
+                    end
+                    if (~found_in_mshr) begin
+                        // request from memory
+                        mem_en = 1;
+                        mem_addr_out = {target[31:3], 3'b0} + (i*8);
+                        mem_command = MEM_LOAD;
+
+                        next_mshr_data[mem_transaction_tag] = mem_addr_out;
+                        next_mshr_valid[mem_transaction_tag] = 1;
+                    end
+                end
+            end
+        end
     end
     
     always_comb begin
@@ -75,91 +124,76 @@ module fetch #(
         next_out_insts = '0;
         next_mshr_data = mshr_data;
         next_mshr_valid = mshr_valid;
-        cache_target = target;
+        //cache_target = target;
 
         // check for mshr eviction and cache updates
-        if (mem_data_tag != 0 & mshr_valid[mem_data_tag]) begin
+        // mem is finsihed, write to cache
+        // MEM TO CACHE
+        if (mem_done) begin
             cache_write_en = 1;
             cache_write_data = mem_data;
-            cache_target = next_mshr_data[mem_data_tag];
+            cache_target = mshr_data[mem_data_tag];
             next_mshr_data[mem_data_tag] = '0;
             next_mshr_valid[mem_data_tag] = '0;
         end
 
         // update mshr when transaction tag recieved
-        if (mem_transaction_handshake) begin
-            next_mshr_data[mem_transaction_tag] = mem_addr;
-            next_mshr_valid[mem_transaction_tag] = 1;
-        end
+        // [OLD] SETTING TRANSACTION 
+        // if (mem_transaction_handshake) begin
+        //     next_mshr_data[mem_transaction_tag] = mem_addr;
+        //     next_mshr_valid[mem_transaction_tag] = 1;
+        // end
 
 
         // counts valid instructions in current cache line
-        valid_insts = '0;
+        //valid_insts = icache_valid ? 2 : 0;
+        /*
         for (int i = 0; i < 4; i++) begin
-            logic adr = target + (i * 4);
+            ADDR adr;
+            adr = target + (i * 4);
             if (icache_valid && (adr[31:3] == cache_target[31:3] && cache_read_data.word_level[i][31:0] != '0)) begin
                 valid_insts = valid_insts + 1;
             end
         end
+        */
 
-        insts_to_return = (valid_insts < ibuff_open) ? valid_insts : ibuff_open;
+        // insts_to_return = (valid_insts < ibuff_open) ? valid_insts : ibuff_open;
+
+        
+    end
 
 
-        // perform coalescing logic
-        // a few cases:
-
-        // case: new memory data from mshr (indicated by cache_write_en)
-        if (cache_write_en) begin
-            if (ibuff_open) begin
-                next_num_insts = '0;
-                // iterate through 4 potential returns
-                for (int i = 0; i < insts_to_return; i++) begin
-                    ADDR current = target + i * 4;
-                    // if the address is in the same block as cache_target
-                    if (current[31:3] == cache_target[31:3]) begin
-                        next_out_insts[next_num_insts].inst = cache_write_data.word_level[current[2]];
-                        if (next_out_insts[next_num_insts].inst) begin
-                            next_out_insts[next_num_insts].valid = 1'b1;
-                            next_out_insts[next_num_insts].PC = current;
-                            next_out_insts[next_num_insts].NPC = current + 4;
-                            next_out_insts[next_num_insts].pred_taken = 1'b0;
-                            next_num_insts = next_num_insts + 1;
-                        end
-                    end
-                    // Check if this address hits in the cache
-                    else if (icache_valid && current[31:3] == cache_target[31:3]) begin
-                        next_out_insts[next_num_insts].inst = cache_read_data.word_level[current[2]];
-                        if (next_out_insts[next_num_insts].inst) begin
-                            next_out_insts[next_num_insts].valid = 1'b1;
-                            next_out_insts[next_num_insts].PC = current;
-                            next_out_insts[next_num_insts].NPC = current + 4;
-                            next_out_insts[next_num_insts].pred_taken = 1'b0;
-                            next_num_insts = next_num_insts + 1;
-                        end
-                    end
-                end
-            end
-        end 
-        // case: cache hit
-        else if (icache_valid) begin
-            next_num_insts = '0;
-            for (int i = 0; i < insts_to_return; i++) begin
-                ADDR current = target + (i * 4);
-                if (icache_valid && current[31:3] == cache_target[31:3]) begin
-                    next_out_insts[next_num_insts].inst = cache_read_data.word_level[current[2]];
-                    if (next_out_insts[next_num_insts].inst != '0) begin
-                        next_out_insts[next_num_insts].valid = 1'b1;
-                        next_out_insts[next_num_insts].PC = current;
-                        next_out_insts[next_num_insts].NPC = current + 4;
-                        next_out_insts[next_num_insts].pred_taken = 1'b0;
-                        next_num_insts = next_num_insts + 1;
-                    end
-                end
+    // FETCH TO INST_BUF
+    always_comb begin
+        next_num_insts = '0;
+        
+        for (int i = 0; i < 2; i++) begin
+            // if the cache block is valid, increment next_num_insts by 2 (2 insts per block)
+            if (icache_valid[i] == 1) begin
+                next_num_insts +=2;
+            end 
+            else begin
+                break;
             end
         end
 
-        // Update prefetch target to next invalid line from icache
-        next_prefetch_target = next_invalid_line;
+        next_num_insts = (next_num_insts < ibuff_open) ? next_num_insts : ibuff_open;
+
+        // Note: Temporary design decision, we only read instructions from icache, this could waste some cycles (faster to implement rn)
+        // case: cache hit
+        for (int i = 0; i < 4; i++) begin
+            ADDR current;
+            current = target + (i * 4);
+            if (i < next_num_insts) begin
+                next_out_insts[i].inst = cache_read_data.word_level[current[2]];
+                next_out_insts[i].valid = 1'b1;
+                next_out_insts[i].PC = current;
+                next_out_insts[i].NPC = current + 4;
+                next_out_insts[i].pred_taken = 1'b0; // TODO branch prediction
+            end else begin
+                break;
+            end
+        end
     end
 
 
@@ -198,37 +232,33 @@ module fetch #(
         // inputs
         .clock                      (clock),
         .reset                      (reset),
-        .proc2Icache_addr           (cache_target),
+        .proc2Icache_addr           (target),
         .write_en                   (cache_write_en),
         .write_data                 (cache_write_data),
         // outputs
         .Icache_data_out            (cache_read_data),
-        .Icache_valid_out           (icache_valid),
-        .next_invalid_line          (next_invalid_line)
+        .Icache_valid_out           (icache_valid)
     );
 
     always_ff @(posedge clock) begin
-        if (reset || br_en) begin
-            state                <= FETCH;
+        if (reset || br_task == SQUASH) begin // TODO squash doesn't necessarily mean to empty everything, could be beneficial to keep icache (imagine short loops)
             out_insts            <= '0;
             num_insts            <= '0;
             mshr_data            <= '0;
             mshr_valid           <= '0;
             mem_addr             <= '0;
         end else begin
-            state                <= next_state;
             out_insts            <= next_out_insts;
             num_insts            <= next_num_insts;
             // TODO: ^^ handle ibuff_open in always comb
             mshr_data            <= next_mshr_data;
             mshr_valid           <= next_mshr_valid;
             mem_addr             <= next_mem_addr;
-            prefetch_target      <= (state == FETCH) ? target : 
-                                    (state == PREFETCH) ? next_prefetch_target :
-                                    (state == STALL) ? prefetch_target : '0;
+            
         end
-        $display("FETCH: %b -- %b -- %h -- %h", state, next_state, prefetch_target, target);
-        $display("          -- %h -- %b -- %b", mem_addr, mem_en, mem_transaction_handshake);
-        $display("          -- %h -- %b -- %b", cache_target, cache_write_en, icache_valid);
+        $display("IN FETCH: %d", next_num_insts);
+        //$display("\nFETCH: state: %b -- next_state: %b \nprefetch_target: %h -- target: %h", state, next_state, prefetch_target, target);
+        //$display("          mem_addr: %h -- mem_en: %b -- mem_transaction_handshake: %b", mem_addr, mem_en, mem_transaction_handshake);
+        //$display("          cache_target: %h -- cache_write_en: %b -- icache_valid: %b", cache_target, cache_write_en, icache_valid);
     end
 endmodule

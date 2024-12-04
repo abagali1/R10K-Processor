@@ -15,9 +15,9 @@ module cpu (
     input                                                                                       clock, // System clock
     input                                                                                       reset, // System reset
 
-    input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction
+    input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction [current transaction]
     input MEM_BLOCK mem2proc_data,            // Data coming back from memory
-    input MEM_TAG   mem2proc_data_tag,        // Tag for which transaction data is for
+    input MEM_TAG   mem2proc_data_tag,        // Tag for which finished transaction data is for
 
     output MEM_COMMAND proc2mem_command, // Command sent to memory
     output ADDR        proc2mem_addr,    // Address sent to memory
@@ -352,7 +352,7 @@ module cpu (
     assign mem2proc_transaction_handshake = (prev_proc2mem_command == LOAD) ? 1 : 0;
 
     always_ff @(posedge clock) begin
-        prev_proc2mem_command = proc2mem_command;
+        prev_proc2mem_command <= proc2mem_command;
     end
 
     fetch rufus (
