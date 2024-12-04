@@ -134,8 +134,8 @@ module cpu (
     // fake fetch
 
     logic fetch_mem_en;
-    logic [$clog2(`INST_BUFF_DEPTH+1)-1:0] num_input;
-    INST_PACKET [`INST_BUFF_DEPTH-1:0] in_insts;
+    logic [2:0] num_input;
+    INST_PACKET [3:0] in_insts;
 
     ADDR PC;
 
@@ -360,18 +360,18 @@ module cpu (
         .reset(reset),
 
         .target(NPC),
+        .arbiter_signal(1'b1), // TODO
         .br_task(br_task),
         .ibuff_open(ib_open),
         .mem_transaction_tag(mem2proc_transaction_tag),
-        .mem_transaction_handshake(mem2proc_transaction_handshake),
         .mem_data_tag(mem2proc_data_tag),
         .mem_data(mem2proc_data),
 
         .mem_en(fetch_mem_en),
-        .mem_addr(proc2mem_addr),
-        .mem_command(proc2mem_command),
+        .mem_addr_out(proc2mem_addr),
+        //.mem_command(proc2mem_command),
         .out_insts(in_insts),
-        .num_insts(num_input)
+        .out_num_insts(num_input)
     );
 
     inst_buffer buffet (
