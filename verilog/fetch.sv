@@ -29,7 +29,7 @@ module fetch #(
 
     STATE state, next_state;
     INST_PACKET [N-1:0] next_out_insts;
-    logic [$clog2(N)-1:0] next_num_insts;
+    logic [$clog2(N+1)-1:0] next_num_insts;
 
     // 16 possible transaction tags from memory (1 based indexing as 0 is unused)
     ADDR [`NUM_MEM_TAGS-1:0] mshr_data, next_mshr_data;
