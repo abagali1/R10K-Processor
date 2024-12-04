@@ -33,14 +33,17 @@
  * feature points, but will require careful management of memory tags.
  */
 
-module icache (
+module icache #(
+    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE
+)
+(
     input clock,
     input reset,
 
     // From memory
-    input MEM_TAG   Imem2proc_transaction_tag, // Should be zero unless there is a response
-    input MEM_BLOCK Imem2proc_data,
-    input MEM_TAG   Imem2proc_data_tag,
+    //input MEM_TAG   Imem2proc_transaction_tag, // Should be zero unless there is a response
+    //input MEM_BLOCK Imem2proc_data,
+    //input MEM_TAG   Imem2proc_data_tag,
 
     // From fetch stage
     input ADDR proc2Icache_addr,
@@ -48,44 +51,44 @@ module icache (
     input MEM_BLOCK write_data,
 
     // To memory
-    output MEM_COMMAND proc2Imem_command,
-    output ADDR        proc2Imem_addr,
+    //output MEM_COMMAND proc2Imem_command,
+    //output ADDR        proc2Imem_addr,
 
-    // To fetch stage
-    output MEM_BLOCK Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     Icache_valid_out, // When valid is high
-    output ADDR      next_invalid_line
+    output MEM_BLOCK [PREFETCH_DISTANCE-1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
+    output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out // When valid is high
 );
 
     // Note: cache tags, not memory tags
-    logic [12-`ICACHE_LINE_BITS:0] current_tag,   last_tag;
-    logic [$clog2(`ICACHE_LINES)-1:0] current_index, last_index;
-    logic                          got_mem_data;
+    logic [12-`ICACHE_LINE_BITS:0] current_tag;
+    logic [$clog2(`ICACHE_LINES)-1:0] current_index;
+    //logic                          got_mem_data;
 
+    ADDR [PREFETCH_DISTANCE-1:0] raddr;
+
+    always_comb begin
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+            raddr[i] = (current_index + i*8) % ICACHE_LINES;
+        end
+    end
 
     // ---- Cache data ---- //
 
     ICACHE_TAG [`ICACHE_LINES-1:0] icache_tags;
 
-    // needed for next_invalid_line
-    logic [`ICACHE_LINE_BITS-1:0] next_invalid_index;
-    logic [12-`ICACHE_LINE_BITS:0] next_invalid_tag;
-    logic found_invalid;
-
     memDP #(
         .WIDTH     (64),
         .DEPTH     (`ICACHE_LINES),
-        .READ_PORTS(1),
+        .READ_PORTS(2),
         .BYPASS_EN (0))
     icache_mem (
         .clock(clock),
         .reset(reset),
-        .re   (1'b1),
-        .raddr(current_index),
-        .rdata(Icache_data_out.word_level),
-        .we   (got_mem_data),
+        .re   ('1),
+        .raddr({raddr[1], raddr[0]}),
+        .rdata({Icache_data_out[1].word_level, Icache_data_out[0].word_level}), // TODO SUS
+        .we   (write_en),
         .waddr(current_index),
-        .wdata(Imem2proc_data.word_level)
+        .wdata(write_data.word_level)
     );
     
 
@@ -94,86 +97,62 @@ module icache (
     assign current_tag = proc2Icache_addr[15:3+`ICACHE_LINE_BITS];
     assign current_index = proc2Icache_addr[3+`ICACHE_LINE_BITS:0];
 
+    //
+    always_comb begin
+        Icache_valid_out = '0;
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+            Icache_valid_out[i] = icache_tags[current_index+i].valid && (icache_tags[current_index+i].tags == (current_tag+i)); 
+        end
+    end
+    /*
     assign Icache_valid_out =  icache_tags[current_index].valid &&
-                              (icache_tags[current_index].tags == current_tag);
+                              (icache_tags[current_index].tags == current_tag);*/
 
     // ---- Main cache logic ---- //
 
-    MEM_TAG current_mem_tag; // The current memory tag we might be waiting on
-    logic miss_outstanding; // Whether a miss has received its response tag to wait on
+    //MEM_TAG current_mem_tag; // The current memory tag we might be waiting on
+    //logic miss_outstanding; // Whether a miss has received its response tag to wait on
 
-    logic changed_addr;
-    logic update_mem_tag;
-    logic unanswered_miss;
+    //logic changed_addr;
+    //logic update_mem_tag;
+    //logic unanswered_miss;
 
-    assign got_mem_data = (current_mem_tag == Imem2proc_data_tag) && (current_mem_tag != 0);
+    //assign got_mem_data = (current_mem_tag == Imem2proc_data_tag) && (current_mem_tag != 0);
 
-    assign changed_addr = (current_index != last_index) || (current_tag != last_tag);
+    //assign changed_addr = (current_index != last_index) || (current_tag != last_tag);
 
     // Set mem tag to zero if we changed_addr, and keep resetting while there is
     // a miss_outstanding. Then set to zero when we got_mem_data.
     // (this relies on Imem2proc_transaction_tag being zero when there is no request)
-    assign update_mem_tag = changed_addr || miss_outstanding || got_mem_data;
+    // assign update_mem_tag = changed_addr || miss_outstanding || got_mem_data;
 
     // If we have a new miss or still waiting for the response tag, we might
     // need to wait for the response tag because dcache has priority over icache
-    assign unanswered_miss = changed_addr ? !Icache_valid_out :
-                                        miss_outstanding && (Imem2proc_transaction_tag == 0);
+    // assign unanswered_miss = changed_addr ? !Icache_valid_out :
+                                        // miss_outstanding && (Imem2proc_transaction_tag == 0);
 
     // Keep sending memory requests until we receive a response tag or change addresses
-    assign proc2Imem_command = (miss_outstanding && !changed_addr) ? MEM_LOAD : MEM_NONE;
-    assign proc2Imem_addr    = {proc2Icache_addr[31:3],3'b0};
-
-    // find next_invalid line logic
-    always_comb begin
-        found_invalid = 0;
-        next_invalid_index = current_index;
-        next_invalid_tag = current_tag;
-
-        // start the search from the current index
-        for (int i = 0; i < `ICACHE_LINES && !found_invalid; i++) begin
-            logic [`ICACHE_LINE_BITS-1:0] search_index;
-            search_index = (current_index + i) % `ICACHE_LINES;
-            
-            if (!icache_tags[search_index].valid) begin
-                found_invalid = 1;
-                next_invalid_index = search_index;
-                // Keep same tag if in same block, otherwise increment
-                if (search_index < current_index)
-                    next_invalid_tag = current_tag + 1;
-                else
-                    next_invalid_tag = current_tag;
-            end
-        end
-
-        // If no invalid lines found, point to next block in cache
-        if (!found_invalid) begin
-            next_invalid_index = current_index;
-            next_invalid_tag = current_tag + 1;
-        end
-    end
-
-    assign next_invalid_line = {next_invalid_tag, next_invalid_index, 3'b0};
-
+    // assign proc2Imem_command = (miss_outstanding && !changed_addr) ? MEM_LOAD : MEM_NONE;
+    // assign proc2Imem_addr    = {proc2Icache_addr[31:3],3'b0};
 
     // ---- Cache state registers ---- //
 
     always_ff @(posedge clock) begin
-        $display("ICACHE: %b %b %b %b %b", proc2Icache_addr, current_index, icache_tags[current_index].valid, icache_tags[current_index].tags, current_tag);
+        //$display("ICACHE: \nicache_write_addr: %b \ncurrent_index: %b \nicache_valid_tags: %b \nicache_tags: %b \ncurrent_tag: %b", proc2Icache_addr, current_index, icache_tags[current_index].valid, icache_tags[current_index].tags, current_tag);
         if (reset) begin
-            last_index       <= -1; // These are -1 to get ball rolling when
-            last_tag         <= -1; // reset goes low because addr "changes"
-            current_mem_tag  <= '0;
-            miss_outstanding <= '0;
+            //last_index       <= -1; // These are -1 to get ball rolling when
+            //last_tag         <= -1; // reset goes low because addr "changes"
+            //current_mem_tag  <= '0;
+            //miss_outstanding <= '0;
             icache_tags      <= '0; // Set all cache tags and valid bits to 0
         end else begin
-            last_index       <= current_index;
-            last_tag         <= current_tag;
-            miss_outstanding <= unanswered_miss;
-            if (update_mem_tag) begin
-                current_mem_tag <= Imem2proc_transaction_tag;
-            end
-            if (got_mem_data) begin // If data came from memory, meaning tag matches
+            //last_index       <= current_index;
+            //last_tag         <= current_tag;
+            //miss_outstanding <= unanswered_miss;
+            // if (update_mem_tag) begin
+            //     current_mem_tag <= Imem2proc_transaction_tag;
+            // end
+            if (write_en) begin // If data, meaning tag matches
                 icache_tags[current_index].tags  <= current_tag;
                 icache_tags[current_index].valid <= 1'b1;
             end

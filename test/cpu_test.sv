@@ -175,18 +175,13 @@ module testbench;
     cpu dut(
         .clock(clock),
         .reset(reset),
-        .in_insts(in_insts),
-        .num_input(num_input),
-
-        .mem2proc_transaction_tag (mem2proc_transaction_tag),
-        .mem2proc_data            (mem2proc_data),
-        .mem2proc_data_tag        (mem2proc_data_tag),
-
-        // Outputs
-        .proc2mem_command (proc2mem_command),
-        .proc2mem_addr    (proc2mem_addr),
-        .proc2mem_data    (proc2mem_data),
-
+        .mem2proc_transaction_tag(mem2proc_transaction_tag),
+        .mem2proc_data(mem2proc_data),
+        .mem2proc_data_tag(mem2proc_data_tag),
+        .proc2mem_command(proc2mem_command),
+        .proc2mem_addr(proc2mem_addr),
+        .proc2mem_data(proc2mem_data),
+        .proc2mem_size(proc2mem_size),
         .committed_insts(committed_insts),
         .retired_insts(retired_insts),
         .ib_open(ib_open),
