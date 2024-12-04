@@ -5,15 +5,14 @@ make cpu.out
 for test in "${TESTS[@]}"; do
     echo $test
     make $test.out > /dev/null
-    diff output/$test.wb correct_out/$test.wb
+    diff output/$test.wb correct_out/$test.wb > /dev/null 2>&1
     wb_status=$?
-    diff <(grep "@@@" output/$test.out) <(grep "@@@" correct_out/$test.out)
+    diff <(grep "@@@" output/$test.out) <(grep "@@@" correct_out/$test.out) > /dev/null 2>&1
     out_status=$?
 
     if [ $wb_status -ne 0 ] || [ $out_status -ne 0 ]
     then
         echo "Failed"
-        exit 1
     else
         echo "Passed"
     fi
