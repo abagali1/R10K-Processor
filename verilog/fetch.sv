@@ -50,7 +50,7 @@ module fetch #(
     logic insts_to_return;
     logic br_en;
     
-    assign mem_cmd = mem_en ? MEM_LOAD : MEM_NONE;
+    assign mem_command = mem_en ? MEM_LOAD : MEM_NONE;
     assign br_en = br_task == SQUASH | br_task == CLEAR;
 
     assign mshr_full = &next_mshr_valid;
@@ -64,8 +64,8 @@ module fetch #(
         //                     (state == PREFETCH) ? prev_prefetch_target + 8 :
         //                     (state == STALL) ? prev_prefetch_target : '0;
         next_state = (state == FETCH) ? PREFETCH :
-                     (state == PREFETCH & mshr_full & ~icache_valid) ? STALL :
-                     (state == STALL & ~mshr_full) ? PREFETCH : DEF;
+                     ((state == PREFETCH) & mshr_full & ~icache_valid) ? STALL :
+                     ((state == STALL) & ~mshr_full) ? PREFETCH : FETCH;
         next_mem_addr = (state == FETCH | mem_transaction_handshake) ? prefetch_target : mem_addr;
     end
     
@@ -74,7 +74,8 @@ module fetch #(
         cache_write_data = '0;
         next_out_insts = '0;
         next_mshr_data = mshr_data;
-        cache_target = prefetch_target;
+        next_mshr_valid = mshr_valid;
+        cache_target = target;
 
         // check for mshr eviction and cache updates
         if (mem_data_tag != 0 & mshr_valid[mem_data_tag]) begin
@@ -225,7 +226,7 @@ module fetch #(
         // inputs
         .clock                      (clock),
         .reset                      (reset),
-        .proc2Icache_addr         (cache_target),
+        .proc2Icache_addr           (cache_target),
         .write_en                   (cache_write_en),
         .write_data                 (cache_write_data),
         // outputs
@@ -235,9 +236,6 @@ module fetch #(
     );
 
     always_ff @(posedge clock) begin
-        $display("FETCH: %b -- %b -- %h", state, next_state, prefetch_target);
-        $display("          -- %h -- %b -- %b", mem_addr, mem_en, mem_transaction_handshake);
-        $display("          -- %h -- %b -- %b", cache_target, cache_write_en, icache_valid);
         if (reset || br_en) begin
             state                <= FETCH;
             out_insts            <= '0;
@@ -257,6 +255,9 @@ module fetch #(
                                     (state == PREFETCH) ? next_prefetch_target :
                                     (state == STALL) ? prefetch_target : '0;
         end
+        $display("FETCH: %b -- %b -- %h -- %h", state, next_state, prefetch_target, target);
+        $display("          -- %h -- %b -- %b", mem_addr, mem_en, mem_transaction_handshake);
+        $display("          -- %h -- %b -- %b", cache_target, cache_write_en, icache_valid);
     end
 endmodule
 

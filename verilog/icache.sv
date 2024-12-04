@@ -91,7 +91,8 @@ module icache (
 
     // ---- Addresses and final outputs ---- //
 
-    assign {current_tag, current_index} = proc2Icache_addr[15:3];
+    assign current_tag = proc2Icache_addr[15:3+`ICACHE_LINE_BITS];
+    assign current_index = proc2Icache_addr[3+`ICACHE_LINE_BITS:0];
 
     assign Icache_valid_out =  icache_tags[current_index].valid &&
                               (icache_tags[current_index].tags == current_tag);
@@ -158,9 +159,8 @@ module icache (
     // ---- Cache state registers ---- //
 
     always_ff @(posedge clock) begin
-        $display("ICACHE: %b %b %b", icache_tags[current_index].valid, icache_tags[current_index].tags, current_tag);
+        $display("ICACHE: %b %b %b %b %b", proc2Icache_addr, current_index, icache_tags[current_index].valid, icache_tags[current_index].tags, current_tag);
         if (reset) begin
-            $write("RESET ICACHECEC");
             last_index       <= -1; // These are -1 to get ball rolling when
             last_tag         <= -1; // reset goes low because addr "changes"
             current_mem_tag  <= '0;
