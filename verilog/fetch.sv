@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-`include "icache.sv"
+//`include "icache.sv"
 
 module fetch #(
     parameter N = `N,
@@ -195,7 +195,7 @@ module fetch #(
         .write_addr                 (cache_write_addr),
         .write_data                 (cache_write_data),
         // outputs
-        .Icache_data_out            ({cache_read_data[1].word_level, cache_read_data[0].word_level}),
+        .Icache_data_out            ({cache_read_data[3].word_level, cache_read_data[2].word_level, cache_read_data[1].word_level, cache_read_data[0].word_level}),
         .Icache_valid_out           (icache_valid)
     );
 
