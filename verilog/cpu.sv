@@ -120,6 +120,23 @@ module cpu (
         output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_data,
         output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data,
         output logic                                                                            debug_sq_full
+        output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data
+
+
+        output ADDR                                                                             debug_fetch_target,
+        output logic                                                                            debug_fetch_arbiter_signal, 
+        output BR_TASK                                                                          debug_fetch_br_task,  
+        output logic                    [$clog2(`INST_BUFF_DEPTH+1)-1:0]                        debug_fetch_ibuff_open,
+
+        output MEM_TAG                                                                          debug_fetch_mem_transaction_tag, 
+        output MEM_TAG                                                                          debug_fetch_mem_data_tag, 
+        output MEM_BLOCK                                                                        debug_fetch_mem_data, 
+                    
+        output logic                                                                            debug_fetch_mem_en,
+        output ADDR                                                                             debug_fetch_mem_addr_out, 
+                    
+        output INST_PACKET              [3:0]                                                   debug_fetch_out_insts, 
+        output logic                    [2:0]                                                   debug_fetch_out_num_insts
     `endif
 );
 
@@ -134,22 +151,25 @@ module cpu (
     // fake fetch
 
     logic fetch_mem_en;
+    assign proc2Imem_command = fetch_mem_en == 1; // TODO replace with arbiter
+
     logic [2:0] num_input;
     INST_PACKET [3:0] in_insts;
 
     ADDR PC;
 
-    assign NPC = PC;
+    assign NPC = PC + num_input * 4; // TODO branch prediction
+    
 
     always @(posedge clock) begin
         if (reset) begin
             PC <= 0;
         end 
-        else if (!br_fu_out.pred_correct) begin
-            PC <= br_fu_out.target_addr;
-        end 
+        // else if (!br_fu_out.pred_correct) begin
+        //     PC <= br_fu_out.result;
+        // end 
         else begin
-            PC <= NPC + num_input * 4;
+            PC <= NPC;
         end
     end
 
@@ -360,7 +380,7 @@ module cpu (
         .reset(reset),
 
         .target(NPC),
-        .arbiter_signal(1'b1), // TODO
+        .arbiter_signal(1'b1), // TODO arbiter
         .br_task(br_task),
         .ibuff_open(ib_open),
         .mem_transaction_tag(mem2proc_transaction_tag),
@@ -373,6 +393,23 @@ module cpu (
         .out_insts(in_insts),
         .out_num_insts(num_input)
     );
+
+    `ifdef DEBUG
+        assign debug_fetch_target               = NPC;
+        assign debug_fetch_arbiter_signal       = 1'b1;
+        assign debug_fetch_br_task              = br_task;
+        assign debug_fetch_ibuff_open           = ib_open;
+
+        assign debug_fetch_mem_transaction_tag  = mem2proc_transaction_tag;
+        assign debug_fetch_mem_data_tag         = mem2proc_data_tag;
+        assign debug_fetch_mem_data             = mem2proc_data;
+
+        assign debug_fetch_mem_en               = fetch_mem_en;
+        assign debug_fetch_mem_addr_out         = proc2mem_addr;
+
+        assign debug_fetch_out_insts            = in_insts;
+        assign debug_fetch_out_num_insts        = num_input;
+    `endif
 
     inst_buffer buffet (
         .clock(clock),

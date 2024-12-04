@@ -215,8 +215,10 @@ module fetch #(
             //mem_addr             <= next_mem_addr;
             
         end
+        
         $display("IN FETCH: %d", next_num_insts);
-        //$display("\nFETCH: state: %b -- next_state: %b \nprefetch_target: %h -- target: %h", state, next_state, prefetch_target, target);
+        $display("TARGET: %d", target);
+
         //$display("          mem_addr: %h -- mem_en: %b -- mem_transaction_handshake: %b", mem_addr, mem_en, mem_transaction_handshake);
         //$display("          cache_target: %h -- cache_write_en: %b -- icache_valid: %b", cache_target, cache_write_en, icache_valid);
     end
