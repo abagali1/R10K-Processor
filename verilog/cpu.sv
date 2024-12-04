@@ -103,6 +103,8 @@ module cpu (
         output logic                    [`LD_SZ-1:0]                                            debug_ld_alloc_spot,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_issued_entry,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_freed_spots,
+        output logic                                                                            debug_ld_full,
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_stall_sig,
 
         output logic                                                                            debug_Dcache_ld_out,
         output ADDR                                                                             debug_Dcache_addr_out,
@@ -308,6 +310,7 @@ module cpu (
         assign debug_start_store = start_store;
 
         assign debug_ld_rd_en = ld_rd_en;
+        assign debug_ld_full = ld_full;
 
         assign debug_Dcache_addr_out = Dcache_addr_out;
         assign debug_Dcache_ld_out = Dcache_ld_out;
@@ -688,7 +691,8 @@ module cpu (
             .debug_ready_spots(debug_ld_ready_spots),
             .debug_alloc_spot(debug_ld_alloc_spot),
             .debug_issued_entry(debug_ld_issued_entry),
-            .debug_freed_spots(debug_ld_freed_spots)
+            .debug_freed_spots(debug_ld_freed_spots),
+            .debug_ld_stall_sig(debug_ld_stall_sig)
         `endif
     );
 
