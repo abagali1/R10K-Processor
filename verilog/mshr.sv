@@ -63,6 +63,8 @@ module mshr (
                 $display("mshr2cache_is_store: %d", mshr2cache_is_store);
                 $display("mshr2cache_wr: %d", mshr2cache_wr);
 
+                $display("data returned from memory: %x", mem2proc_data);
+
 
                 $display("mshr state: %s", mshr.state.name());
                 $display("mshr stall: %b", stall);
@@ -83,8 +85,13 @@ module mshr (
         proc2mem_command = MEM_NONE;
         mshr2cache_wr = 0;
 
-        if (mshr.state == NONE) begin
-            if (!Dcache_hit && valid) begin // make request directly to cashay and see what she says
+        
+
+        if (valid && mshr.state == NONE) begin
+            if (Dcache_hit && is_store) begin
+                proc2mem_command = MEM_STORE;
+            end
+            if (!Dcache_hit) begin // make request directly to cashay and see what she says
                 proc2mem_command = MEM_LOAD;
 
                 next_mshr.state = WAITING_FOR_LOAD_DATA;

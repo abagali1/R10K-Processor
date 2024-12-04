@@ -388,7 +388,7 @@ module testbench;
             output_reg_writeback_and_maybe_halt();
 
             // stop the processor
-            if (error_status != NO_ERROR || clock_count > `TB_MAX_CYCLES) begin
+            if (error_status != NO_ERROR || clock_count > 300) begin
 
                 $display("  %16t : Processor Finished", $realtime);
 
