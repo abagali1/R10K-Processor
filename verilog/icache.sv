@@ -7,7 +7,8 @@
 //                                                                     //
 /////////////////////////////////////////////////////////////////////////
 
-`include "verilog/sys_defs.svh"
+`include "sys_defs.svh"
+`include "memDP.sv"
 
 /**
  * A quick overview of the cache and memory:
@@ -46,8 +47,9 @@ module icache #(
     //input MEM_TAG   Imem2proc_data_tag,
 
     // From fetch stage
-    input ADDR proc2Icache_addr,
+    input ADDR proc2Icache_addr, // read addr
     input logic write_en,
+    input ADDR write_addr,
     input MEM_BLOCK write_data,
 
     // To memory
@@ -59,15 +61,16 @@ module icache #(
 );
 
     // Note: cache tags, not memory tags
-    logic [12-`ICACHE_LINE_BITS:0] current_tag;
-    logic [$clog2(`ICACHE_LINES)-1:0] current_index;
+    logic [12-`ICACHE_LINE_BITS:0] current_tag, write_tag;
+    logic [$clog2(`ICACHE_LINES)-1:0] current_index, write_index;
     //logic                          got_mem_data;
 
-    ADDR [PREFETCH_DISTANCE-1:0] raddr;
+    logic [1:0] [`ICACHE_LINE_BITS-1:0] raddr; // TODO
 
     always_comb begin
+        raddr = '0;
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
-            raddr[i] = (current_index + i*8) % ICACHE_LINES;
+            raddr[i] = (current_index + i*8) % `ICACHE_LINES;
         end
     end
 
@@ -85,9 +88,9 @@ module icache #(
         .reset(reset),
         .re   ('1),
         .raddr({raddr[1], raddr[0]}),
-        .rdata({Icache_data_out[1].word_level, Icache_data_out[0].word_level}), // TODO SUS
+        .rdata({Icache_data_out[1].word_level, Icache_data_out[0].word_level}), // TODO SUS?
         .we   (write_en),
-        .waddr(current_index),
+        .waddr(write_index),
         .wdata(write_data.word_level)
     );
     
@@ -96,6 +99,8 @@ module icache #(
 
     assign current_tag = proc2Icache_addr[15:3+`ICACHE_LINE_BITS];
     assign current_index = proc2Icache_addr[3+`ICACHE_LINE_BITS:0];
+    assign write_tag = write_addr[15:3+`ICACHE_LINE_BITS];
+    assign write_index = write_addr[3+`ICACHE_LINE_BITS:0];
 
     //
     always_comb begin
@@ -153,7 +158,7 @@ module icache #(
             //     current_mem_tag <= Imem2proc_transaction_tag;
             // end
             if (write_en) begin // If data, meaning tag matches
-                icache_tags[current_index].tags  <= current_tag;
+                icache_tags[current_index].tags  <= write_tag;
                 icache_tags[current_index].valid <= 1'b1;
             end
         end
