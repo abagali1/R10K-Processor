@@ -93,9 +93,17 @@ module fetch #(
         end
 
 
-        // TODO: so this needs to be kept to coalesce the mshr val with the icache vals
-        // but we need to return min(ibuff_open, valid icache insts) from icache
-        // so presumably this has to come first. 
+        // counts valid instructions in current cache line
+        valid_insts = '0;
+        for (int i = 0; i < 4; i++) begin
+            logic adr = target + (i * 4);
+            if (icache_valid && (adr[31:3] == cache_target[31:3] && cache_read_data.word_level[i][31:0] != '0)) begin
+                valid_insts = valid_insts + 1;
+            end
+        end
+
+        insts_to_return = (valid_insts < ibuff_open) ? valid_insts : ibuff_open;
+
 
         // perform coalescing logic
         // a few cases:
@@ -103,29 +111,29 @@ module fetch #(
         // case: new memory data from mshr (indicated by cache_write_en)
         if (cache_write_en) begin
             if (ibuff_open) begin
+                next_num_insts = '0;
                 // iterate through 4 potential returns
-                for (int i = 0; i < 4; i++) begin
-                    ADDR current;
-                    current = target + i * 4;
+                for (int i = 0; i < insts_to_return; i++) begin
+                    ADDR current = target + i * 4;
                     // if the address is in the same block as cache_target
                     if (current[31:3] == cache_target[31:3]) begin
-                        next_out_insts[i].inst = current[2] ? cache_write_data[63:32] : cache_write_data[31:0];
-                        if (next_out_insts[i].inst) begin
-                            next_out_insts[i].valid = 1'b1;
-                            next_out_insts[i].PC = current;
-                            next_out_insts[i].NPC = current + 4;
-                            next_out_insts[i].pred_taken = 1'b0;
+                        next_out_insts[next_num_insts].inst = cache_write_data.word_level[current[2]];
+                        if (next_out_insts[next_num_insts].inst) begin
+                            next_out_insts[next_num_insts].valid = 1'b1;
+                            next_out_insts[next_num_insts].PC = current;
+                            next_out_insts[next_num_insts].NPC = current + 4;
+                            next_out_insts[next_num_insts].pred_taken = 1'b0;
                             next_num_insts = next_num_insts + 1;
                         end
                     end
                     // Check if this address hits in the cache
                     else if (icache_valid && current[31:3] == cache_target[31:3]) begin
-                        next_out_insts[i].inst = current[2] ? cache_read_data[63:32] : cache_read_data[31:0];
-                        if (next_out_insts[i].inst) begin
-                            next_out_insts[i].valid = 1'b1;
-                            next_out_insts[i].PC = current;
-                            next_out_insts[i].NPC = current + 4;
-                            next_out_insts[i].pred_taken = 1'b0;
+                        next_out_insts[next_num_insts].inst = cache_read_data.word_level[current[2]];
+                        if (next_out_insts[next_num_insts].inst) begin
+                            next_out_insts[next_num_insts].valid = 1'b1;
+                            next_out_insts[next_num_insts].PC = current;
+                            next_out_insts[next_num_insts].NPC = current + 4;
+                            next_out_insts[next_num_insts].pred_taken = 1'b0;
                             next_num_insts = next_num_insts + 1;
                         end
                     end
@@ -134,54 +142,18 @@ module fetch #(
         end 
         // case: cache hit
         else if (icache_valid) begin
-            // cache hit handling
-            for (int i = 0; i < 4; i++) begin
-                ADDR current;
-                current = target + i * 4;
-                // same block
-                if (current[31:3] == cache_target[31:3]) begin
-                    next_out_insts[i].inst = cache_read_data.word_level[current[2]];
-                    // if (next_out_insts[i].inst) begin
-                    //     next_out_insts[i].valid = 1'b1;
-                    //     next_out_insts[i].PC = current;
-                    //     next_out_insts[i].NPC = current + 4;
-                    //     next_out_insts[i].pred_taken = 1'b0;
-                    //     next_num_insts = next_num_insts + 1;
-                    // end
-                end
-            end
-        end
-
-
-
-
-        // RETURN LOGIC TO RETURN MIN(IBUFF, VALID INSTS IN CACHE)
-
-        // counts valid instructions in current cache line
-        valid_insts = '0;
-        for (int i = 0; i < 4; i++) begin
-            ADDR adr;
-            adr = target + (i * 4);
-            if (icache_valid && (adr[31:3] == cache_target[31:3] && cache_read_data.word_level[i][31:0] != '0)) begin
-                valid_insts = valid_insts + 1;
-            end
-        end
-
-        insts_to_return = (valid_insts < ibuff_open) ? valid_insts : ibuff_open;
-
-        // output instructions up to the calculated limit
-        next_num_insts = '0;
-        for (int i = 0; i < 4 && next_num_insts < insts_to_return; i++) begin
-            ADDR current;
-            current = target + (i * 4);
-            if (icache_valid && current[31:3] == cache_target[31:3]) begin
-                next_out_insts[next_num_insts].inst = cache_read_data.word_level[current[2]];
-                if (next_out_insts[next_num_insts].inst != '0) begin
-                    next_out_insts[next_num_insts].valid = 1'b1;
-                    next_out_insts[next_num_insts].PC = current;
-                    next_out_insts[next_num_insts].NPC = current + 4;
-                    next_out_insts[next_num_insts].pred_taken = 1'b0;
-                    next_num_insts = next_num_insts + 1;
+            next_num_insts = '0;
+            for (int i = 0; i < insts_to_return; i++) begin
+                ADDR current = target + (i * 4);
+                if (icache_valid && current[31:3] == cache_target[31:3]) begin
+                    next_out_insts[next_num_insts].inst = cache_read_data.word_level[current[2]];
+                    if (next_out_insts[next_num_insts].inst != '0) begin
+                        next_out_insts[next_num_insts].valid = 1'b1;
+                        next_out_insts[next_num_insts].PC = current;
+                        next_out_insts[next_num_insts].NPC = current + 4;
+                        next_out_insts[next_num_insts].pred_taken = 1'b0;
+                        next_num_insts = next_num_insts + 1;
+                    end
                 end
             end
         end
@@ -260,6 +232,3 @@ module fetch #(
         $display("          -- %h -- %b -- %b", cache_target, cache_write_en, icache_valid);
     end
 endmodule
-
-
-
