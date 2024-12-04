@@ -79,6 +79,7 @@ module fetch #(
         cache_write_data = '0;
         next_mshr_data = mshr_data;
         next_mshr_valid = mshr_valid;
+        mem_en = 0;
         //cache_target = target;
 
         // check for mshr eviction and cache updates
@@ -124,6 +125,7 @@ module fetch #(
     // FETCH TO INST_BUF
     always_comb begin
         next_num_insts = '0;
+        next_out_insts = '0;
         
         for (int i = 0; i < 2; i++) begin
             // if the cache block is valid, increment next_num_insts by 2 (2 insts per block)
