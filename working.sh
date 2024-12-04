@@ -12,7 +12,7 @@ for test in "${TESTS[@]}"; do
 
     if [ $wb_status -ne 0 ] || [ $out_status -ne 0 ]
     then
-        echo "Failed"
+        echo "Failed WB: $wb_status MEM: $out_status"
     else
         echo "Passed"
     fi

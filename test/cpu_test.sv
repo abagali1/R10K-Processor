@@ -662,16 +662,18 @@ module testbench;
     function void print_issue();
         $display("\nIssue Module");
         $display("ALU packets");
-        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |  b_mask |");
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
-            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
+            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |   %b  |", 
                     i,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.inst,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.PC,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.NPC,
                     debug_issued_alu_pack[i].rs1_value,
-                    debug_issued_alu_pack[i].rs2_value);
+                    debug_issued_alu_pack[i].rs2_value,
+                    debug_issued_alu_pack[i].decoded_vals.b_mask
+                    );
         end
 
         $display("MULT packets");
@@ -687,15 +689,18 @@ module testbench;
                     debug_issued_mult_pack[i].rs2_value);
         end
         $display("BR packets");
-        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
-        $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |   b_id |   b_mask");
+        $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |   %b | %b", 
                     0,
                     debug_issued_br_pack.decoded_vals.decoded_vals.valid,
                     debug_issued_br_pack.decoded_vals.decoded_vals.inst,
                     debug_issued_br_pack.decoded_vals.decoded_vals.PC,
                     debug_issued_br_pack.decoded_vals.decoded_vals.NPC,
                     debug_issued_br_pack.rs1_value,
-                    debug_issued_br_pack.rs2_value);
+                    debug_issued_br_pack.rs2_value,
+                    debug_issued_br_pack.decoded_vals.b_id,
+                    debug_issued_br_pack.decoded_vals.b_mask
+                    );
 
         $display("ST packets");
         $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
@@ -732,6 +737,8 @@ module testbench;
     // cdb
     function void print_cdb();
         $display("\nCDB, gnt: %b", debug_cdb_gnt);
+        $display("FU DONE: %b", debug_cdb_fu_done);
+        $display("CDB Stall Sig %b", debug_cdb_stall_sig);
         $display("#  |   valid |  reg_idx | p_reg_idx |   reg_val   |");
 
         for (int i = 0; i < `N; i++) begin
@@ -813,7 +820,6 @@ module testbench;
         $display("MULT Rd EN: %b", debug_mult_rd_en);
         $display("MULT Data Ready: %b", debug_mult_done);
         // $display("MULT Data Ready: %b", dut.mult_done);
-        $display("FU DONE: %b", debug_cdb_fu_done);
         // $display("FU DONE: %b", dut.cbd.fu_done);
 
         print_rs();
