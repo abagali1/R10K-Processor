@@ -24,9 +24,6 @@ module cpu (
     output MEM_BLOCK   proc2mem_data,    // Data sent to memory
     output MEM_SIZE    proc2mem_size,    // Data size sent to memory
 
-    input INST_PACKET                   [7:0]                               in_insts,
-    input logic                         [3:0]                               num_input,
-
     // Note: these are assigned at the very bottom of the modulo
     output COMMIT_PACKET                [`N-1:0]                                                committed_insts,
     output ROB_PACKET                   [`N-1:0]                                                retired_insts,
@@ -135,6 +132,10 @@ module cpu (
     // the start of amrita ducking around
 
     // fake fetch
+
+    logic fetch_mem_en;
+    logic [$clog2(`INST_BUFF_DEPTH+1)-1:0] num_input;
+    INST_PACKET [`INST_BUFF_DEPTH-1:0] in_insts;
 
     ADDR PC;
 
@@ -358,8 +359,8 @@ module cpu (
         .clock(clock),
         .reset(reset),
 
-        .target(),
-        .br_en(br_en),
+        .target(NPC),
+        .br_task(br_task),
         .ibuff_open(ib_open),
         .mem_transaction_tag(mem2proc_transaction_tag),
         .mem_transaction_handshake(mem2proc_transaction_handshake),
@@ -368,6 +369,7 @@ module cpu (
 
         .mem_en(fetch_mem_en),
         .mem_addr(proc2mem_addr),
+        .mem_command(proc2mem_command),
         .out_insts(in_insts),
         .num_insts(num_input)
     );

@@ -371,7 +371,6 @@ module testbench;
             // Count the number of cycles and number of instructions committed
             clock_count = 0;
             instr_count = 0;
-            inst_mem_count = 0;
         end else begin
             #2; // wait a short time to avoid a clock edge
             clock_count = clock_count + 1;
@@ -910,7 +909,10 @@ module testbench;
         print_alu_data();
         print_issue();
         $display("\n");
-        `endif
+
+        // if(clock_count > 250) begin
+        //     $finish;
+        // end
     endfunction
 
 
