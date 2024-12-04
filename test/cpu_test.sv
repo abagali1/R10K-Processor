@@ -168,6 +168,22 @@ module testbench;
         FU_PACKET               [`NUM_FU_ALU-1:0]                                           debug_alu_next_data;
         logic                                                                               debug_sq_full;
         logic                   [$clog2(`SQ_SZ+1)-1:0]                                      debug_sq_br_tail;
+        
+        
+        ADDR                                                                                debug_fetch_target;
+        logic                                                                               debug_fetch_arbiter_signal; 
+        BR_TASK                                                                             debug_fetch_br_task;
+        logic                    [$clog2(`INST_BUFF_DEPTH+1)-1:0]                           debug_fetch_ibuff_open;
+                
+        MEM_TAG                                                                             debug_fetch_mem_transaction_tag; 
+        MEM_TAG                                                                             debug_fetch_mem_data_tag;
+        MEM_BLOCK                                                                           debug_fetch_mem_data;
+                
+        logic                                                                               debug_fetch_mem_en;
+        ADDR                                                                                debug_fetch_mem_addr_out; 
+                
+        INST_PACKET              [3:0]                                                      debug_fetch_out_insts;
+        logic                    [2:0]                                                      debug_fetch_out_num_insts;
     `endif
 
 
@@ -279,6 +295,22 @@ module testbench;
             .debug_alu_next_data(debug_alu_next_data),
             .debug_sq_full(debug_sq_full),
             .debug_sq_br_tail(debug_sq_br_tail)
+            .debug_alu_next_data(debug_alu_next_data)
+
+            .debug_fetch_target(debug_fetch_target),
+            .debug_fetch_arbiter_signal(debug_fetch_arbiter_signal),
+            .debug_fetch_br_task(debug_fetch_br_task),
+            .debug_fetch_ibuff_open(debug_fetch_ibuff_open),
+
+            .debug_fetch_mem_transaction_tag(debug_fetch_mem_transaction_tag),
+            .debug_fetch_mem_data_tag(debug_fetch_mem_data_tag),
+            .debug_fetch_mem_data(debug_fetch_mem_data),
+
+            .debug_fetch_mem_en(debug_fetch_mem_en),
+            .debug_fetch_mem_addr_out(debug_fetch_mem_addr_out),
+
+            .debug_fetch_out_insts(debug_fetch_out_insts),
+            .debug_fetch_out_num_insts(debug_fetch_out_num_insts)
         `endif
     );
 
@@ -555,6 +587,39 @@ module testbench;
     // DEBUGGER
 
     `ifdef DEBUG
+    // print fetch/prefetcher
+    function void print_fetch();
+        $display("FETCH");
+
+        $display("#\t|    target    |    mem_data    |   mem_en   |  mem_addr_out   | out_num_insts |");
+        $display("  %b   |   %b   | %d |      %b      |  %d |", 
+                debug_fetch_target,
+                debug_fetch_mem_data,
+                debug_fetch_mem_en,
+                debug_fetch_mem_addr_out,
+                debug_fetch_out_num_insts
+            );
+
+        $display("#\t|    mem_transaction_tag    |    mem_data_tag    |   mem_data  |");
+        $display("  %b   |   %b   | %b ", 
+                debug_fetch_mem_transaction_tag,
+                debug_fetch_mem_data_tag,
+                debug_fetch_mem_data
+            );
+        
+        
+        // for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin
+        //     $display("  %b   |   %b   | %d |      %b      |  %d |", 
+        //         i, 
+        //         debug_inst_buff_entries[i].valid, 
+        //         debug_inst_buff_entries[i].inst, 
+        //         debug_inst_buff_entries[i].PC, 
+        //         debug_inst_buff_entries[i].NPC, 
+        //         debug_inst_buff_entries[i].pred_taken ? "t" : "nt"
+        //     );
+        // end
+    endfunction
+
     // inst buff
     function void print_inst_buff();
         $display("Instruction Buffer");
@@ -880,7 +945,7 @@ module testbench;
             $display("%02d: 0h%05x", i, retired_insts[i].PC);
         end
         $display("\n");
-
+        print_fetch();
         print_inst_buff();
         print_dispatch();
         print_sq();
