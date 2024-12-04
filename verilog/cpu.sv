@@ -62,6 +62,7 @@ module cpu (
         output logic                    [`RS_SZ-1:0]                                            debug_all_issued_br,
         output logic                    [`RS_SZ-1:0]                                            debug_all_issued_st,
         output logic                    [`RS_SZ-1:0]                                            debug_all_issued_ld,
+        output BR_MASK                                                                          debug_rs_br_mask,
 
         output ROB_PACKET               [`ROB_SZ-1:0]                                           debug_rob_entries,
         output logic                    [$clog2(`ROB_SZ)-1:0]                                   debug_rob_head,
@@ -459,7 +460,8 @@ module cpu (
             .debug_all_issued_mult(debug_all_issued_mult),
             .debug_all_issued_br(debug_all_issued_br),
             .debug_all_issued_ld(debug_all_issued_ld),
-            .debug_all_issued_st(debug_all_issued_st)
+            .debug_all_issued_st(debug_all_issued_st),
+            .debug_b_mask(debug_rs_br_mask)
         `endif
     );
 

@@ -54,6 +54,7 @@ module rs #(
         output logic                [N-1:0][DEPTH-1:0]                                  debug_dis_entries_bus,
         output logic                [$clog2(DEPTH+1)-1:0]                               debug_open_entries,
         output logic                [DEPTH-1:0]                                         debug_all_issued_insts,
+        output BR_MASK                                                                  debug_b_mask,
 
         output logic                [`NUM_FU_ALU-1:0][DEPTH-1:0]                        debug_alu_issued_bus,
         output logic                [DEPTH-1:0]                                         debug_alu_req,
@@ -116,6 +117,7 @@ module rs #(
         assign debug_dis_entries_bus = dis_entries_bus;
         assign debug_open_entries = DEPTH - num_entries;
         assign debug_all_issued_insts = all_issued_insts;
+        assign debug_b_mask = b_mask;
 
         assign debug_alu_issued_bus = alu_issued_bus;
         assign debug_alu_req = alu_req;
