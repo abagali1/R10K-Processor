@@ -1,0 +1,4 @@
+Register writeback output (hexadecimal)
+PC 0000:lui     | r01=1000    
+PC 0004:mul     | r02=1000000 
+PC 0008:wfi     | ---
