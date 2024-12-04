@@ -61,15 +61,15 @@ module branch_fu (
 
     always_ff @(posedge clock) begin
         if (reset || (rem_br_task == SQUASH && (is_pack.decoded_vals.b_mask & rem_b_id) != '0)) begin
-            fu_pack     <= '{result: '0, decoded_vals: '0, pred_correct: '1, rs2_value: 0, ld_state: 0, target_addr: 0};
+            fu_pack     <= '{result: '0, decoded_vals: '0, pred_correct: '1, rs2_value: 0, ld_state: 0, target_addr: '0};
             data_ready  <= '0;
             br_task     <= NOTHING;
         end else if (rd_en) begin
-            fu_pack     <= '{result: target, decoded_vals: out, pred_correct: correct, rs2_value: 0, ld_state: 0, target_addr: 0};
+            fu_pack     <= '{result: is_pack.decoded_vals.decoded_vals.NPC, decoded_vals: out, pred_correct: correct, rs2_value: 0, ld_state: 0, target_addr: target};
             data_ready  <= 1;
             br_task     <= (correct ? CLEAR : SQUASH);
         end else begin
-            fu_pack     <= '{result: '0, decoded_vals: '0, pred_correct: '1, rs2_value: 0, ld_state: 0, target_addr: 0};
+            fu_pack     <= '{result: '0, decoded_vals: '0, pred_correct: '1, rs2_value: 0, ld_state: 0, target_addr: '0};
             data_ready  <= '0;
             br_task     <= NOTHING;
         end
