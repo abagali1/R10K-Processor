@@ -858,6 +858,10 @@ module cpu (
                 $display("@@@ Cycle %0d @@@", cycle);
                 $display("Time: %0t", $time);
                 cycle++;
+
+                // if (cycle == 107) begin
+                //     $finish;
+                // end
             end
         `endif
     `endif

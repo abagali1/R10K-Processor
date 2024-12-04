@@ -56,7 +56,7 @@ module dcache (
 
     `ifdef DEBUG
         `ifndef DC
-            always @(posedge clock) begin #5;
+            always @(negedge clock) begin #5;
                 $display("---- d cache inputs ----");
                 $display("  proc2Dcache_addr: %x, tag: %b, idx: %b", proc2Dcache_addr, current_tag, current_index);
                 $display("  is_store: %b, st_size: %s, in_data: %x", is_store, st_size.name(), in_data);
