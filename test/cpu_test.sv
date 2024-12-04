@@ -27,7 +27,7 @@ import "DPI-C" function string decode_inst(int inst);
 //import "DPI-C" function void close_pipeline_output_file();
 
 
-`define TB_MAX_CYCLES 50000000
+`define TB_MAX_CYCLES 1000
 
 
 module testbench;
@@ -388,7 +388,7 @@ module testbench;
             output_reg_writeback_and_maybe_halt();
 
             // stop the processor
-            if (error_status != NO_ERROR || clock_count > 300) begin
+            if (error_status != NO_ERROR || clock_count > `TB_MAX_CYCLES) begin
 
                 $display("  %16t : Processor Finished", $realtime);
 
@@ -825,10 +825,6 @@ module testbench;
         print_issue();
         $display("\n");
         `endif
-
-        if(clock_count > 950) begin
-            $finish;
-        end
     endfunction
 
 
