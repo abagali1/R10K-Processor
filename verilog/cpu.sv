@@ -134,7 +134,7 @@ module cpu (
             PC <= 0;
         end 
         else if (!br_fu_out.pred_correct) begin
-            PC <= br_fu_out.result;
+            PC <= br_fu_out.target_addr;
         end 
         else begin
             PC <= NPC + num_input * 4;
@@ -424,6 +424,7 @@ module cpu (
         .cdb_in(cdb_entries),
 
         .sq_head_in(sq_head),
+        .start_store(start_store),
 
         // ebr logic
         .rem_b_id(br_fu_out.decoded_vals.b_id),

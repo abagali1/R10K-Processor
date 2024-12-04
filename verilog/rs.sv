@@ -34,6 +34,7 @@ module rs #(
     input logic                     [$clog2(N+1)-1:0]                                   num_accept,
 
     input logic                     [$clog2(`SQ_SZ)-1:0]                                sq_head_in,
+    input logic                                                                         start_store,
 
     // output packets directly to FUs (they all are pipelined)
     output RS_PACKET                [`NUM_FU_ALU-1:0]                                   issued_alu, 
@@ -287,7 +288,7 @@ module rs #(
                     end
                 end
                 if(next_entries[i].decoded_vals.fu_type == LD_INST) begin
-                    if(next_entries[i].decoded_vals.sq_tail == sq_head_in) begin
+                    if(next_entries[i].decoded_vals.sq_tail == sq_head_in && start_store) begin
                         next_entries[i].ld_ready = 1;
                     end
                 end

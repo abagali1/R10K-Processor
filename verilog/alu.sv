@@ -65,21 +65,19 @@ module alu (
         endcase
     end
 
-
     always_ff @(posedge clock) begin
-        if (reset || (rem_br_task == SQUASH && (is_pack.decoded_vals.b_mask & rem_b_id) != '0)) begin
+        if (reset || (rem_br_task == SQUASH && (fu_pack.decoded_vals.b_mask & rem_b_id) != '0)) begin
             data_ready  <= '0;
-            fu_pack         <= '0;
+            fu_pack     <= '0;
         end else if (stall) begin
             data_ready  <= data_ready;
-            fu_pack         <= fu_pack;
+            fu_pack     <= fu_pack;
         end else if (rd_in) begin
             data_ready  <= 1;
-            fu_pack         <= '{result: result, decoded_vals: out, pred_correct: 0, rs2_value: 0, ld_state: 0, target_addr: 0};
-;
+            fu_pack     <= '{result: result, decoded_vals: out, pred_correct: 0, rs2_value: 0, ld_state: 0, target_addr: 0};
         end else begin
             data_ready  <= '0;
-            fu_pack         <= '0;
+            fu_pack     <= '0;
         end
     end
 
