@@ -59,7 +59,7 @@ module icache (
 
     // Note: cache tags, not memory tags
     logic [12-`ICACHE_LINE_BITS:0] current_tag,   last_tag;
-    logic [`ICACHE_LINE_BITS -1:0] current_index, last_index;
+    logic [$clog2(`ICACHE_LINES)-1:0] current_index, last_index;
     logic                          got_mem_data;
 
 
@@ -73,7 +73,7 @@ module icache (
     logic found_invalid;
 
     memDP #(
-        .WIDTH     ($bits(MEM_BLOCK)),
+        .WIDTH     (64),
         .DEPTH     (`ICACHE_LINES),
         .READ_PORTS(1),
         .BYPASS_EN (0))
@@ -82,10 +82,10 @@ module icache (
         .reset(reset),
         .re   (1'b1),
         .raddr(current_index),
-        .rdata(Icache_data_out),
+        .rdata(Icache_data_out.word_level),
         .we   (got_mem_data),
         .waddr(current_index),
-        .wdata(Imem2proc_data)
+        .wdata(Imem2proc_data.word_level)
     );
     
 
@@ -158,7 +158,9 @@ module icache (
     // ---- Cache state registers ---- //
 
     always_ff @(posedge clock) begin
+        $display("ICACHE: %b %b %b", icache_tags[current_index].valid, icache_tags[current_index].tags, current_tag);
         if (reset) begin
+            $write("RESET ICACHECEC");
             last_index       <= -1; // These are -1 to get ball rolling when
             last_tag         <= -1; // reset goes low because addr "changes"
             current_mem_tag  <= '0;

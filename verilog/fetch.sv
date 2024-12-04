@@ -1,30 +1,31 @@
 `include "sys_defs.svh"
-`include "icache.sv"
 
 module fetch #(
     parameter N = `N,
-    parameter NUM_MEM_TAGS = `NUM_MEM_TAGS
+    parameter NUM_MEM_TAGS = `NUM_MEM_TAGS,
+    parameter INST_BUFF_DEPTH = `INST_BUFF_DEPTH
 )
 (
     input logic                     clock,
     input logic                     reset,
 
     input ADDR                      target,
-    input logic                     br_en,  // taken or squashed, whenever target chanegs
-    input logic                     ibuff_open,
+    input BR_TASK                   br_task,  // taken or squashed, whenever target chanegs
+    input logic [$clog2(INST_BUFF_DEPTH+1)-1:0] ibuff_open,
 
     input MEM_TAG                   mem_transaction_tag,
     input logic                     mem_transaction_handshake,
     input MEM_TAG                   mem_data_tag,
-    input DATA                      mem_data,
+    input MEM_BLOCK                 mem_data,
 
     output logic                    mem_en,
     output ADDR                     mem_addr,
+    output MEM_COMMAND              mem_command,
 
-    output INST_PACKET [3:0]        out_insts,
-    output logic [1:0]              num_insts
+    output INST_PACKET [INST_BUFF_DEPTH-1:0]        out_insts,
+    output logic [$clog2(INST_BUFF_DEPTH+1)-1:0]    num_insts
 );
-    typedef enum logic [1:0] {FETCH, PREFETCH, STALL} STATE;
+    typedef enum logic [1:0] {FETCH, PREFETCH, STALL, DEF} STATE;
 
     STATE state, next_state;
     INST_PACKET [N-1:0] next_out_insts;
@@ -34,7 +35,7 @@ module fetch #(
     ADDR [`NUM_MEM_TAGS-1:0] mshr_data, next_mshr_data;
     logic [`NUM_MEM_TAGS-1:0] mshr_valid, next_mshr_valid;
     
-    ADDR next_mem_addr, cache_target, prefetch_target, prev_prefetch_target;
+    ADDR next_mem_addr, cache_target, prefetch_target, next_prefetch_target;
     MEM_BLOCK cache_write_data, cache_read_data;
     logic cache_write_en;
     logic mem_transaction_started;
@@ -47,7 +48,10 @@ module fetch #(
 
     logic valid_insts;
     logic insts_to_return;
+    logic br_en;
     
+    assign mem_cmd = mem_en ? MEM_LOAD : MEM_NONE;
+    assign br_en = br_task == SQUASH | br_task == CLEAR;
 
     assign mshr_full = &next_mshr_valid;
     assign mem_en = ~mshr_full & ~icache_valid;
@@ -56,12 +60,12 @@ module fetch #(
     // if the icache isn't valid, prefetch_target = next_miss_addr
     // otherwise, prefetch_target = current_fetch_addr + 8 (next instruction)
     always_comb begin
-        prefetch_target =   (state == FETCH) ? target : 
-                            (state == PREFETCH) ? prev_prefetch_target + 8 :
-                            (state == STALL) ? prev_prefetch_target : '0;
+        // prefetch_target =   (state == FETCH) ? target : 
+        //                     (state == PREFETCH) ? prev_prefetch_target + 8 :
+        //                     (state == STALL) ? prev_prefetch_target : '0;
         next_state = (state == FETCH) ? PREFETCH :
                      (state == PREFETCH & mshr_full & ~icache_valid) ? STALL :
-                     (state == STALL & ~mshr_full) ? PREFETCH : state;
+                     (state == STALL & ~mshr_full) ? PREFETCH : DEF;
         next_mem_addr = (state == FETCH | mem_transaction_handshake) ? prefetch_target : mem_addr;
     end
     
@@ -100,10 +104,11 @@ module fetch #(
             if (ibuff_open) begin
                 // iterate through 4 potential returns
                 for (int i = 0; i < 4; i++) begin
-                    ADDR current = target + i * 4;
+                    ADDR current;
+                    current = target + i * 4;
                     // if the address is in the same block as cache_target
                     if (current[31:3] == cache_target[31:3]) begin
-                        next_out_insts[i].inst = cache_write_data.word_level[current[2]];
+                        next_out_insts[i].inst = current[2] ? cache_write_data[63:32] : cache_write_data[31:0];
                         if (next_out_insts[i].inst) begin
                             next_out_insts[i].valid = 1'b1;
                             next_out_insts[i].PC = current;
@@ -114,7 +119,7 @@ module fetch #(
                     end
                     // Check if this address hits in the cache
                     else if (icache_valid && current[31:3] == cache_target[31:3]) begin
-                        next_out_insts[i].inst = cache_read_data.word_level[current[2]];
+                        next_out_insts[i].inst = current[2] ? cache_read_data[63:32] : cache_read_data[31:0];
                         if (next_out_insts[i].inst) begin
                             next_out_insts[i].valid = 1'b1;
                             next_out_insts[i].PC = current;
@@ -130,7 +135,8 @@ module fetch #(
         else if (icache_valid) begin
             // cache hit handling
             for (int i = 0; i < 4; i++) begin
-                ADDR current = target + i * 4;
+                ADDR current;
+                current = target + i * 4;
                 // same block
                 if (current[31:3] == cache_target[31:3]) begin
                     next_out_insts[i].inst = cache_read_data.word_level[current[2]];
@@ -153,7 +159,8 @@ module fetch #(
         // counts valid instructions in current cache line
         valid_insts = '0;
         for (int i = 0; i < 4; i++) begin
-            logic adr = target + (i * 4);
+            ADDR adr;
+            adr = target + (i * 4);
             if (icache_valid && (adr[31:3] == cache_target[31:3] && cache_read_data.word_level[i][31:0] != '0)) begin
                 valid_insts = valid_insts + 1;
             end
@@ -164,7 +171,8 @@ module fetch #(
         // output instructions up to the calculated limit
         next_num_insts = '0;
         for (int i = 0; i < 4 && next_num_insts < insts_to_return; i++) begin
-            ADDR current = target + (i * 4);
+            ADDR current;
+            current = target + (i * 4);
             if (icache_valid && current[31:3] == cache_target[31:3]) begin
                 next_out_insts[next_num_insts].inst = cache_read_data.word_level[current[2]];
                 if (next_out_insts[next_num_insts].inst != '0) begin
@@ -178,7 +186,7 @@ module fetch #(
         end
 
         // Update prefetch target to next invalid line from icache
-        prefetch_target = next_invalid_line;
+        next_prefetch_target = next_invalid_line;
     end
 
 
@@ -227,6 +235,9 @@ module fetch #(
     );
 
     always_ff @(posedge clock) begin
+        $display("FETCH: %b -- %b -- %h", state, next_state, prefetch_target);
+        $display("          -- %h -- %b -- %b", mem_addr, mem_en, mem_transaction_handshake);
+        $display("          -- %h -- %b -- %b", cache_target, cache_write_en, icache_valid);
         if (reset || br_en) begin
             state                <= FETCH;
             out_insts            <= '0;
@@ -234,7 +245,6 @@ module fetch #(
             mshr_data            <= '0;
             mshr_valid           <= '0;
             mem_addr             <= '0;
-            prev_prefetch_target <= '0;
         end else begin
             state                <= next_state;
             out_insts            <= next_out_insts;
@@ -243,7 +253,9 @@ module fetch #(
             mshr_data            <= next_mshr_data;
             mshr_valid           <= next_mshr_valid;
             mem_addr             <= next_mem_addr;
-            prev_prefetch_target <= prefetch_target;
+            prefetch_target      <= (state == FETCH) ? target : 
+                                    (state == PREFETCH) ? next_prefetch_target :
+                                    (state == STALL) ? prefetch_target : '0;
         end
     end
 endmodule
