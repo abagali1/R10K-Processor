@@ -70,8 +70,8 @@ module testbench;
     logic [63:0] unified_memory [`MEM_64BIT_LINES-1:0];
 
     `ifdef DEBUG
-        logic                    [`BRANCH_HISTORY_REG_SZ-1:0]                               debug_bhr;
-        
+        logic                   [`BRANCH_HISTORY_REG_SZ-1:0]                                debug_bhr;
+
         logic                   [$clog2(`N+1)-1:0]                                          debug_num_dispatched;
         DECODED_PACKET          [`N-1:0]                                                    debug_dis_insts;
         logic                   [$clog2(`N+1)-1:0]                                          debug_num_retired;
@@ -99,6 +99,7 @@ module testbench;
         logic                   [`RS_SZ-1:0]                                                debug_all_issued_br;
         logic                   [`RS_SZ-1:0]                                                debug_all_issued_ld;
         logic                   [`RS_SZ-1:0]                                                debug_all_issued_st;
+        BR_MASK                                                                             debug_rs_br_mask;
 
         ROB_PACKET              [`ROB_SZ-1:0]                                               debug_rob_entries;
         logic                   [$clog2(`ROB_SZ)-1:0]                                       debug_rob_head;
@@ -198,6 +199,7 @@ module testbench;
             .debug_rs_other_sig(debug_rs_other_sig),
             .debug_rs_open_entries(debug_rs_open_entries),
             .debug_rs_all_issued_insts(debug_rs_all_issued_insts),
+            .debug_rs_br_mask(debug_rs_br_mask),
 
             .debug_all_issued_alu(debug_all_issued_alu),
             .debug_all_issued_mult(debug_all_issued_mult),
@@ -596,7 +598,7 @@ module testbench;
 
     // rs
     function void print_rs();
-        $display("\nReservation Station (SQ Head: %02d)", debug_sq_head);
+        $display("\nReservation Station (SQ Head: %02d) (B Mask: %b)", debug_sq_head, debug_rs_br_mask);
         $display("#  | valid |  PC   |  NPC  |fu_type| t |t1 |t2 |b_id|b_mask| sq tail|alu issued|mult issued|br issued|ld issued|st issued|");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
             $display("%02d |  %d    | %05x | %05x |  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |     %d   |     %d   |", 
@@ -662,9 +664,9 @@ module testbench;
     function void print_issue();
         $display("\nIssue Module");
         $display("ALU packets");
-        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |  b_mask |");
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    | b_mask |");
         for (int i = 0; i < `NUM_FU_ALU; i++) begin
-            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |   %b  |", 
+            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |  %b  |", 
                     i,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.valid,
                     debug_issued_alu_pack[i].decoded_vals.decoded_vals.inst,
@@ -689,8 +691,8 @@ module testbench;
                     debug_issued_mult_pack[i].rs2_value);
         end
         $display("BR packets");
-        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |   b_id |   b_mask");
-        $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |   %b | %b", 
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    | b_id | b_mask");
+        $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      | %b | %b   |", 
                     0,
                     debug_issued_br_pack.decoded_vals.decoded_vals.valid,
                     debug_issued_br_pack.decoded_vals.decoded_vals.inst,
