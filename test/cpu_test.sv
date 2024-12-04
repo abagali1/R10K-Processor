@@ -591,16 +591,20 @@ module testbench;
     function void print_fetch();
         $display("FETCH");
 
-        $display("#\t|    target    |    mem_data    |   mem_en   |  mem_addr_out   | out_num_insts |");
-        $display("  %b   |   %b   | %d |      %b      |  %d |", 
+        $display("                   target                        |                          mem_data");
+        $display("  %b   |   %b   |", 
                 debug_fetch_target,
-                debug_fetch_mem_data,
+                debug_fetch_mem_data
+            );
+
+        $display("|   mem_en   |  mem_addr_out   | out_num_insts |");
+        $display(" %d |      %b      |  %d |",
                 debug_fetch_mem_en,
                 debug_fetch_mem_addr_out,
                 debug_fetch_out_num_insts
             );
 
-        $display("#\t|    mem_transaction_tag    |    mem_data_tag    |   mem_data  |");
+        $display("mem_transaction_tag    |    mem_data_tag    |                      mem_data                     |");
         $display("  %b   |   %b   | %b ", 
                 debug_fetch_mem_transaction_tag,
                 debug_fetch_mem_data_tag,
