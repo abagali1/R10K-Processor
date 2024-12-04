@@ -219,6 +219,7 @@ module rs #(
         next_entries = entries;
         next_num_entries = num_entries;
         other_sig = open_spots | all_issued_insts;
+        next_b_mask = b_mask;
 
         alu_req = '0;
         mult_req = '0;
@@ -243,6 +244,7 @@ module rs #(
 
         // Branch mask logic
         if (br_task == SQUASH) begin
+            next_b_mask = ((next_b_mask & rem_b_id) != 0) ? '0 : b_mask;
             for (int i = 0; i < DEPTH; i++) begin
                 if ((entries[i].b_mask & rem_b_id) != 0) begin
                     next_entries[i] = '0;
@@ -252,6 +254,7 @@ module rs #(
             end
         end 
         if (br_task == CLEAR) begin
+            next_b_mask = ((next_b_mask & rem_b_id) != 0) ? next_b_mask ^ rem_b_id : b_mask;
             for (int i = 0; i < DEPTH; i++) begin
                 if ((entries[i].b_mask & rem_b_id) != 0) begin
                     next_entries[i].b_mask = entries[i].b_mask ^ rem_b_id;
@@ -368,7 +371,7 @@ module rs #(
         ////////////////////////
 
         next_open_spots = other_sig;
-        next_b_mask = (b_mask | b_id) & ~rem_b_id;
+        next_b_mask = (next_b_mask | b_id) & ~rem_b_id;
         // Reads in new entries (parallelized)
         for (int i = 0; i < N; ++i) begin
             if (rs_in[i].valid && dis_entries_bus[i]) begin
