@@ -150,6 +150,11 @@ module testbench;
         logic                                                                               debug_Dcache_ld_out;
         ADDR                                                                                debug_Dcache_addr_out;
         logic                                                                               debug_mshr2cache_wr;
+        logic                   [`NUM_FU_ALU-1:0]                                           debug_alu_rd_en;
+        logic                   [`NUM_FU_ALU-1:0][`RS_SZ-1:0]                               debug_alu_issued_bus;
+
+        FU_PACKET               [`NUM_FU_ALU-1:0]                                           debug_alu_data;
+        FU_PACKET               [`NUM_FU_ALU-1:0]                                           debug_alu_next_data;
     `endif
 
 
@@ -255,7 +260,13 @@ module testbench;
 
             .debug_Dcache_ld_out(debug_Dcache_ld_out),
             .debug_Dcache_addr_out(debug_Dcache_addr_out),
-            .debug_mshr2cache_wr(debug_mshr2cache_wr)
+            .debug_mshr2cache_wr(debug_mshr2cache_wr),
+
+            .debug_alu_rd_en(debug_alu_rd_en),
+            .debug_alu_issued_bus(debug_alu_issued_bus),
+
+            .debug_alu_data(debug_alu_data),
+            .debug_alu_next_data(debug_alu_next_data)
         `endif
     );
 
@@ -599,6 +610,11 @@ module testbench;
     // rs
     function void print_rs();
         $display("\nReservation Station (SQ Head: %02d) (B Mask: %b)", debug_sq_head, debug_rs_br_mask);
+        $display("ALU Busy: %b", debug_cdb_stall_sig[`NUM_FU_ALU-1:0]);
+        $display("ALU Issued Bus");
+        for(int i=`NUM_FU_ALU-1;i>=0;i--) begin
+            $display("%02d: %b", i, debug_alu_issued_bus[i]);
+        end
         $display("#  | valid |  PC   |  NPC  |fu_type| t |t1 |t2 |b_id|b_mask| sq tail|alu issued|mult issued|br issued|ld issued|st issued|");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
             $display("%02d |  %d    | %05x | %05x |  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |     %d   |     %d   |", 
@@ -718,6 +734,16 @@ module testbench;
         end
     endfunction
 
+    function void print_alu_data();
+        $display("\nALU State");
+        $display("#  | valid | PC | result");
+        for(int i=`NUM_FU_ALU-1;i>=0;i--) begin
+            $display("%02d | %b  | %x  | %x", i, debug_alu_data[i].decoded_vals.decoded_vals.valid, debug_alu_data[i].decoded_vals.decoded_vals.PC, debug_alu_data[i].result);
+            $display("%02d | %b  | %x  | %x", i, debug_alu_next_data[i].decoded_vals.decoded_vals.valid, debug_alu_next_data[i].decoded_vals.decoded_vals.PC, debug_alu_next_data[i].result);
+            $display();
+        end
+    endfunction
+
     // branch stack
     function void print_br_stack();
         $display("\nBranch Stack");
@@ -741,6 +767,7 @@ module testbench;
         $display("\nCDB, gnt: %b", debug_cdb_gnt);
         $display("FU DONE: %b", debug_cdb_fu_done);
         $display("CDB Stall Sig %b", debug_cdb_stall_sig);
+        $display("ALU RD en %b", debug_alu_rd_en);
         $display("#  |   valid |  reg_idx | p_reg_idx |   reg_val   |");
 
         for (int i = 0; i < `N; i++) begin
@@ -830,6 +857,7 @@ module testbench;
         print_bhr();
         print_br_stack();
         print_cdb();
+        print_alu_data();
         print_issue();
         $display("\n");
         `endif

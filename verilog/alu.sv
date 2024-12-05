@@ -41,9 +41,20 @@ module alu(
 
     output FU_PACKET    fu_pack,
     output logic        data_ready
+
+    `ifdef DEBUG
+    ,   output FU_PACKET debug_data,
+        output FU_PACKET debug_next_data
+    `endif
 );
 
     FU_PACKET data, next_data;
+
+
+    `ifdef DEBUG
+        assign debug_data = data;
+        assign debug_next_data = next_data;
+    `endif
 
     DATA result, opa, opb;
     alu_impl impl(
