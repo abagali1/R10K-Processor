@@ -43,8 +43,6 @@ module rs #(
     output RS_PACKET                [`SQ_SZ-1:0]                                        issued_store,
     output RS_PACKET                [`NUM_FU_BR-1:0]                                    issued_br,
 
-    output PHYS_REG_IDX             [`SQ_SZ-1:0]                                        issued_store_t,
-
     output logic                    [$clog2(N+1)-1:0]                                   open_entries
 
     `ifdef DEBUG
@@ -233,7 +231,6 @@ module rs #(
         issued_mult = '0;
         issued_ld = '0;
         issued_store = '0;
-        issued_store_t = '0;
         issued_br = '0;
 
         `ifdef DEBUG
@@ -355,7 +352,6 @@ module rs #(
             for(int j=0;j<DEPTH;j++) begin
                 if(store_issued_bus[i][j]) begin
                     issued_store[i] = next_entries[j];
-                    issued_store_t[i] = next_entries[j].t.reg_idx;
                     next_entries[j] = '0;
                 end
             end

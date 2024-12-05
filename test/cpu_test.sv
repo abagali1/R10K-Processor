@@ -140,7 +140,7 @@ module testbench;
         logic                   [`LD_SZ-1:0]                                                debug_ld_ready_spots;
         logic                   [`LD_SZ-1:0]                                                debug_ld_alloc_spot;
         logic                   [`LD_SZ-1:0]                                                debug_ld_issued_entry;
-        logic                   [`LD_SZ-1:0]                                                debug_ld_freed_spots;
+        logic                   [`LD_SZ-1:0]                                                debug_ld_broadcast_entry;
         logic                                                                               debug_ld_full;
         logic                   [`LD_SZ-1:0]                                                debug_ld_stall_sig;
 
@@ -251,7 +251,7 @@ module testbench;
             .debug_ld_ready_spots(debug_ld_ready_spots),
             .debug_ld_alloc_spot(debug_ld_alloc_spot),
             .debug_ld_issued_entry(debug_ld_issued_entry),
-            .debug_ld_freed_spots(debug_ld_freed_spots),
+            .debug_ld_broadcast_entry(debug_ld_broadcast_entry),
             .debug_ld_full(debug_ld_full),
             .debug_ld_stall_sig(debug_ld_stall_sig),
 
@@ -601,9 +601,9 @@ module testbench;
         $display("\nLoad Unit (Full: %b) (Rd_en: %b) (Dcache_ld_out: %b) (mshr2cache_wr: %b)", debug_ld_full, debug_ld_rd_en, debug_Dcache_ld_out, debug_mshr2cache_wr);
         $display("CDB Stall: %b", debug_cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:`NUM_FU_ALU+`NUM_FU_MULT]);
         $display("Dcache Addr Out: 0h%05x", debug_Dcache_addr_out);
-        $display("#  |    PC   |Target Addr| Result | State | Open? | Ready? | Alloc? | Issued? | Freed? | Stalled?");
+        $display("#  |    PC   |Target Addr| Result | State | Open? | Ready? | Alloc? | Issued? | BCast? | Stalled?");
         for(int i=0;i<`LD_SZ;i++) begin
-            $display("%02d |  %05x  |   %05x   | %05x  |   %d   |   %b   |   %b    |   %b    |    %b    |   %b    |  %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_freed_spots[i], debug_ld_stall_sig[i]);
+            $display("%02d |  %05x  |   %05x   | %05x  |   %d   |   %b   |   %b    |   %b    |    %b    |   %b    |  %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_broadcast_entry[i], debug_ld_stall_sig[i]);
         end
     endfunction
 
