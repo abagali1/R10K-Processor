@@ -394,7 +394,6 @@ module testbench;
     ADDR current;
     MEM_BLOCK block;
     always @(negedge clock) begin
-        $write("\nUNIFFF\n%b %b\n", memory.unified_memory[98][63:32], memory.unified_memory[98][31:0]);
         if (reset) begin
             // Count the number of cycles and number of instructions committed
             clock_count = 0;

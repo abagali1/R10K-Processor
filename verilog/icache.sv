@@ -182,7 +182,7 @@ module icache #(
             $write("ICache tag: %d %b %b %b\n", i, icache_tags[i].tags, icache_tags[i].valid, icache_tags[i].alloc);
         end
         for (int i = 0; i < 2; i++) begin
-            $write("ICache data out: %d %b\n", i, Icache_data_out[i]);
+            $write("ICache data out: %d %b %b %b\n", i, Icache_data_out[i], Icache_valid_out[i], Icache_alloc_out[i]);
         end
     end
 
