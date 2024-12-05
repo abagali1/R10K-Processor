@@ -112,7 +112,12 @@ module cpu (
         output logic                                                                            debug_mshr2cache_wr,
 
         output MSHR                                                                             debug_mshr,
-        output DCACHE_TAG                [`DCACHE_LINES-1:0]                                    debug_dcache_tags
+        output DCACHE_TAG               [`DCACHE_LINES-1:0]                                     debug_dcache_tags,
+        output logic                    [`NUM_FU_ALU-1:0]                                       debug_alu_rd_en,
+        output logic                    [`NUM_FU_ALU-1:0][`RS_SZ-1:0]                           debug_alu_issued_bus,
+
+        output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_data,
+        output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data
     `endif
 );
 
@@ -316,6 +321,8 @@ module cpu (
         assign debug_Dcache_addr_out = Dcache_addr_out;
         assign debug_Dcache_ld_out = Dcache_ld_out;
         assign debug_mshr2cache_wr = mshr2cache_wr;
+
+        assign debug_alu_rd_en = alu_rd_en;
     `endif
 
     bhr goop (
@@ -412,6 +419,9 @@ module cpu (
         `endif
     );
 
+    logic [`NUM_FU_ALU-1:0] fu_alu_busy;
+    assign fu_alu_busy = cdb_stall_sig[`NUM_FU_ALU-1:0] | alu_rd_en;
+
     rs rasam (
         .clock(clock),
         .reset(reset),
@@ -432,7 +442,7 @@ module cpu (
         .br_task(br_task),
 
         // busy bits from FUs to mark when available to issue
-        .fu_alu_busy(cdb_stall_sig[`NUM_FU_ALU-1:0]),
+        .fu_alu_busy(fu_alu_busy),
         .fu_mult_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT-1:`NUM_FU_ALU]),
         .fu_ld_busy(ld_full),
         .fu_br_busy(1'b0),
@@ -461,7 +471,8 @@ module cpu (
             .debug_all_issued_br(debug_all_issued_br),
             .debug_all_issued_ld(debug_all_issued_ld),
             .debug_all_issued_st(debug_all_issued_st),
-            .debug_b_mask(debug_rs_br_mask)
+            .debug_b_mask(debug_rs_br_mask),
+            .debug_alu_issued_bus(debug_alu_issued_bus)
         `endif
     );
 
@@ -625,6 +636,11 @@ module cpu (
 
                 .fu_pack(alu_fu_out[i]),
                 .data_ready(alu_done[i])
+
+                `ifdef DEBUG
+                ,   .debug_data(debug_alu_data[i]),
+                    .debug_next_data(debug_alu_next_data[i])
+                `endif
             );
         end
     endgenerate
