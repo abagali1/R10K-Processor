@@ -151,7 +151,7 @@ module cpu (
     // fake fetch
 
     logic fetch_mem_en;
-    assign proc2Imem_command = fetch_mem_en == 1; // TODO replace with arbiter
+    assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
 
     logic [2:0] num_input;
     INST_PACKET [3:0] in_insts;
