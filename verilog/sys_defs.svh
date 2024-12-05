@@ -46,7 +46,7 @@
 // worry about these later
 `define BRANCH_PRED_SZ 4
 `define LSQ_SZ xx
-`define SQ_SZ 3
+`define SQ_SZ 32
 `define LD_SZ 1
 `define INST_BUFF_DEPTH 8
 

@@ -253,6 +253,8 @@ module cpu (
     FU_PACKET [`NUM_FU_MULT-1:0] mult_fu_out;
     logic     [`NUM_FU_MULT-1:0] mult_done;
 
+    logic sq_full;
+
     logic ld_full, start_load;
     FU_PACKET [`LD_SZ-1:0] ld_fu_out;
     logic [`LD_SZ-1:0] ld_done;
@@ -361,6 +363,7 @@ module cpu (
         .insts(ib_insts),
         .sq_tail_in(sq_tail),
         .bs_full(br_full),
+        .sq_full(sq_full),
 
         .num_dispatch(num_dis),
         .num_store_dispatched(num_store_dispatched),
@@ -733,7 +736,8 @@ module cpu (
         .Dmem_size(Dmem_size),
 
         .sq_head(sq_head),
-        .sq_tail(sq_tail)
+        .sq_tail(sq_tail),
+        .sq_full(sq_full)
 
         `ifdef DEBUG
         ,   .debug_entries(debug_sq_entries),

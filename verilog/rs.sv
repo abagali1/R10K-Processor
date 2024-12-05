@@ -290,7 +290,7 @@ module rs #(
                     end
                 end
                 if(next_entries[i].decoded_vals.fu_type == LD_INST) begin
-                    if(next_entries[i].decoded_vals.sq_tail == sq_head_in && start_store) begin
+                    if(next_entries[i].decoded_vals.sq_tail == sq_head_in) begin
                         next_entries[i].ld_ready = 1;
                     end
                 end

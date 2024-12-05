@@ -17,6 +17,7 @@ module dispatch #(
     input logic             [$clog2(`SQ_SZ)-1:0]        sq_tail_in,
     input INST_PACKET       [N-1:0]                     insts,
     input logic                                         bs_full,
+    input logic                                         sq_full,
 
     output logic            [$clog2(N+1)-1:0]           num_dispatch,
     output logic            [$clog2(N+1)-1:0]           num_store_dispatched,
@@ -81,12 +82,12 @@ module dispatch #(
                         out_insts[i] = '0;
                     end
                     if(decoded_insts[i].wr_mem) begin
-                        if(sq_open - num_store_dispatched <= 0) begin
+                        if(sq_full) begin
                             break;
                         end
                         out_insts[i] = decoded_insts[i];
                         out_insts[i].sq_tail = (sq_tail_in + num_store_dispatched) % `SQ_SZ;
-                        num_store_dispatched++;
+                        num_store_dispatched = num_store_dispatched + 1;
                     end else begin
                         out_insts[i] = decoded_insts[i];
                         out_insts[i].sq_tail = (sq_tail_in + num_store_dispatched) % `SQ_SZ;
@@ -99,6 +100,7 @@ module dispatch #(
             end
         end
     end
+
 
     // `ifdef DEBUG
     //     `ifndef DC
