@@ -47,8 +47,8 @@ module fetch #(
     MEM_BLOCK       cache_write_data;
     ADDR            cache_write_addr;
 
-    MEM_BLOCK   [PREFETCH_DISTANCE-1:0] cache_read_data;
-    logic       [PREFETCH_DISTANCE-1:0] icache_valid, icache_alloc;
+    MEM_BLOCK   [1:0] cache_read_data;
+    logic       [1:0] icache_valid, icache_alloc;
 
     //logic mem_transaction_started;
     logic mem_done;
@@ -98,7 +98,7 @@ module fetch #(
 
         found_in_mshr = -1;
         if (arbiter_signal & ~mshr_full) begin
-            for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+            for (int i = 0; i < 2; i++) begin
                 // check if in icache first
                 $write("\nicache alloc %b\n", icache_alloc);
                 if (~icache_valid[i]) begin
@@ -131,6 +131,7 @@ module fetch #(
         next_num_insts = '0;
         next_out_insts = '0;
         
+        $write("ICACHE VALID: %b", icache_valid);
         for (int i = 0; i < 2; i++) begin
             // if the cache block is valid, increment next_num_insts by 2 (2 insts per block)
             if (icache_valid[i] == 1) begin
@@ -141,7 +142,7 @@ module fetch #(
             end
         end
 
-        next_num_insts = (next_num_insts < ibuff_open) ? next_num_insts : ibuff_open;
+        next_num_insts = (next_num_insts < (ibuff_open - num_insts)) ? next_num_insts : (ibuff_open - num_insts);
 
         // Note: Temporary design decision, we only read instructions from icache, this could waste some cycles (faster to implement rn)
         // case: cache hit
@@ -149,8 +150,8 @@ module fetch #(
             ADDR current;
             current = target + (i * 4);
             if (i < next_num_insts) begin
+                $write("SETTING OUT INST: %h -- %b %b\n", current, cache_read_data[i/2].word_level[current[2]], icache_valid);
                 next_out_insts[i].inst = cache_read_data[i/2].word_level[current[2]];
-                $write("I AM ERRONEOUS: %b\n", cache_read_data[i/2]);
                 next_out_insts[i].valid = 1'b1;
                 next_out_insts[i].PC = current;
                 next_out_insts[i].NPC = current + 4;
@@ -198,12 +199,13 @@ module fetch #(
         .clock                      (clock),
         .reset                      (reset),
         .proc2Icache_addr           (target),
-        .found_in_mshr              (found_in_mshr),
+        .alloc_addr                 (mem_addr_out),
+        .alloc_en                   (mem_en),
         .write_en                   (cache_write_en),
         .write_addr                 (cache_write_addr),
         .write_data                 (cache_write_data),
         // outputs
-        .Icache_data_out            ({cache_read_data[3], cache_read_data[2], cache_read_data[1], cache_read_data[0]}),
+        .Icache_data_out            (cache_read_data),
         .Icache_valid_out           (icache_valid),
         .Icache_alloc_out           (icache_alloc)
     );
@@ -228,7 +230,7 @@ module fetch #(
         for (int i = 0; i < 4; i++) begin
             $display("OUT INSTSS: %b", out_insts[i]);
         end
-        $display("TARGET: %d", target);
+        $display("MEM DONE: %b %b %b %b", mem_done, cache_write_en, cache_write_addr, cache_write_data);
 
         //$display("          mem_addr: %h -- mem_en: %b -- mem_transaction_handshake: %b", mem_addr, mem_en, mem_transaction_handshake);
         //$display("          cache_target: %h -- cache_write_en: %b -- icache_valid: %b", cache_target, cache_write_en, icache_valid);

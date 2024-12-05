@@ -142,39 +142,6 @@ module cpu (
 
     //////////////////////////////////////////////////
     //                                              //
-    //               amrita trying                  //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    // the start of amrita ducking around
-
-    // fake fetch
-
-    logic fetch_mem_en;
-    assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
-
-    logic [2:0] num_input;
-    INST_PACKET [3:0] in_insts;
-
-    ADDR PC;
-
-    assign NPC = PC + num_input * 4; // TODO branch prediction
-    
-
-    always @(posedge clock) begin
-        if (reset) begin
-            PC <= 0;
-        end 
-        // else if (!br_fu_out.pred_correct) begin
-        //     PC <= br_fu_out.result;
-        // end 
-        else begin
-            PC <= NPC;
-        end
-    end
-
-    //////////////////////////////////////////////////
-    //                                              //
     //               pipeline wires                 //
     //                                              //
     //////////////////////////////////////////////////
@@ -356,6 +323,64 @@ module cpu (
         assign debug_sq_full = sq_full;
         assign debug_sq_br_tail = cp_out.sq_tail;
     `endif
+
+    //////////////////////////////////////////////////
+    //                                              //
+    //          john and rohan trying               //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    logic fetch_mem_en;
+    assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
+
+    logic [2:0] num_input;
+    INST_PACKET [3:0] in_insts;
+
+    ADDR PC;
+
+    assign NPC = PC + num_input * 4; // TODO branch prediction
+    
+
+    always @(posedge clock) begin
+        if (reset) begin
+            PC <= 0;
+        end 
+        // else if (!br_fu_out.pred_correct) begin
+        //     PC <= br_fu_out.result;
+        // end 
+        else begin
+            PC <= (br_task == SQUASH) ? br_fu_out.result : NPC;
+        end
+    end
+
+    //////////////////////////////////////////////////
+    //                                              //
+    //          john and rohan trying               //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    logic fetch_mem_en;
+    assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
+
+    logic [2:0] num_input;
+    INST_PACKET [3:0] in_insts;
+
+    ADDR PC;
+
+    assign NPC = PC + num_input * 4; // TODO branch prediction
+    
+
+    always @(posedge clock) begin
+        if (reset) begin
+            PC <= 0;
+        end 
+        // else if (!br_fu_out.pred_correct) begin
+        //     PC <= br_fu_out.result;
+        // end 
+        else begin
+            PC <= (br_task == SQUASH) ? br_fu_out.result : NPC;
+        end
+    end
 
     bhr goop (
         .clock(clock),
