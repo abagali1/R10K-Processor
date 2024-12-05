@@ -33,7 +33,7 @@ module decode #(
             id_packet[i].dest_reg_idx = (has_dest_reg[i]) ? insts[i].inst.r.rd : `ZERO_REG;
             id_packet[i].pred_taken = insts[i].pred_taken;
             id_packet[i].sq_tail = 0;
-        end
+            $write("DECODE PC %d %d", insts[i].PC, id_packet[i].dest_reg_idx);
     end
 
 

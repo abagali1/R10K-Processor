@@ -487,7 +487,7 @@ module testbench;
                 instr_count = instr_count + 1;
 
                 pc = committed_insts[n].NPC - 4;
-                block = mem.unified_memory[pc[31:3]];
+                block = memory.unified_memory[pc[31:3]];
                 inst = block.word_level[pc[2]];
                 // print the committed instructions to the writeback output file
                 if (committed_insts[n].reg_idx == `ZERO_REG) begin
@@ -605,10 +605,11 @@ module testbench;
             );
 
         $display("mem_transaction_tag    |    mem_data_tag    |                      mem_data                     |");
-        $display("  %b   |   %b   | %b ", 
+        $display("  %b   |   %b   | %b  | %b", 
                 debug_fetch_mem_transaction_tag,
                 debug_fetch_mem_data_tag,
-                debug_fetch_mem_data
+                debug_fetch_mem_data,
+                debug_fetch_ibuff_open
             );
         
         
@@ -974,9 +975,9 @@ module testbench;
         print_issue();
         $display("\n");
 
-        // if(clock_count > 250) begin
-        //     $finish;
-        // end
+        if(clock_count > 1000) begin
+            $finish;
+        end
     endfunction
 
 

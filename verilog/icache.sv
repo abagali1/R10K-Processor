@@ -47,7 +47,8 @@ module icache #(
     //input MEM_TAG   Imem2proc_data_tag,
 
     // From fetch stage
-    input logic [$clog2(PREFETCH_DISTANCE+1)-1:0] found_in_mshr,
+    input ADDR alloc_addr,
+    input logic alloc_en,
     input ADDR proc2Icache_addr, // read addr
     input logic write_en,
     input ADDR write_addr,
@@ -57,22 +58,22 @@ module icache #(
     //output MEM_COMMAND proc2Imem_command,
     //output ADDR        proc2Imem_addr,
 
-    output MEM_BLOCK [PREFETCH_DISTANCE-1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out, // When valid is high
-    output logic     [PREFETCH_DISTANCE-1:0]  Icache_alloc_out // When valid is high
+    output MEM_BLOCK [1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
+    output logic     [1:0]  Icache_valid_out, // When valid is high
+    output logic     [1:0]  Icache_alloc_out // When valid is high
 );
 
     // Note: cache tags, not memory tags
-    logic [12-`ICACHE_LINE_BITS:0] current_tag, write_tag;
-    logic [$clog2(`ICACHE_LINES)-1:0] current_index, write_index;
+    logic [12-`ICACHE_LINE_BITS:0] current_tag, write_tag, alloc_tag;
+    logic [`ICACHE_LINE_BITS-1:0] current_index, write_index, alloc_index;
     //logic                          got_mem_data;
 
     logic [1:0] [`ICACHE_LINE_BITS-1:0] raddr; // TODO
 
     always_comb begin
         raddr = '0;
-        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
-            raddr[i] = (current_index + i*8) % `ICACHE_LINES;
+        for (int i = 0; i < 2; i++) begin
+            raddr[i] = (current_index + i) % `ICACHE_LINES;
         end
     end
 
@@ -99,15 +100,14 @@ module icache #(
 
     // ---- Addresses and final outputs ---- //
 
-    assign current_tag = proc2Icache_addr[15:3+`ICACHE_LINE_BITS];
-    assign current_index = proc2Icache_addr[3+`ICACHE_LINE_BITS:0];
-    assign write_tag = write_addr[15:3+`ICACHE_LINE_BITS];
-    assign write_index = write_addr[3+`ICACHE_LINE_BITS:0];
+    assign {current_tag, current_index} = proc2Icache_addr[15:3];
+    assign {write_tag, write_index} = write_addr[15:3];
+    assign {alloc_tag, alloc_index} = alloc_addr[15:3];
 
     //
     always_comb begin
         Icache_valid_out = '0;
-        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+        for (int i = 0; i < 2; i++) begin
             Icache_valid_out[i] = icache_tags[current_index+i].valid; //&& (icache_tags[current_index+i].tags == (current_tag+i)); 
             Icache_alloc_out[i] = icache_tags[current_index+i].alloc;
         end
@@ -161,13 +161,13 @@ module icache #(
             //     current_mem_tag <= Imem2proc_transaction_tag;
             // end
             if (write_en) begin // If data, meaning tag matches
-                $write("ICACHE WRITING %h %b", write_addr, write_data);
-                icache_tags[current_index].tags  <= write_tag;
-                icache_tags[current_index].valid <= 1'b1;
-                icache_tags[current_index].alloc <= 1'b0;
+                $write("ICACHE WRITING %d %b", write_index, write_data);
+                icache_tags[write_index].tags  <= write_tag;
+                icache_tags[write_index].valid <= 1'b1;
+                icache_tags[write_index].alloc <= 1'b0;
             end
-            if (found_in_mshr != -1) begin
-                icache_tags[current_index+found_in_mshr].alloc <= 1'b1;
+            if (alloc_en) begin
+                icache_tags[alloc_index].alloc <= 1'b1;
             end
         end
         $write("raddr: %b\n", raddr[1:0]);
