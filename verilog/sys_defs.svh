@@ -148,6 +148,7 @@ typedef enum logic [1:0] {
 typedef struct packed {
     logic [12-`ICACHE_LINE_BITS:0] tags;
     logic                          valid;
+    logic                          alloc;
 } ICACHE_TAG;
 
 typedef struct packed {
