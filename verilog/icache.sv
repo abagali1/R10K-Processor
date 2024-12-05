@@ -57,9 +57,9 @@ module icache #(
     //output MEM_COMMAND proc2Imem_command,
     //output ADDR        proc2Imem_addr,
 
-    output MEM_BLOCK [PREFETCH_DISTANCE-1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out, // When valid is high
-    output logic     [PREFETCH_DISTANCE-1:0]  Icache_alloc_out // When valid is high
+    output MEM_BLOCK [1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
+    output logic     [1:0]  Icache_valid_out, // When valid is high
+    output logic     [1:0]  Icache_alloc_out // When valid is high
 );
 
     // Note: cache tags, not memory tags
