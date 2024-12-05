@@ -87,11 +87,11 @@ module alu(
         endcase
     end
 
+    assign fu_pack = data;
+    assign data_ready = data != '0;
+
     always_comb begin
         next_data = stall ? data : '0;
-
-        fu_pack = data;
-        data_ready = data != '0;
 
         if(!stall && rd_in) begin
             next_data = '{
