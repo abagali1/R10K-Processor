@@ -111,6 +111,7 @@ module icache #(
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
             Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && (icache_tags[(current_index+i)% `ICACHE_LINES].tags == (current_tag+i)); 
             Icache_alloc_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].alloc;
+            $write("ICACHE TAGS:: %b %b %d %b\n", icache_tags[current_index+i].tags, current_tag, i, Icache_valid_out[i]);
         end
     end
     /*
@@ -182,7 +183,7 @@ module icache #(
             $write("ICache tag: %d %b %b %b\n", i, icache_tags[i].tags, icache_tags[i].valid, icache_tags[i].alloc);
         end
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
-            $write("ICache data out: %d %b %b %b\n", i, Icache_data_out[i], Icache_valid_out[i], Icache_alloc_out[i]);
+            $write("ICache data out: %d %b %b %b %b\n", i, raddr[i], Icache_data_out[i], Icache_valid_out[i], Icache_alloc_out[i]);
         end
     end
 
