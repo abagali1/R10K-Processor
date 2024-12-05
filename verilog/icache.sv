@@ -53,6 +53,7 @@ module icache #(
     input logic write_en,
     input ADDR write_addr,
     input MEM_BLOCK write_data,
+    input BR_TASK br_task,
 
     // To memory
     //output MEM_COMMAND proc2Imem_command,
@@ -108,7 +109,7 @@ module icache #(
     always_comb begin
         Icache_valid_out = '0;
         for (int i = 0; i < 2; i++) begin
-            Icache_valid_out[i] = icache_tags[current_index+i].valid; //&& (icache_tags[current_index+i].tags == (current_tag+i)); 
+            Icache_valid_out[i] = icache_tags[current_index+i].valid && (icache_tags[current_index+i].tags == (current_tag+i)); 
             Icache_alloc_out[i] = icache_tags[current_index+i].alloc;
         end
     end
@@ -160,14 +161,20 @@ module icache #(
             // if (update_mem_tag) begin
             //     current_mem_tag <= Imem2proc_transaction_tag;
             // end
-            if (write_en) begin // If data, meaning tag matches
-                $write("ICACHE WRITING %d %b", write_index, write_data);
-                icache_tags[write_index].tags  <= write_tag;
-                icache_tags[write_index].valid <= 1'b1;
-                icache_tags[write_index].alloc <= 1'b0;
-            end
-            if (alloc_en) begin
-                icache_tags[alloc_index].alloc <= 1'b1;
+            if (br_task == SQUASH) begin
+                for (int i = 0; i < `ICACHE_LINES; i++) begin
+                    icache_tags[i].alloc <= 1'b0;
+                end
+            end else begin
+                if (write_en) begin // If data, meaning tag matches
+                    $write("ICACHE WRITING %d %b", write_index, write_data);
+                    icache_tags[write_index].tags  <= write_tag;
+                    icache_tags[write_index].valid <= 1'b1;
+                    icache_tags[write_index].alloc <= 1'b0;
+                end
+                if (alloc_en) begin
+                    icache_tags[alloc_index].alloc <= 1'b1;
+                end
             end
         end
         $write("raddr: %b\n", raddr[1:0]);
