@@ -199,6 +199,7 @@ module fetch #(
         .clock                      (clock),
         .reset                      (reset),
         .proc2Icache_addr           (target),
+        .br_task                    (br_task),
         .alloc_addr                 (mem_addr_out),
         .alloc_en                   (mem_en),
         .write_en                   (cache_write_en),

@@ -21,6 +21,12 @@ module decode #(
     output DECODED_PACKET [N-1:0] id_packet
 );
 
+    always_ff @(posedge clock) begin
+        for (int i = 0; i < N; i++) begin
+            $write("DECODE PC %d %d %d", i, insts[i].PC, id_packet[i].dest_reg_idx);
+        end
+    end
+
     logic [N-1:0] has_dest_reg;
     always_comb begin
         for (int i = 0; i < N; i++) begin
@@ -34,6 +40,7 @@ module decode #(
             id_packet[i].pred_taken = insts[i].pred_taken;
             id_packet[i].sq_tail = 0;
             $write("DECODE PC %d %d", insts[i].PC, id_packet[i].dest_reg_idx);
+        end
     end
 
 
