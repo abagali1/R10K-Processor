@@ -1,3 +1,6 @@
+
+Final memory state and exit status:
+
 @@@ Unified Memory contents hex on left, decimal on right: 
 @@@
 @@@ mem[    0] = 0000113700000313 : 18927920874259

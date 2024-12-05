@@ -39,7 +39,7 @@ module load_fu #(
         output logic                    [DEPTH-1:0]                 debug_ready_spots,
         output logic                    [DEPTH-1:0]                 debug_alloc_spot,
         output logic                    [DEPTH-1:0]                 debug_issued_entry,
-        output logic                    [DEPTH-1:0]                 debug_freed_spots,
+        output logic                    [DEPTH-1:0]                 debug_broadcast_entry,
         output logic                    [DEPTH-1:0]                 debug_ld_stall_sig
     `endif
 );
@@ -47,6 +47,7 @@ module load_fu #(
     FU_PACKET [DEPTH-1:0] entries, next_entries;
     logic [DEPTH-1:0] open_spots, next_open_spots;
     logic [DEPTH-1:0] ready_spots, next_ready_spots;
+    logic [DEPTH-1:0] data_ready_spots, next_data_ready_spots;
 
     DATA addr_result;
     basic_adder addr_calc(
@@ -78,7 +79,18 @@ module load_fu #(
         .empty()
     );
 
-    logic [DEPTH-1:0] spots_freed;
+    logic [DEPTH-1:0] broadcast_req, broadcasted_entry, squashed_spots;
+    assign broadcast_req = data_ready_spots ^ squashed_spots;
+    psel_gen #(
+        .WIDTH(DEPTH),
+        .REQS(DEPTH)
+    ) broadcaster (
+        .req(broadcast_req),
+        .gnt(broadcasted_entry),
+        .gnt_bus(),
+        .empty()
+    );
+
     assign full = next_open_spots == '0;
 
     `ifdef DEBUG
@@ -87,7 +99,7 @@ module load_fu #(
         assign debug_ready_spots = ready_spots;
         assign debug_alloc_spot = rd_en ? alloc_spot : '0;
         assign debug_issued_entry = (!dm_stalled && !start_store) ? issued_entry : '0;
-        assign debug_freed_spots = spots_freed;
+        assign debug_broadcast_entry = broadcasted_entry;
         assign debug_ld_stall_sig = cdb_stall;
     `endif
 
@@ -95,8 +107,9 @@ module load_fu #(
         next_entries = entries;
         next_open_spots = open_spots;
         next_ready_spots = ready_spots;
+        next_data_ready_spots = data_ready_spots;
 
-        spots_freed = '0;
+        squashed_spots = '0;
 
         start_load = '0;
         Dmem_addr = '0;
@@ -110,14 +123,15 @@ module load_fu #(
                 if(rem_br_task == SQUASH) begin
                     next_entries[i] = '0;
 
-                    spots_freed[i] = '1;
+                    squashed_spots[i] = '1;
+
                     next_open_spots[i] = '1;
                     next_ready_spots[i] = '0;
+                    next_data_ready_spots[i] = '0;
                 end
                 if(rem_br_task == CLEAR) begin
                     next_entries[i].decoded_vals.b_mask = '0;
 
-                    spots_freed[i] = '0;
                     next_open_spots[i] = '0;
                     next_ready_spots[i] = '0;
                 end
@@ -133,9 +147,9 @@ module load_fu #(
                     rs2_value: is_pack.rs2_value,
                     pred_correct: 0
                 };
-                spots_freed[i] = '0;
                 next_open_spots[i] = '0;
                 next_ready_spots[i] = '1;
+                next_data_ready_spots[i] = '0;
             end
 
             if(!dm_stalled && !start_store && issued_entry[i]) begin
@@ -144,9 +158,9 @@ module load_fu #(
 
                 next_entries[i].ld_state = WAITING_FOR_DATA;
 
-                spots_freed[i] = '0;
                 next_open_spots[i] = '0;
                 next_ready_spots[i] = '0;
+                next_data_ready_spots[i] = '0;
             end
 
             // Memory transaction completed
@@ -162,21 +176,27 @@ module load_fu #(
 
                 next_entries[i].ld_state = DATA_READY;
 
-                spots_freed[i] = '0;
                 next_open_spots[i] = '0;
                 next_ready_spots[i] = '0;
+                next_data_ready_spots[i] = '1;
+            end
 
+            if(broadcasted_entry[i]) begin
                 fu_pack[i] = next_entries[i];
                 data_ready[i] = '1;
+
+                next_open_spots[i] = '0;
+                next_ready_spots[i] = '0;
+                next_data_ready_spots[i] = '1;
             end
 
             // CDB Accepted Packet
-            if(!cdb_stall[i] && data_ready[i]) begin
+            if(!cdb_stall[i] && broadcasted_entry[i]) begin
                 next_entries[i] = '0;
 
-                spots_freed[i] = '1;
                 next_open_spots[i] = '1;
                 next_ready_spots[i] = '0;
+                next_data_ready_spots[i] = '0;
             end
         end
     end
@@ -186,10 +206,12 @@ module load_fu #(
             entries <= '0;
             open_spots <= '1;
             ready_spots <= '0;
+            data_ready_spots <= '0;
         end else begin
             entries <= next_entries;
             open_spots <= next_open_spots;
             ready_spots <= next_ready_spots;
+            data_ready_spots <= next_data_ready_spots;
         end
     end
 endmodule;

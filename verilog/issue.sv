@@ -10,19 +10,19 @@ module issue #(
     input  DATA           [NUM_FU-1:0]             reg_data_1,
     input  DATA           [NUM_FU-1:0]             reg_data_2,
 
-    input RS_PACKET       [`NUM_FU_ALU-1:0]        issued_alu, 
+    input RS_PACKET       [`NUM_FU_ALU-1:0]        issued_alu,
     input RS_PACKET       [`NUM_FU_MULT-1:0]       issued_mult,
     input RS_PACKET       [`NUM_FU_LD-1:0]         issued_ld,
     input RS_PACKET       [`SQ_SZ-1:0]             issued_st,
     input RS_PACKET                                issued_br,
 
-    output logic          [`NUM_FU_ALU-1:0]        alu_rd_en, 
+    output logic          [`NUM_FU_ALU-1:0]        alu_rd_en,
     output logic          [`NUM_FU_MULT-1:0]       mult_rd_en,
     output logic          [`NUM_FU_LD-1:0]         ld_rd_en,
     output logic          [`SQ_SZ-1:0]             st_rd_en,
     output logic                                   br_rd_en,
 
-    output ISSUE_PACKET   [`NUM_FU_ALU-1:0]        issued_alu_pack, 
+    output ISSUE_PACKET   [`NUM_FU_ALU-1:0]        issued_alu_pack,
     output ISSUE_PACKET   [`NUM_FU_MULT-1:0]       issued_mult_pack,
     output ISSUE_PACKET   [`NUM_FU_LD-1:0]         issued_ld_pack,
     output ISSUE_PACKET   [`SQ_SZ-1:0]             issued_st_pack,

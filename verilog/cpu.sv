@@ -103,7 +103,7 @@ module cpu (
         output logic                    [`LD_SZ-1:0]                                            debug_ld_ready_spots,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_alloc_spot,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_issued_entry,
-        output logic                    [`LD_SZ-1:0]                                            debug_ld_freed_spots,
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_broadcast_entry,
         output logic                                                                            debug_ld_full,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_stall_sig,
 
@@ -178,7 +178,6 @@ module cpu (
     RS_PACKET    [`NUM_FU_MULT-1:0]     issued_mult;
     RS_PACKET    [`NUM_FU_LD-1:0]       issued_ld;
     RS_PACKET    [`SQ_SZ-1:0]           issued_store;
-    PHYS_REG_IDX [`SQ_SZ-1:0]           issued_store_t;
     RS_PACKET                           issued_br;
 
 
@@ -437,7 +436,7 @@ module cpu (
         .sq_head_in(sq_head),
         .start_store(start_store),
 
-        // ebr logic
+    // ebr logic
         .rem_b_id(br_fu_out.decoded_vals.b_id),
         .br_task(br_task),
 
@@ -455,8 +454,6 @@ module cpu (
         .issued_ld(issued_ld),
         .issued_store(issued_store),
         .issued_br(issued_br),
-
-        .issued_store_t(issued_store_t),
 
         .open_entries(rs_open)
 
@@ -485,7 +482,7 @@ module cpu (
         .t_old(t_old_data),
 
         .complete_t(cdb_p_reg_idx), // comes from the CDB
-        .store_complete_t(issued_store_t),
+        .store_complete_t(issued_st_pack),
         .num_accept(num_dis), // input signal from min block, dependent on open_entries 
         .br_tail(cp_out.rob_tail),
         .br_en(br_done & ~br_fu_out.pred_correct),
@@ -710,7 +707,7 @@ module cpu (
             .debug_ready_spots(debug_ld_ready_spots),
             .debug_alloc_spot(debug_ld_alloc_spot),
             .debug_issued_entry(debug_ld_issued_entry),
-            .debug_freed_spots(debug_ld_freed_spots),
+            .debug_broadcast_entry(debug_ld_broadcast_entry),
             .debug_ld_stall_sig(debug_ld_stall_sig)
         `endif
     );
