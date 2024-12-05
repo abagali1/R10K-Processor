@@ -53,7 +53,8 @@ module sq #(
     output MEM_SIZE                                                     Dmem_size,
 
     output logic                        [$clog2(DEPTH)-1:0]             sq_head,
-    output logic                        [$clog2(DEPTH)-1:0]             sq_tail
+    output logic                        [$clog2(DEPTH)-1:0]             sq_tail,
+    output logic                                                        sq_full
 
     `ifdef DEBUG
     ,   output FU_PACKET                [DEPTH-1:0]                     debug_entries,
@@ -81,6 +82,7 @@ module sq #(
     endgenerate
 
     assign open_entries = ((DEPTH - num_entries + (start_store ? 1 : 0)) > N ? N : (DEPTH - num_entries + (start_store ? 1 : 0)))-1;
+    assign sq_full = num_entries >= N;
     assign sq_head = next_head;
     assign sq_tail = tail; // output next_tail so we can dispatch stores and loads in the same cycle. 
     //Stores will always be first instruction in dispatch stage
