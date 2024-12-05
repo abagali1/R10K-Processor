@@ -23,7 +23,7 @@ module decode #(
 
     always_ff @(posedge clock) begin
         for (int i = 0; i < N; i++) begin
-            $write("DECODE PC %d %d %d", i, insts[i].PC, id_packet[i].dest_reg_idx);
+            $write("\nDECODE PC %d %x %d", i, insts[i].PC, id_packet[i].dest_reg_idx);
         end
     end
 
