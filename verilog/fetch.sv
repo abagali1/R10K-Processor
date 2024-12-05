@@ -40,7 +40,7 @@ module fetch #(
     // this should be 15:1 (16 entries, 0 is unused = 15 entries)
     ADDR    [NUM_MEM_TAGS:1]   mshr_data, next_mshr_data;
     logic   [NUM_MEM_TAGS:1]   mshr_valid, next_mshr_valid;
-    logic found_in_mshr;
+    logic [$clog2(PREFETCH_DISTANCE+1)-1:0] found_in_mshr;
     
     //ADDR cache_target, prefetch_target, next_prefetch_target;
     logic           cache_write_en;
@@ -96,19 +96,19 @@ module fetch #(
         // FETCHING + PREFETCHING
         mem_addr_out = '0;
 
-        found_in_mshr = 0;
+        found_in_mshr = -1;
         if (arbiter_signal & ~mshr_full) begin
             for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
                 // check if in icache first
                 if (~icache_valid[i]) begin
                     // check in mhr
                     for (int j = 1; j <= NUM_MEM_TAGS; j++) begin
-                        if (mshr_data[j][31:3] == target[31:3]) begin
-                            found_in_mshr = 1;
+                        if (mshr_data[j][31:3] == target[31:3] & mshr_valid[j]) begin
+                            found_in_mshr = i;
                             break;
                         end
                     end
-                    if (~found_in_mshr) begin
+                    if (found_in_mshr != -1) begin
                         // request from memory
                         mem_en = 1;
                         mem_addr_out = {target[31:3], 3'b0} + (i*8);
@@ -116,6 +116,7 @@ module fetch #(
 
                         next_mshr_data[mem_transaction_tag] = mem_addr_out;
                         next_mshr_valid[mem_transaction_tag] = 1;
+                        break;
                     end
                 end
             end
@@ -193,6 +194,7 @@ module fetch #(
         .clock                      (clock),
         .reset                      (reset),
         .proc2Icache_addr           (target),
+        .found_in_mshr              (found_in_mshr),
         .write_en                   (cache_write_en),
         .write_addr                 (cache_write_addr),
         .write_data                 (cache_write_data),

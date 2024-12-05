@@ -47,6 +47,7 @@ module icache #(
     //input MEM_TAG   Imem2proc_data_tag,
 
     // From fetch stage
+    input logic [$clog2(PREFETCH_DISTANCE+1)-1:0] found_in_mshr,
     input ADDR proc2Icache_addr, // read addr
     input logic write_en,
     input ADDR write_addr,
@@ -106,7 +107,7 @@ module icache #(
     always_comb begin
         Icache_valid_out = '0;
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
-            Icache_valid_out[i] = icache_tags[current_index+i].valid && (icache_tags[current_index+i].tags == (current_tag+i)); 
+            Icache_valid_out[i] = icache_tags[current_index+i].valid; //&& (icache_tags[current_index+i].tags == (current_tag+i)); 
         end
     end
     /*
@@ -160,6 +161,9 @@ module icache #(
             if (write_en) begin // If data, meaning tag matches
                 icache_tags[current_index].tags  <= write_tag;
                 icache_tags[current_index].valid <= 1'b1;
+            end
+            if (found_in_mshr != -1) begin
+                icache_tags[current_index+found_in_mshr].valid = 1'b1;
             end
         end
     end
