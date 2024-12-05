@@ -74,7 +74,7 @@ module freelist #(
             tail <= 0;
             for (int i = 0; i < DEPTH; i++) begin
                 entries[i].reg_idx <= i + `ARCH_REG_SZ;
-                entries[i].valid <= 1;
+                entries[i].valid <= 0;
                 // should we be incrementing tail here?
             end
             num_entries <= DEPTH;
@@ -85,6 +85,21 @@ module freelist #(
             num_entries <= next_num_entries;
         end
     end
+
+    `ifdef DEBUG
+    `ifndef DC
+            always @(negedge clock) begin
+                $display("FL registers that are being read");
+                $display("(rd_num: %d)", rd_num);
+                for (int i = 0; i < N; i++) begin
+                    if (i < rd_num) begin
+                        $display("reg: %d", rd_reg[i].reg_idx);
+                    end
+                end
+            end
+        `endif
+    `endif
+
 
     // `ifdef DEBUG
     //     always @(posedge clock) begin
