@@ -48,7 +48,7 @@ module fetch #(
     ADDR            cache_write_addr;
 
     MEM_BLOCK   [PREFETCH_DISTANCE-1:0] cache_read_data;
-    logic       [PREFETCH_DISTANCE-1:0] icache_valid;
+    logic       [PREFETCH_DISTANCE-1:0] icache_valid, icache_alloc;
 
     //logic mem_transaction_started;
     logic mem_done;
@@ -100,10 +100,13 @@ module fetch #(
         if (arbiter_signal & ~mshr_full) begin
             for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
                 // check if in icache first
+                $write("\nicache alloc %b\n", icache_alloc);
                 if (~icache_valid[i]) begin
                     // check in mhr
                     for (int j = 1; j <= NUM_MEM_TAGS; j++) begin
-                        if (mshr_data[j][31:3] == target[31:3] & mshr_valid[j]) begin
+                        logic [31:0] prefetch_target;
+                        prefetch_target = ({target[31:3], 3'b0} + (i*8));
+                        if (mshr_data[j][31:3] == prefetch_target[31:3] & mshr_valid[j] & ~icache_alloc[i]) begin
                             found_in_mshr = i;
                             break;
                         end
@@ -147,6 +150,7 @@ module fetch #(
             current = target + (i * 4);
             if (i < next_num_insts) begin
                 next_out_insts[i].inst = cache_read_data[i/2].word_level[current[2]];
+                $write("I AM ERRONEOUS: %b\n", cache_read_data[i/2]);
                 next_out_insts[i].valid = 1'b1;
                 next_out_insts[i].PC = current;
                 next_out_insts[i].NPC = current + 4;
@@ -199,8 +203,9 @@ module fetch #(
         .write_addr                 (cache_write_addr),
         .write_data                 (cache_write_data),
         // outputs
-        .Icache_data_out            ({cache_read_data[3].word_level, cache_read_data[2].word_level, cache_read_data[1].word_level, cache_read_data[0].word_level}),
-        .Icache_valid_out           (icache_valid)
+        .Icache_data_out            ({cache_read_data[3], cache_read_data[2], cache_read_data[1], cache_read_data[0]}),
+        .Icache_valid_out           (icache_valid),
+        .Icache_alloc_out           (icache_alloc)
     );
 
     always_ff @(posedge clock) begin
@@ -220,7 +225,9 @@ module fetch #(
             
         end
         
-        $display("IN FETCH: %d", next_num_insts);
+        for (int i = 0; i < 4; i++) begin
+            $display("OUT INSTSS: %b", out_insts[i]);
+        end
         $display("TARGET: %d", target);
 
         //$display("          mem_addr: %h -- mem_en: %b -- mem_transaction_handshake: %b", mem_addr, mem_en, mem_transaction_handshake);

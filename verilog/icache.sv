@@ -58,7 +58,8 @@ module icache #(
     //output ADDR        proc2Imem_addr,
 
     output MEM_BLOCK [PREFETCH_DISTANCE-1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out // When valid is high
+    output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out, // When valid is high
+    output logic     [PREFETCH_DISTANCE-1:0]  Icache_alloc_out // When valid is high
 );
 
     // Note: cache tags, not memory tags
@@ -83,16 +84,16 @@ module icache #(
         .WIDTH     (64),
         .DEPTH     (`ICACHE_LINES),
         .READ_PORTS(2),
-        .BYPASS_EN (0))
+        .BYPASS_EN (1))
     icache_mem (
         .clock(clock),
         .reset(reset),
         .re   ('1),
-        .raddr({raddr[1], raddr[0]}),
-        .rdata({Icache_data_out[1].word_level, Icache_data_out[0].word_level}), // TODO SUS?
+        .raddr(raddr[1:0]),
+        .rdata(Icache_data_out[1:0]), // TODO SUS?
         .we   (write_en),
         .waddr(write_index),
-        .wdata(write_data.word_level)
+        .wdata(write_data)
     );
     
 
@@ -108,6 +109,7 @@ module icache #(
         Icache_valid_out = '0;
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
             Icache_valid_out[i] = icache_tags[current_index+i].valid; //&& (icache_tags[current_index+i].tags == (current_tag+i)); 
+            Icache_alloc_out[i] = icache_tags[current_index+i].alloc;
         end
     end
     /*
@@ -159,12 +161,21 @@ module icache #(
             //     current_mem_tag <= Imem2proc_transaction_tag;
             // end
             if (write_en) begin // If data, meaning tag matches
+                $write("ICACHE WRITING %h %b", write_addr, write_data);
                 icache_tags[current_index].tags  <= write_tag;
                 icache_tags[current_index].valid <= 1'b1;
+                icache_tags[current_index].alloc <= 1'b0;
             end
             if (found_in_mshr != -1) begin
-                icache_tags[current_index+found_in_mshr].valid = 1'b1;
+                icache_tags[current_index+found_in_mshr].alloc <= 1'b1;
             end
+        end
+        $write("raddr: %b\n", raddr[1:0]);
+        for (int i = 0; i < `ICACHE_LINES; i++) begin
+            $write("ICache tag: %d %b %b %b\n", i, icache_tags[i].tags, icache_tags[i].valid, icache_tags[i].alloc);
+        end
+        for (int i = 0; i < 2; i++) begin
+            $write("ICache data out: %d %b\n", i, Icache_data_out[i]);
         end
     end
 
