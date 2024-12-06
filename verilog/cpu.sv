@@ -530,6 +530,7 @@ module cpu (
         .reset(reset),
 
         .dis_inst(dis_insts[0]),
+        .branch_t(dis_free_reg[0]),
         .in_mt(out_mt),
         .in_fl_head(fl_head_ptr),
         .in_rob_tail(rob_tail),
