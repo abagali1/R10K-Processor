@@ -78,9 +78,9 @@ module dispatch #(
                     end
                     out_insts[i] = decoded_insts[i];
                 end else if (decoded_insts[i].wr_mem || decoded_insts[i].rd_mem) begin
-                    if (decoded_insts[i].illegal) begin
-                        out_insts[i] = '0;
-                    end
+                    // if (decoded_insts[i].illegal) begin
+                    //     out_insts[i] = '0;
+                    // end
                     if(decoded_insts[i].wr_mem) begin
                         if(sq_full) begin
                             break;
