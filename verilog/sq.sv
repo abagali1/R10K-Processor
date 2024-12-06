@@ -82,10 +82,9 @@ module sq #(
     endgenerate
 
     assign open_entries = ((DEPTH - num_entries + (start_store ? 1 : 0)) > N ? N : (DEPTH - num_entries + (start_store ? 1 : 0)))-1;
-    assign sq_full = num_entries >= N;
+    assign sq_full = (DEPTH - num_entries) <= N;
     assign sq_head = next_head;
-    assign sq_tail = tail; // output next_tail so we can dispatch stores and loads in the same cycle. 
-    //Stores will always be first instruction in dispatch stage
+    assign sq_tail = tail;
 
     `ifdef DEBUG
         assign debug_entries = entries;
@@ -97,7 +96,7 @@ module sq #(
         next_entries = entries;
         next_head = head;
         next_tail = br_en ? br_tail : tail;
-        next_num_entries = num_entries - (br_en ? (br_tail <= tail ? (tail - br_tail) : (DEPTH - br_tail - tail)) : 0);
+        next_num_entries = num_entries - (br_en ? (br_tail <= tail ? (tail - br_tail) : (DEPTH - br_tail + tail)) : 0);
 
         Dmem_addr = '0;
         Dmem_store_data = '0;
