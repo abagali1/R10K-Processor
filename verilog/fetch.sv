@@ -140,7 +140,8 @@ module fetch #(
             end
         end
     end
-
+    
+    logic [2:0] j;
     // FETCH TO INST_BUF
     always_comb begin
         next_num_insts = '0;
@@ -169,16 +170,18 @@ module fetch #(
 
         // Note: Temporary design decision, we only read instructions from icache, this could waste some cycles (faster to implement rn)
         // case: cache hit
+        // [0|1] [1|1] [1|1]
+        // i = 0; i < next_num_insts + target[2]
+        // TODO: J is gross, we use it to get all four instructions out in the [0|1] [1|1] [1|1] case.
+        j = '0;
         for (int i = 0; i < 4; i++) begin
             ADDR current;
             current = target + (i * 4);
-            // TODO: playing around with how to make sure what we set from the cache corresponds to the right target
-            // TODO: tried using current and target[3:0] and [2:0], neither worked. also played with not using cache_read_data.
-            // out of ideas for now, but will be back post inteviews ~8pm
-            $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[i/2].word_level[current[2]], target, icache_valid[i/2]);
-            if (i < next_num_insts) begin
-                $write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[i/2].word_level[current[2]]), icache_valid);
-                next_out_insts[i].inst = cache_read_data[i/2].word_level[current[2]];
+            j = i + target[2];
+            $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], target, icache_valid[j/2]);
+            if (j < next_num_insts + target[2]) begin
+                $write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
+                next_out_insts[i].inst = cache_read_data[j/2].word_level[current[2]];
                 next_out_insts[i].valid = 1'b1;
                 next_out_insts[i].PC = current;
                 next_out_insts[i].NPC = current + 4;
