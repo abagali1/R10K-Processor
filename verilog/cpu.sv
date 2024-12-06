@@ -334,8 +334,8 @@ module cpu (
 
     logic fetch_mem_en;
     //assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
-    assign proc2mem_command = (start_load | start_store) ? d_proc2mem_command : fetch_mem_en ? MEM_LOAD : MEM_NONE;
-    assign proc2mem_addr = (start_load | start_store) ? d_proc2mem_addr : fetch_mem_en ? fetch_proc2mem_addr : '0;
+    assign proc2mem_command = d_proc2mem_command == MEM_NONE ? (fetch_mem_en ? MEM_LOAD : MEM_NONE) : d_proc2mem_command;
+    assign proc2mem_addr = d_proc2mem_command == MEM_NONE ? (fetch_mem_en ? fetch_proc2mem_addr : '0) : d_proc2mem_addr;
 
     logic [2:0] num_input;
     INST_PACKET [3:0] in_insts;
@@ -372,7 +372,7 @@ module cpu (
         .reset(reset),
 
         .target(NPC),
-        .arbiter_signal(~(start_load | start_store)), 
+        .arbiter_signal(d_proc2mem_command == MEM_NONE), 
         .br_task(br_task),
         .ibuff_open(ib_open),
         .mem_transaction_tag(mem2proc_transaction_tag),
