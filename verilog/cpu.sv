@@ -136,7 +136,10 @@ module cpu (
         output ADDR                                                                             debug_fetch_mem_addr_out, 
                     
         output INST_PACKET              [3:0]                                                   debug_fetch_out_insts, 
-        output logic                    [2:0]                                                   debug_fetch_out_num_insts
+        output logic                    [2:0]                                                   debug_fetch_out_num_insts,
+
+        output ADDR                     [`NUM_MEM_TAGS:1]                    debug_mshr_data,
+        output logic                    [`NUM_MEM_TAGS:1]                    debug_mshr_valid
     `endif
 );
 
@@ -417,6 +420,10 @@ module cpu (
         //.mem_command(proc2mem_command),
         .out_insts(in_insts),
         .out_num_insts(num_input)
+        `ifdef DEBUG
+        ,   .debug_mshr_data(debug_mshr_data),
+            .debug_mshr_valid(debug_mshr_valid)
+        `endif
     );
 
     `ifdef DEBUG

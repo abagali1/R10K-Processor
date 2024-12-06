@@ -59,9 +59,9 @@ module icache #(
     //output MEM_COMMAND proc2Imem_command,
     //output ADDR        proc2Imem_addr,
 
-    output MEM_BLOCK [1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     [1:0]  Icache_valid_out, // When valid is high
-    output logic     [1:0]  Icache_alloc_out // When valid is high
+    output MEM_BLOCK [PREFETCH_DISTANCE-1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
+    output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out, // When valid is high
+    output logic     [PREFETCH_DISTANCE-1:0]  Icache_alloc_out // When valid is high
 );
 
     // Note: cache tags, not memory tags
@@ -69,11 +69,11 @@ module icache #(
     logic [`ICACHE_LINE_BITS-1:0] current_index, write_index, alloc_index;
     //logic                          got_mem_data;
 
-    logic [1:0] [`ICACHE_LINE_BITS-1:0] raddr; // TODO
+    logic [PREFETCH_DISTANCE-1:0] [`ICACHE_LINE_BITS-1:0] raddr; // TODO
 
     always_comb begin
         raddr = '0;
-        for (int i = 0; i < 2; i++) begin
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
             raddr[i] = (current_index + i) % `ICACHE_LINES;
         end
     end
@@ -85,14 +85,14 @@ module icache #(
     memDP #(
         .WIDTH     (64),
         .DEPTH     (`ICACHE_LINES),
-        .READ_PORTS(2),
-        .BYPASS_EN (1))
+        .READ_PORTS(PREFETCH_DISTANCE),
+        .BYPASS_EN (0))
     icache_mem (
         .clock(clock),
         .reset(reset),
         .re   ('1),
-        .raddr(raddr[1:0]),
-        .rdata(Icache_data_out[1:0]), // TODO SUS?
+        .raddr(raddr),
+        .rdata(Icache_data_out), // TODO SUS?
         .we   (write_en),
         .waddr(write_index),
         .wdata(write_data)
@@ -108,9 +108,9 @@ module icache #(
     //
     always_comb begin
         Icache_valid_out = '0;
-        for (int i = 0; i < 2; i++) begin
-            Icache_valid_out[i] = icache_tags[current_index+i].valid && (icache_tags[current_index+i].tags == (current_tag+i)); 
-            Icache_alloc_out[i] = icache_tags[current_index+i].alloc;
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+            Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && (icache_tags[(current_index+i)% `ICACHE_LINES].tags == (current_tag+i)); 
+            Icache_alloc_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].alloc;
         end
     end
     /*
@@ -177,11 +177,11 @@ module icache #(
                 end
             end
         end
-        $write("raddr: %b\n", raddr[1:0]);
+        $write("raddr: %b\n", raddr[PREFETCH_DISTANCE-1:0]);
         for (int i = 0; i < `ICACHE_LINES; i++) begin
             $write("ICache tag: %d %b %b %b\n", i, icache_tags[i].tags, icache_tags[i].valid, icache_tags[i].alloc);
         end
-        for (int i = 0; i < 2; i++) begin
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
             $write("ICache data out: %d %b %b %b\n", i, Icache_data_out[i], Icache_valid_out[i], Icache_alloc_out[i]);
         end
     end

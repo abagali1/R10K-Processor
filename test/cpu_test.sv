@@ -184,6 +184,9 @@ module testbench;
                 
         INST_PACKET              [3:0]                                                      debug_fetch_out_insts;
         logic                    [2:0]                                                      debug_fetch_out_num_insts;
+
+        ADDR                    [`NUM_MEM_TAGS:1]                            debug_mshr_data;
+        logic                   [`NUM_MEM_TAGS:1]                            debug_mshr_valid;
     `endif
 
 
@@ -310,7 +313,10 @@ module testbench;
             .debug_fetch_mem_addr_out(debug_fetch_mem_addr_out),
 
             .debug_fetch_out_insts(debug_fetch_out_insts),
-            .debug_fetch_out_num_insts(debug_fetch_out_num_insts)
+            .debug_fetch_out_num_insts(debug_fetch_out_num_insts),
+
+            .debug_mshr_data(debug_mshr_data),
+            .debug_mshr_valid(debug_mshr_valid)
         `endif
     );
 
@@ -611,6 +617,12 @@ module testbench;
                 debug_fetch_mem_data,
                 debug_fetch_ibuff_open
             );
+
+        $display("MSHR:");
+        $display("| Tag | Valid |");
+        for (int i = 1; i <= `NUM_MEM_TAGS; i++) begin
+            $display("|%0d | %0d |", debug_mshr_data[i], debug_mshr_valid[i]);
+        end
         
         
         // for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin
@@ -975,7 +987,7 @@ module testbench;
         print_issue();
         $display("\n");
 
-        if(clock_count > 10000) begin
+        if(clock_count > 1000) begin
             $finish;
         end
     endfunction
