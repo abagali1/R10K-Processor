@@ -27,7 +27,8 @@ module fetch #(
     //output MEM_COMMAND              mem_command,
 
     output INST_PACKET  [3:0]       out_insts, // hardcoded to 4
-    output logic        [2:0]       out_num_insts // need 3 bits to represent 4
+    output logic        [2:0]       out_num_insts, // need 3 bits to represent 4
+    output ADDR                     NPC
 
     `ifdef DEBUG
     ,   output  ADDR [NUM_MEM_TAGS:1] debug_mshr_data,
@@ -147,7 +148,7 @@ module fetch #(
     always_comb begin
         next_num_insts = '0;
         next_out_insts = '0;
-        next_cache_target = cache_target;
+        next_cache_target = NPC;
         
         $write("ICACHE VALID: %b", icache_valid);
         // Changed this to three to handle this case
@@ -178,10 +179,10 @@ module fetch #(
         j = '0;
         for (int i = 0; i < 4; i++) begin
             ADDR current;
-            current = cache_target + (i * 4);
-            j = i + cache_target[2];
-            $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], cache_target, icache_valid[j/2]);
-            if (j < next_num_insts + cache_target[2]) begin
+            current = NPC + (i * 4);
+            j = i + NPC[2];
+            $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], NPC, icache_valid[j/2]);
+            if (j < next_num_insts + NPC[2]) begin
                 //$write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
                 next_out_insts[i].inst = cache_read_data[j/2].word_level[current[2]];
                 next_out_insts[i].valid = 1'b1;
@@ -232,7 +233,7 @@ module fetch #(
         // inputs
         .clock                      (clock),
         .reset                      (reset),
-        .proc2Icache_addr           (cache_target),
+        .proc2Icache_addr           (NPC),
         .br_task                    (br_task),
         .alloc_addr                 (mem_addr_out),
         .alloc_en                   (mem_en),
@@ -245,14 +246,20 @@ module fetch #(
         .Icache_alloc_out           (icache_alloc)
     );
 
+    assign NPC = (br_task == SQUASH) ? target : cache_target;
+
     always_ff @(posedge clock) begin
-        if (reset || br_task == SQUASH) begin // TODO squash doesn't necessarily mean to empty everything, could be beneficial to keep icache (imagine short loops)
+        if (reset) begin // TODO squash doesn't necessarily mean to empty everything, could be beneficial to keep icache (imagine short loops)
             out_insts            <= '0;
             num_insts            <= '0;
+            cache_target         <= '0;
             mshr_data            <= '0;
             mshr_valid           <= '0;
-            cache_target         <= (br_task == SQUASH) ? target : '0;
             //mem_addr             <= '0;
+        end else if (br_task == SQUASH) begin
+            out_insts            <= '0;
+            num_insts            <= '0;
+            cache_target         <= next_cache_target;
         end else begin
             out_insts            <= next_out_insts;
             num_insts            <= next_num_insts;
