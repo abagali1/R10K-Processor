@@ -48,6 +48,7 @@ module load_fu #(
     logic [DEPTH-1:0] open_spots, next_open_spots;
     logic [DEPTH-1:0] ready_spots, next_ready_spots;
     logic [DEPTH-1:0] data_ready_spots, next_data_ready_spots;
+    logic [DEPTH-1:0] squashed_spots;
 
     DATA addr_result;
     basic_adder addr_calc(
@@ -56,7 +57,8 @@ module load_fu #(
     );
 
     // psel to read in new packet
-    logic [DEPTH-1:0] alloc_spot;
+    logic [DEPTH-1:0] alloc_req, alloc_spot;
+    assign alloc_req = open_spots | squashed_spots;
     psel_gen #(
         .WIDTH(DEPTH),
         .REQS(1)
@@ -68,19 +70,20 @@ module load_fu #(
     );
 
     // psel to start transaction
-    logic [DEPTH-1:0] issued_entry;
+    logic [DEPTH-1:0] issued_req, issued_entry;
+    assign issued_req = ready_spots & !squashed_spots;
     psel_gen #(
         .WIDTH(DEPTH),
         .REQS(1)
     ) issuer(
-        .req(ready_spots),
+        .req(issued_req),
         .gnt(issued_entry),
         .gnt_bus(),
         .empty()
     );
 
-    logic [DEPTH-1:0] broadcast_req, broadcasted_entry, squashed_spots;
-    assign broadcast_req = data_ready_spots ^ squashed_spots;
+    logic [DEPTH-1:0] broadcast_req, broadcasted_entry;
+    assign broadcast_req = data_ready_spots & !squashed_spots;
     psel_gen #(
         .WIDTH(DEPTH),
         .REQS(DEPTH)
@@ -148,8 +151,14 @@ module load_fu #(
                     pred_correct: 0
                 };
                 next_open_spots[i] = '0;
-                next_ready_spots[i] = '1;
-                next_data_ready_spots[i] = '0;
+
+                if(is_pack.decoded_vals.decoded_vals.dest_reg_idx == 0) begin
+                    next_ready_spots[i] = '0;
+                    next_data_ready_spots[i] = '1;
+                end else begin
+                    next_ready_spots[i] = '1;
+                    next_data_ready_spots[i] = '0;
+                end
             end
 
             if(!dm_stalled && !start_store && issued_entry[i]) begin
