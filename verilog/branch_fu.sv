@@ -77,14 +77,14 @@ module branch_fu (
 
     `ifdef DEBUG
         `ifndef DC
-            always @(posedge clock) begin #2;
+            always @(negedge clock) begin #2;
                 $display("============== BRANCH FU ==============\n");
                 $display("  rd_en: %b",  rd_en);
-                $display("  Issue Packet PC: 0x%05x", is_pack.decoded_vals.decoded_vals.PC);
+                $display("  Issue Packet PC: 0x%05x t: %d", is_pack.decoded_vals.decoded_vals.PC, is_pack.decoded_vals.t.reg_idx);
                 $display("  pred: %s, b_id: %0d, b_mask: %0d, rs1_value: %0d, rs2_value: %0d", is_pack.decoded_vals.decoded_vals.pred_taken ? "T" : "NT", is_pack.decoded_vals.b_id, is_pack.decoded_vals.b_mask, is_pack.rs1_value, is_pack.rs2_value);
-                $display("  branch target: %x, target: %x, result: %x, target_addr: %x", branch_target, target, fu_pack.result, fu_pack.target_addr);
+                $display("  branch target: %x, target: %x, result: %x", branch_target, target, rd_en ? is_pack.decoded_vals.decoded_vals.NPC : 0);
                 $display("  FU Packet Out:");
-                $display("  result: %s, branch target: %x, prediction correct: %0d, br task: %0s", br_taken ? "T" : "NT", fu_pack.target_addr, correct, br_task.name());
+                $display("  result: %s, branch target: %x, prediction correct: %0d, br task: %0s", br_taken ? "T" : "NT", target, correct, correct ? "CLEAR" : "SQUASH");
                 $display("  rem_br_task: %0s, rem_b_id: %0b, is_pack b_mask: %0b", rem_br_task, rem_b_id, is_pack.decoded_vals.b_mask);
                 // gonna let you finish this anup
             end
