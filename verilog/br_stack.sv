@@ -24,7 +24,8 @@ module br_stack #(
     input BR_TASK                                                           br_task, // not defined here. in main sysdefs
     input BR_MASK                                                           rem_b_id, // b_id to remove
 
-    output BR_MASK                                                          assigned_b_id, // b_id given to a dispatched branch instruction
+    output BR_MASK                                                          assigned_b_id,
+    output BR_MASK                                                          assigned_b_mask, // b_id given to a dispatched branch instruction
     output CHECKPOINT                                                       cp_out,
     output logic                                                            full
 
@@ -43,6 +44,8 @@ module br_stack #(
     logic [DEPTH-1:0] next_free_entries;
 
     logic [DEPTH-1:0] stack_gnt;
+    BR_MASK b_mask, next_b_mask;
+
 
     psel_gen #(
         .WIDTH(DEPTH),
@@ -60,6 +63,7 @@ module br_stack #(
     always_comb begin
         next_entries = entries;
         next_free_entries = free_entries;
+        next_b_mask = b_mask;
         cp_out = '0;
 
         `ifdef DEBUG
@@ -70,6 +74,7 @@ module br_stack #(
 
         // Branch clear or branch squash
         if (br_task == SQUASH) begin
+            next_b_mask = '0;
             for (int i = 0; i < DEPTH; i++) begin
                 if (entries[i].b_id == rem_b_id) begin
                     cp_out = entries[i];
@@ -78,10 +83,12 @@ module br_stack #(
                     next_entries[i] = '0;
                     next_free_entries[i] = 1;
                 end
+                next_b_mask |= next_entries[i].b_id;
             end
         end 
 
         if (br_task == CLEAR) begin
+            next_b_mask = ((b_mask & rem_b_id) != 0) ? b_mask & ~rem_b_id : b_mask;
             for (int i = 0; i < DEPTH; i++) begin
                 if (entries[i].b_id == rem_b_id) begin
                     next_entries[i] = '0;
@@ -93,13 +100,15 @@ module br_stack #(
         end
 
         // Set checkpoint
-        assigned_b_id = '0;
         if (dis_inst.valid && (dis_inst.uncond_branch || dis_inst.cond_branch)) begin // check me on this
+            next_b_mask |= stack_gnt;
+            assigned_b_id = stack_gnt;
             for (int k = 0; k < DEPTH; k++) begin
                 if (stack_gnt[k]) begin
                     next_entries[k].valid = 1;
                     next_entries[k].b_id = stack_gnt;
                     //next_entries[k].rec_PC = dis_inst.PC;
+                    next_entries[k].b_mask = next_b_mask;
                     next_entries[k].rec_mt = in_mt;
                     next_entries[k].fl_head = in_fl_head;
                     next_entries[k].rob_tail = in_rob_tail;
@@ -109,16 +118,11 @@ module br_stack #(
                         next_entries[k].rec_mt[dis_inst.dest_reg_idx].reg_idx = branch_t;
                         next_entries[k].rec_mt[dis_inst.dest_reg_idx].ready = 0;
                     end
-
-                    for (int i = 0; i < DEPTH; i++) begin
-                        next_entries[k].b_mask |= next_entries[i].b_id;
-                    end
-
                     next_free_entries[k] = 0;
                 end 
             end
-            assigned_b_id = stack_gnt;
         end
+        assigned_b_mask = next_b_mask;
 
         // Set ready bit for everything in the map table
         for (int i = 0; i < N; i++) begin
@@ -134,9 +138,11 @@ module br_stack #(
         if (reset) begin
             entries <= '0;
             free_entries <= '1;
+            b_mask <= '0;
         end else begin
             entries <= next_entries;
             free_entries <= next_free_entries;
+            b_mask <= next_b_mask;
         end
     end
 

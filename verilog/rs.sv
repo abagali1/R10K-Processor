@@ -18,6 +18,7 @@ module rs #(
     input MAP_TABLE_PACKET          [N-1:0]                                             t1_in,
     input MAP_TABLE_PACKET          [N-1:0]                                             t2_in,
     input BR_MASK                                                                       b_id,
+    input BR_MASK                                                                       b_mask,
 
     input CDB_PACKET                [N-1:0]                                             cdb_in,
 
@@ -103,8 +104,6 @@ module rs #(
     logic [$clog2(`NUM_FU_LD+1)-1:0]        num_ld_issued;
     logic [$clog2(`SQ_SZ+1)-1:0]            num_store_issued;
     logic [$clog2(`NUM_FU_BR+1)-1:0]        num_br_issued;
-
-    BR_MASK b_mask, next_b_mask;
 
     assign open_entries = (DEPTH - num_entries > N) ? N : DEPTH - num_entries;
 
@@ -219,7 +218,6 @@ module rs #(
         next_entries = entries;
         next_num_entries = num_entries;
         other_sig = open_spots | all_issued_insts;
-        next_b_mask = b_mask;
 
         alu_req = '0;
         mult_req = '0;
@@ -243,7 +241,6 @@ module rs #(
 
         // Branch mask logic
         if (br_task == SQUASH) begin
-            next_b_mask = ((next_b_mask & rem_b_id) != 0) ? '0 : b_mask;
             for (int i = 0; i < DEPTH; i++) begin
                 if ((entries[i].b_mask & rem_b_id) != 0) begin
                     next_entries[i] = '0;
@@ -253,7 +250,6 @@ module rs #(
             end
         end 
         if (br_task == CLEAR) begin
-            next_b_mask = ((next_b_mask & rem_b_id) != 0) ? next_b_mask ^ rem_b_id : b_mask;
             for (int i = 0; i < DEPTH; i++) begin
                 if ((entries[i].b_mask & rem_b_id) != 0) begin
                     next_entries[i].b_mask = entries[i].b_mask ^ rem_b_id;
@@ -369,7 +365,6 @@ module rs #(
         ////////////////////////
 
         next_open_spots = other_sig;
-        next_b_mask = (next_b_mask | b_id) & ~rem_b_id;
         // Reads in new entries (parallelized)
         for (int i = 0; i < N; ++i) begin
             if (rs_in[i].valid && dis_entries_bus[i]) begin
@@ -379,7 +374,7 @@ module rs #(
                         next_entries[j].t = t_in[i];
                         next_entries[j].t1 = t1_in[i]; 
                         next_entries[j].t2 = t2_in[i];
-                        next_entries[j].b_mask = next_b_mask;
+                        next_entries[j].b_mask = b_mask;
                         next_entries[j].b_id = (i == 0) ? b_id : '0;
                         next_entries[j].ld_ready = '0;
 
@@ -398,12 +393,10 @@ module rs #(
             entries <= 0;
             num_entries <= 0;
             open_spots <= '1;
-            b_mask <= '0;
         end else begin
             entries <= next_entries;
             num_entries <= next_num_entries;
             open_spots <= next_open_spots;
-            b_mask <= next_b_mask;
         end
     end
 

@@ -221,7 +221,7 @@ module cpu (
     // output of br stack
     CHECKPOINT  cp_out;
     logic br_full;
-    BR_MASK assigned_b_id;
+    BR_MASK assigned_b_id, assigned_b_mask;
 
 
     // output of regfile
@@ -433,6 +433,7 @@ module cpu (
         .t1_in(r1_p_reg),
         .t2_in(r2_p_reg),
         .b_id(assigned_b_id),
+        .b_mask(assigned_b_mask),
 
         .cdb_in(cdb_entries),
 
@@ -542,6 +543,7 @@ module cpu (
         .rem_b_id(br_fu_out.decoded_vals.b_id), // b_id to remove
 
         .assigned_b_id(assigned_b_id),
+        .assigned_b_mask(assigned_b_mask),
         .cp_out(cp_out),
         .full(br_full)
 
