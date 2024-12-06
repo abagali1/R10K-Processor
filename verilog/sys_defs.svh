@@ -117,7 +117,7 @@ typedef logic [3:0] MEM_TAG;
 `define DCACHE_LINES 32
 `define DCACHE_LINE_BITS $clog2(`DCACHE_LINES)
 // Number of blocks to prefetch (not instructions - )
-`define PREFETCH_DISTANCE 4
+`define PREFETCH_DISTANCE 1
 
 `define MEM_SIZE_IN_BYTES (64*1024)
 `define MEM_64BIT_LINES   (`MEM_SIZE_IN_BYTES/8)

@@ -28,6 +28,11 @@ module fetch #(
 
     output INST_PACKET  [3:0]       out_insts, // hardcoded to 4
     output logic        [2:0]       out_num_insts // need 3 bits to represent 4
+
+    `ifdef DEBUG
+    ,   output  ADDR [NUM_MEM_TAGS:1] debug_mshr_data,
+        output  logic [NUM_MEM_TAGS:1] debug_mshr_valid
+    `endif
 );
     //typedef enum logic [1:0] {FETCH, PREFETCH, STALL, DEF} STATE;
 
@@ -41,15 +46,20 @@ module fetch #(
     // this should be 15:1 (16 entries, 0 is unused = 15 entries)
     ADDR    [NUM_MEM_TAGS:1]   mshr_data, next_mshr_data;
     logic   [NUM_MEM_TAGS:1]   mshr_valid, next_mshr_valid;
-    logic [$clog2(PREFETCH_DISTANCE+1)-1:0] found_in_mshr;
+    logic found_in_mshr;
+
+    `ifdef DEBUG
+        assign debug_mshr_data = mshr_data;
+        assign debug_mshr_valid = mshr_valid;
+    `endif
     
     //ADDR cache_target, prefetch_target, next_prefetch_target;
     logic           cache_write_en;
     MEM_BLOCK       cache_write_data;
     ADDR            cache_write_addr;
 
-    MEM_BLOCK   [1:0] cache_read_data;
-    logic       [1:0] icache_valid, icache_alloc;
+    MEM_BLOCK   [PREFETCH_DISTANCE-1:0] cache_read_data;
+    logic       [PREFETCH_DISTANCE-1:0] icache_valid, icache_alloc;
 
     //logic mem_transaction_started;
     logic mem_done;
@@ -58,6 +68,8 @@ module fetch #(
     //logic valid_insts;
     logic [2:0] insts_to_return;
     //logic br_en;
+
+    logic [31:0] prefetch_target;
 
     //ADDR mem_addr;
 
@@ -81,6 +93,7 @@ module fetch #(
         next_mshr_data = mshr_data;
         next_mshr_valid = mshr_valid;
         mem_en = 0;
+        prefetch_target = '0;
         //cache_target = target;
 
         // check for mshr eviction and cache updates
@@ -97,28 +110,29 @@ module fetch #(
         // FETCHING + PREFETCHING
         mem_addr_out = '0;
 
-        found_in_mshr = -1;
+        //$display("MSHRFULL: %0d", ~mshr_full);
         if (arbiter_signal & ~mshr_full) begin
-            for (int i = 0; i < 2; i++) begin
-                // check if in icache first
+            for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+                // check if in icache first\
+                found_in_mshr = 0;
                 $write("\nicache alloc %b\n", icache_alloc);
                 if (~icache_valid[i]) begin
                     // check in mhr
+                    prefetch_target = ({target[31:3], 3'b0} + (i*8));
                     for (int j = 1; j <= NUM_MEM_TAGS; j++) begin
-                        logic [31:0] prefetch_target;
-                        prefetch_target = ({target[31:3], 3'b0} + (i*8));
-                        if (mshr_data[j][31:3] == prefetch_target[31:3] & mshr_valid[j] & ~icache_alloc[i]) begin
-                            found_in_mshr = i;
+                        $display("MSHR_DATA: %d,  PREFETCH_TARGET %d, EQUALS? %0d, SUMMARY: %0d", mshr_data[j], prefetch_target, (mshr_data[j] == prefetch_target), (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])));
+                        if (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])) begin
+                            found_in_mshr = 1;
                             break;
                         end
                     end
-                    if (found_in_mshr != -1) begin
+                    if (~found_in_mshr) begin
                         // request from memory
                         mem_en = 1;
-                        mem_addr_out = {target[31:3], 3'b0} + (i*8);
+                        mem_addr_out = prefetch_target;
                         //mem_command = MEM_LOAD;
 
-                        next_mshr_data[mem_transaction_tag] = mem_addr_out;
+                        next_mshr_data[mem_transaction_tag] = prefetch_target;
                         next_mshr_valid[mem_transaction_tag] = 1;
                         break;
                     end
@@ -133,21 +147,28 @@ module fetch #(
         next_out_insts = '0;
         
         $write("ICACHE VALID: %b", icache_valid);
-        for (int i = 0; i < 2; i++) begin
+        // Changed this to three to handle this case
+        // [0|1] [1|1] [1|1]
+        // Now it can output 4 instructions instead of the previous 3
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
             // if the cache block is valid, increment next_num_insts by 2 (2 insts per block)
-            if (icache_valid[i] == 1) begin
-                next_num_insts +=2;
-            end 
-            else begin
+            if (icache_valid[i]) begin
+                if (~target[2] | i > 0) begin 
+                    next_num_insts += 2;
+                end else begin
+                    next_num_insts += 1;
+                end
+            end else begin
                 break;
             end
         end
+
+        next_num_insts = next_num_insts > 4 ? 4 : next_num_insts; // min(next_num_insts, 4)
 
         next_num_insts = (next_num_insts < (ibuff_open - num_insts)) ? next_num_insts : (ibuff_open - num_insts);
 
         // Note: Temporary design decision, we only read instructions from icache, this could waste some cycles (faster to implement rn)
         // case: cache hit
-        // TODO: i changed this for loop to iterate from 4 to next_num_insts, that made sense to me right\
         for (int i = 0; i < 4; i++) begin
             ADDR current;
             current = target + (i * 4);
@@ -155,17 +176,13 @@ module fetch #(
             // TODO: tried using current and target[3:0] and [2:0], neither worked. also played with not using cache_read_data.
             // out of ideas for now, but will be back post inteviews ~8pm
             $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[i/2].word_level[current[2]], target, icache_valid[i/2]);
-            if (i < next_num_insts & icache_valid[i/2]) begin
+            if (i < next_num_insts) begin
                 $write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[i/2].word_level[current[2]]), icache_valid);
                 next_out_insts[i].inst = cache_read_data[i/2].word_level[current[2]];
                 next_out_insts[i].valid = 1'b1;
                 next_out_insts[i].PC = current;
                 next_out_insts[i].NPC = current + 4;
                 next_out_insts[i].pred_taken = 1'b0; // TODO branch prediction
-                if (current[2]) begin
-                    next_num_insts -= 1;
-                    i++;
-                end
             end else begin
                 break;
             end
