@@ -949,9 +949,7 @@ module testbench;
         $display("CMD: %s (%b), Addr: 0h%05x, Data_out: 0h%x", proc2mem_command.name(), proc2mem_command, proc2mem_addr, proc2mem_data);
         `ifdef DEBUG
         $display("CDB Stall Sig %b", debug_cdb_stall_sig);
-        `endif
         $display("PCs Retired");
-
         for(int i=0;i<debug_num_retired;i++) begin
             $display("%02d: 0h%05x", i, retired_insts[i].PC);
         end
@@ -980,10 +978,7 @@ module testbench;
         print_alu_data();
         print_issue();
         $display("\n");
-
-        if(clock_count > 10000) begin
-            $finish;
-        end
+        `endif
     endfunction
 
 
