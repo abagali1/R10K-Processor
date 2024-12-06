@@ -1,5 +1,5 @@
 `include "sys_defs.svh"
-import "DPI-C" function string decode_inst(int inst);
+//import "DPI-C" function string decode_inst(int inst);
 //`include "icache.sv"
 
 module fetch #(
@@ -180,7 +180,7 @@ module fetch #(
             j = i + target[2];
             $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], target, icache_valid[j/2]);
             if (j < next_num_insts + target[2]) begin
-                $write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
+                //$write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
                 next_out_insts[i].inst = cache_read_data[j/2].word_level[current[2]];
                 next_out_insts[i].valid = 1'b1;
                 next_out_insts[i].PC = current;

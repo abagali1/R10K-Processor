@@ -110,7 +110,7 @@ typedef logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] PHYS_REG_IDX;
 `define NUM_MEM_TAGS 15
 typedef logic [3:0] MEM_TAG;
 
-// icache definitions
+// icache 
 `define ICACHE_LINES 32
 `define ICACHE_LINE_BITS $clog2(`ICACHE_LINES)
 
