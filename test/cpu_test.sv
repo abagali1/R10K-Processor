@@ -981,7 +981,7 @@ module testbench;
         print_issue();
         $display("\n");
 
-        if(clock_count > 1000) begin
+        if(clock_count > 10000) begin
             $finish;
         end
     endfunction
