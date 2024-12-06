@@ -27,7 +27,7 @@ import "DPI-C" function string decode_inst(int inst);
 //import "DPI-C" function void close_pipeline_output_file();
 
 
-`define TB_MAX_CYCLES 1000
+`define TB_MAX_CYCLES 50000
 
 
 module testbench;
@@ -155,6 +155,8 @@ module testbench;
 
         FU_PACKET               [`NUM_FU_ALU-1:0]                                           debug_alu_data;
         FU_PACKET               [`NUM_FU_ALU-1:0]                                           debug_alu_next_data;
+        logic                                                                               debug_sq_full;
+        logic                   [$clog2(`SQ_SZ+1)-1:0]                                      debug_sq_br_tail;
     `endif
 
 
@@ -266,7 +268,9 @@ module testbench;
             .debug_alu_issued_bus(debug_alu_issued_bus),
 
             .debug_alu_data(debug_alu_data),
-            .debug_alu_next_data(debug_alu_next_data)
+            .debug_alu_next_data(debug_alu_next_data),
+            .debug_sq_full(debug_sq_full),
+            .debug_sq_br_tail(debug_sq_br_tail)
         `endif
     );
 
@@ -577,7 +581,7 @@ module testbench;
 
 
     function void print_sq();
-        $display("\nStore Queue (%02d) (Execute Store: %b)", debug_sq_num_entries, debug_start_store);
+        $display("\nStore Queue Full: %0b (%02d) (Execute Store: %b) (BR Tail: %02d - %02d)", debug_sq_full, debug_sq_num_entries, debug_start_store, debug_sq_br_tail, debug_sq_tail);
         $display("Status | #  |    PC   | Target Addr ");
         for(int i=0;i<`SQ_SZ;i++) begin
             string status = "";

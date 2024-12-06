@@ -96,6 +96,7 @@ module cpu (
 
         output FU_PACKET                [`SQ_SZ-1:0]                                            debug_sq_entries,
         output logic                    [$clog2(`SQ_SZ+1)-1:0]                                  debug_sq_num_entries,
+        output logic                    [$clog2(`SQ_SZ+1)-1:0]                                  debug_sq_br_tail,
 
         output logic                    [`NUM_FU_LD-1:0]                                        debug_ld_rd_en,
         output FU_PACKET                [`LD_SZ-1:0]                                            debug_ld_entries,
@@ -117,7 +118,8 @@ module cpu (
         output logic                    [`NUM_FU_ALU-1:0][`RS_SZ-1:0]                           debug_alu_issued_bus,
 
         output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_data,
-        output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data
+        output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data,
+        output logic                                                                            debug_sq_full
     `endif
 );
 
@@ -324,6 +326,8 @@ module cpu (
         assign debug_mshr2cache_wr = mshr2cache_wr;
 
         assign debug_alu_rd_en = alu_rd_en;
+        assign debug_sq_full = sq_full;
+        assign debug_sq_br_tail = cp_out.sq_tail;
     `endif
 
     bhr goop (
@@ -729,7 +733,7 @@ module cpu (
 
         .start_store(start_store),
 
-        .br_en(br_task == SQUASH),
+        .br_en(br_done & ~br_fu_out.pred_correct),
         .br_tail(cp_out.sq_tail),
 
         .open_entries(sq_open),
