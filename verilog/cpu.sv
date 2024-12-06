@@ -336,7 +336,8 @@ module cpu (
 
     logic fetch_mem_en;
     //assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
-    assign proc2mem_command = start_load | start_store ? d_proc2mem_command : fetch_mem_en ? MEM_LOAD : MEM_NONE;
+    assign proc2mem_command = (start_load | start_store) ? d_proc2mem_command : fetch_mem_en ? MEM_LOAD : MEM_NONE;
+    assign proc2mem_addr = (start_load | start_store) ? d_proc2mem_addr : fetch_mem_en ? fetch_proc2mem_addr : '0;
 
     logic [2:0] num_input;
     INST_PACKET [3:0] in_insts;
