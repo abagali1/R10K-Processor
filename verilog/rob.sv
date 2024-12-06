@@ -125,7 +125,7 @@ module rob #(
                 //next_entries[(tail+j) % DEPTH].valid = wr_data[j].valid;
                 next_entries[(tail+j) % DEPTH].complete = 0;
                 next_entries[(tail+j) % DEPTH].t = t[j];
-                next_entries[(tail+j) % DEPTH].t_old = (wr_data[j].cond_branch) ? t[j] : t_old[j];
+                next_entries[(tail+j) % DEPTH].t_old = (wr_data[j].dest_reg_idx == '0) ? t[j] : t_old[j];
 
                 next_entries[(tail+j) % DEPTH].wr_mem = wr_data[j].wr_mem;
 
