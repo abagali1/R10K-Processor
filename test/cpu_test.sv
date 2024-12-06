@@ -289,8 +289,8 @@ module testbench;
             .debug_alu_data(debug_alu_data),
             .debug_alu_next_data(debug_alu_next_data),
             .debug_sq_full(debug_sq_full),
-            .debug_sq_br_tail(debug_sq_br_tail)
-            .debug_alu_next_data(debug_alu_next_data)
+            .debug_sq_br_tail(debug_sq_br_tail),
+
 
             .debug_fetch_target(debug_fetch_target),
             .debug_fetch_arbiter_signal(debug_fetch_arbiter_signal),

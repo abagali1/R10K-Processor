@@ -119,8 +119,7 @@ module cpu (
 
         output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_data,
         output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data,
-        output logic                                                                            debug_sq_full
-        output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data
+        output logic                                                                            debug_sq_full,
 
         output ADDR                                                                             debug_fetch_target,
         output logic                                                                            debug_fetch_arbiter_signal, 
