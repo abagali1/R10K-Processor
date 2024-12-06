@@ -111,6 +111,7 @@ module fetch #(
         mem_addr_out = '0;
 
         //$display("MSHRFULL: %0d", ~mshr_full);
+        $display("ARBITER SIGNAL: %0d", arbiter_signal);
         if (arbiter_signal & ~mshr_full) begin
             for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
                 // check if in icache first\
