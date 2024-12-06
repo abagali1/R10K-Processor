@@ -176,7 +176,8 @@ module cpu (
     RS_PACKET    [`SQ_SZ-1:0]           issued_store;
     RS_PACKET                           issued_br;
 
-    MEM_COMMAND prev_proc2mem_command;
+    MEM_COMMAND d_proc2mem_command;
+    ADDR        d_proc2mem_addr, fetch_proc2mem_addr;
 
     // output of ROB
     logic [$clog2(`N+1)-1:0] rob_open, num_retired;
@@ -334,36 +335,8 @@ module cpu (
     //////////////////////////////////////////////////
 
     logic fetch_mem_en;
-    assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
-
-    logic [2:0] num_input;
-    INST_PACKET [3:0] in_insts;
-
-    ADDR PC;
-
-    assign NPC = PC + num_input * 4; // TODO branch prediction
-    
-
-    always @(posedge clock) begin
-        if (reset) begin
-            PC <= 0;
-        end 
-        // else if (!br_fu_out.pred_correct) begin
-        //     PC <= br_fu_out.result;
-        // end 
-        else begin
-            PC <= (br_task == SQUASH) ? br_fu_out.result : NPC;
-        end
-    end
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //          john and rohan trying               //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    logic fetch_mem_en;
-    assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
+    //assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
+    assign proc2mem_command = start_load | start_store ? d_proc2mem_command : fetch_mem_en ? MEM_LOAD : MEM_NONE;
 
     logic [2:0] num_input;
     INST_PACKET [3:0] in_insts;
@@ -394,30 +367,20 @@ module cpu (
 
         .out_bhr(out_bhr)
     );
-    
-    assign br_en = (br_task == SQUASH) | (br_task == CLEAR);
-    assign mem_cmd = (fetch_mem_en) ? LOAD : NOTHING;
-    assign mem2proc_transaction_handshake = (prev_proc2mem_command == LOAD) ? 1 : 0;
-
-    always_ff @(posedge clock) begin
-        prev_proc2mem_command <= proc2mem_command;
-    end
 
     fetch rufus (
         .clock(clock),
         .reset(reset),
 
         .target(NPC),
-        .arbiter_signal(1'b1), // TODO arbiter
+        .arbiter_signal(~(start_load | start_store)), 
         .br_task(br_task),
         .ibuff_open(ib_open),
         .mem_transaction_tag(mem2proc_transaction_tag),
         .mem_data_tag(mem2proc_data_tag),
         .mem_data(mem2proc_data),
-
         .mem_en(fetch_mem_en),
-        .mem_addr_out(proc2mem_addr),
-        //.mem_command(proc2mem_command),
+        .mem_addr_out(fetch_proc2mem_addr),
         .out_insts(in_insts),
         .out_num_insts(num_input)
         `ifdef DEBUG
@@ -877,7 +840,7 @@ module cpu (
     assign st_size = mshr2cache_wr ? mshr2cache_st_size : Dmem_size;
     assign in_data = mshr2cache_wr ? mshr2cache_data : Dmem_store_data;
     assign proc2Dcache_addr = mshr2cache_wr ? mshr2cache_addr : Dmem_addr;
-    assign proc2mem_addr = Dcache_addr_out;
+    assign d_proc2mem_addr = Dcache_addr_out;
     assign proc2mem_data = Dcache_data_out;
 
     mshr miss_human_resources (
@@ -899,7 +862,7 @@ module cpu (
         .mem2proc_data(mem2proc_data),
 
         // To memory
-        .proc2mem_command(proc2mem_command),
+        .proc2mem_command(d_proc2mem_command),
 
         // To cache
         .mshr2cache_addr(mshr2cache_addr),

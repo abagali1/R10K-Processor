@@ -40,13 +40,6 @@ module testbench;
     int out_fileno, cpi_fileno, wb_fileno, wbt_fileno; // verilog uses integer file handles with $fopen and $fclose
 
 
-    MEM_COMMAND proc2mem_command;
-    ADDR        proc2mem_addr;
-    MEM_BLOCK   proc2mem_data;
-    MEM_TAG     mem2proc_transaction_tag;
-    MEM_BLOCK   mem2proc_data;
-    MEM_TAG     mem2proc_data_tag;
-
     // variables used in the testbench
     logic        clock;
     logic        reset;
@@ -558,9 +551,9 @@ module testbench;
             $fdisplay(out_fileno, "@@@");
             showing_data = 0;
             for (int k = 0; k <= `MEM_64BIT_LINES - 1; k = k+1) begin
-                if (mem.unified_memory[k] != 0) begin
-                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, mem.unified_memory[k],
-                                                             mem.unified_memory[k]);
+                if (memory.unified_memory[k] != 0) begin
+                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, memory.unified_memory[k],
+                                                             memory.unified_memory[k]);
                     showing_data = 1;
                 end else if (showing_data != 0) begin
                     $fdisplay(out_fileno, "@@@");
@@ -957,7 +950,9 @@ module testbench;
         $display("CMD: %s (%b), Addr: 0h%05x, Data_out: 0h%x", proc2mem_command.name(), proc2mem_command, proc2mem_addr, proc2mem_data);
         `ifdef DEBUG
         $display("CDB Stall Sig %b", debug_cdb_stall_sig);
+        `endif
         $display("PCs Retired");
+
         for(int i=0;i<debug_num_retired;i++) begin
             $display("%02d: 0h%05x", i, retired_insts[i].PC);
         end
