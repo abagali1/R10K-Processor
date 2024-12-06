@@ -122,7 +122,6 @@ module cpu (
         output logic                                                                            debug_sq_full
         output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data
 
-
         output ADDR                                                                             debug_fetch_target,
         output logic                                                                            debug_fetch_arbiter_signal, 
         output BR_TASK                                                                          debug_fetch_br_task,  
@@ -131,10 +130,10 @@ module cpu (
         output MEM_TAG                                                                          debug_fetch_mem_transaction_tag, 
         output MEM_TAG                                                                          debug_fetch_mem_data_tag, 
         output MEM_BLOCK                                                                        debug_fetch_mem_data, 
-                    
+
         output logic                                                                            debug_fetch_mem_en,
         output ADDR                                                                             debug_fetch_mem_addr_out, 
-                    
+
         output INST_PACKET              [3:0]                                                   debug_fetch_out_insts, 
         output logic                    [2:0]                                                   debug_fetch_out_num_insts,
 

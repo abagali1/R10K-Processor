@@ -161,20 +161,19 @@ module testbench;
         FU_PACKET               [`NUM_FU_ALU-1:0]                                           debug_alu_next_data;
         logic                                                                               debug_sq_full;
         logic                   [$clog2(`SQ_SZ+1)-1:0]                                      debug_sq_br_tail;
-        
-        
+
         ADDR                                                                                debug_fetch_target;
         logic                                                                               debug_fetch_arbiter_signal; 
         BR_TASK                                                                             debug_fetch_br_task;
         logic                    [$clog2(`INST_BUFF_DEPTH+1)-1:0]                           debug_fetch_ibuff_open;
-                
+
         MEM_TAG                                                                             debug_fetch_mem_transaction_tag; 
         MEM_TAG                                                                             debug_fetch_mem_data_tag;
         MEM_BLOCK                                                                           debug_fetch_mem_data;
-                
+
         logic                                                                               debug_fetch_mem_en;
         ADDR                                                                                debug_fetch_mem_addr_out; 
-                
+
         INST_PACKET              [3:0]                                                      debug_fetch_out_insts;
         logic                    [2:0]                                                      debug_fetch_out_num_insts;
 
