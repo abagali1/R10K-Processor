@@ -72,15 +72,15 @@ module dispatch #(
 
         for (int i = 0; i < N; i++) begin
             if (decoded_insts[i].valid && i < limit) begin
+                if(decoded_insts[i].illegal) begin
+                    break;
+                end
                 if ((decoded_insts[i].uncond_branch || decoded_insts[i].cond_branch)) begin
                     if (!(i ==0 && !bs_full)) begin
                         break;
                     end
                     out_insts[i] = decoded_insts[i];
                 end else if (decoded_insts[i].wr_mem || decoded_insts[i].rd_mem) begin
-                    // if (decoded_insts[i].illegal) begin
-                    //     out_insts[i] = '0;
-                    // end
                     if(decoded_insts[i].wr_mem) begin
                         if(sq_full) begin
                             break;

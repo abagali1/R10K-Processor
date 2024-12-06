@@ -377,15 +377,11 @@ module testbench;
                 block = unified_memory[current[31:3]];
                 in_insts[i].inst = block.word_level[current[2]];
 
-                if (in_insts[i].inst) begin
-                    in_insts[i].valid = 1;
-                    in_insts[i].PC = current;
-                    in_insts[i].NPC = current + 4;
-                    in_insts[i].pred_taken = 0;
-                    num_input++;
-                end else begin
-                    in_insts[i].valid = 0;
-                end
+                in_insts[i].valid = 1;
+                in_insts[i].PC = current;
+                in_insts[i].NPC = current + 4;
+                in_insts[i].pred_taken = 0;
+                num_input++;
 
                 // $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
 
