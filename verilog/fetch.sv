@@ -69,7 +69,7 @@ module fetch #(
     logic [2:0] insts_to_return;
     //logic br_en;
 
-    logic [31:0] prefetch_target;
+    ADDR prefetch_target, cache_target, next_cache_target;
 
     //ADDR mem_addr;
 
@@ -119,7 +119,7 @@ module fetch #(
                 $write("\nicache alloc %b\n", icache_alloc);
                 if (~icache_valid[i]) begin
                     // check in mhr
-                    prefetch_target = ({target[31:3], 3'b0} + (i*8));
+                    prefetch_target = ({cache_target[31:3], 3'b0} + (i*8));
                     for (int j = 1; j <= NUM_MEM_TAGS; j++) begin
                         $display("MSHR_DATA: %d,  PREFETCH_TARGET %d, EQUALS? %0d, SUMMARY: %0d", mshr_data[j], prefetch_target, (mshr_data[j] == prefetch_target), (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])));
                         if (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])) begin
@@ -147,6 +147,7 @@ module fetch #(
     always_comb begin
         next_num_insts = '0;
         next_out_insts = '0;
+        next_cache_target = cache_target;
         
         $write("ICACHE VALID: %b", icache_valid);
         // Changed this to three to handle this case
@@ -177,16 +178,18 @@ module fetch #(
         j = '0;
         for (int i = 0; i < 4; i++) begin
             ADDR current;
-            current = target + (i * 4);
-            j = i + target[2];
-            $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], target, icache_valid[j/2]);
-            if (j < next_num_insts + target[2]) begin
+            current = cache_target + (i * 4);
+            j = i + cache_target[2];
+            $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], cache_target, icache_valid[j/2]);
+            if (j < next_num_insts + cache_target[2]) begin
                 //$write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
                 next_out_insts[i].inst = cache_read_data[j/2].word_level[current[2]];
                 next_out_insts[i].valid = 1'b1;
                 next_out_insts[i].PC = current;
                 next_out_insts[i].NPC = current + 4;
                 next_out_insts[i].pred_taken = 1'b0; // TODO branch prediction
+
+                next_cache_target = next_cache_target > current ? next_cache_target : current + 4;
             end else begin
                 break;
             end
@@ -229,7 +232,7 @@ module fetch #(
         // inputs
         .clock                      (clock),
         .reset                      (reset),
-        .proc2Icache_addr           (target),
+        .proc2Icache_addr           (cache_target),
         .br_task                    (br_task),
         .alloc_addr                 (mem_addr_out),
         .alloc_en                   (mem_en),
@@ -248,6 +251,7 @@ module fetch #(
             num_insts            <= '0;
             mshr_data            <= '0;
             mshr_valid           <= '0;
+            cache_target         <= (br_task == SQUASH) ? target : '0;
             //mem_addr             <= '0;
         end else begin
             out_insts            <= next_out_insts;
@@ -256,7 +260,7 @@ module fetch #(
             mshr_data            <= next_mshr_data;
             mshr_valid           <= next_mshr_valid;
             //mem_addr             <= next_mem_addr;
-            
+            cache_target         <= next_cache_target;
         end
         
         for (int i = 0; i < 4; i++) begin

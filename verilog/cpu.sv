@@ -342,7 +342,7 @@ module cpu (
 
     ADDR PC;
 
-    assign NPC = PC + num_input * 4; // TODO branch prediction
+    assign NPC = (br_task == SQUASH) ? br_fu_out.target_addr : PC + num_input * 4; // TODO branch prediction
     
 
     always @(posedge clock) begin
@@ -353,7 +353,7 @@ module cpu (
         //     PC <= br_fu_out.result;
         // end 
         else begin
-            PC <= (br_task == SQUASH) ? br_fu_out.result : NPC;
+            PC <= NPC;
         end
     end
 
