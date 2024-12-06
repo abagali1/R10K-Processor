@@ -167,8 +167,18 @@ module load_fu #(
             if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3]) begin
                 // aligned result
                 case(MEM_SIZE'(next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[1:0]))
-                    BYTE: next_entries[i].result = {24'b0, Dmem_load_data.byte_level[entries[i].target_addr[2:0]]};
-                    HALF: next_entries[i].result = {16'b0, Dmem_load_data.half_level[entries[i].target_addr[2:1]]};
+                    BYTE: begin
+                        next_entries[i].result = {24'b0, Dmem_load_data.byte_level[entries[i].target_addr[2:0]]};
+                        if(!next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[2]) begin
+                            next_entries[i].result[31:8] = {(24){next_entries[i].result[7]}};
+                        end
+                    end
+                    HALF: begin 
+                        next_entries[i].result = {16'b0, Dmem_load_data.half_level[entries[i].target_addr[2:1]]};
+                        if(!next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[2]) begin
+                            next_entries[i].result[31:16] = {(16){next_entries[i].result[15]}};
+                        end
+                    end
                     WORD: next_entries[i].result = Dmem_load_data.word_level[entries[i].target_addr[2]];
                     DOUBLE: next_entries[i].result = Dmem_load_data.dbbl_level;
                     default: next_entries[i].result = 64'hbadddada;
