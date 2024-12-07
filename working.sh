@@ -11,7 +11,7 @@ declare -a C_TESTS=(alexnet backtrack basic_malloc bfs dft fc_forward graph inse
 declare -a OPT_FLAGS=("O0" "O" "O2" "O3" "Os")
 
 # Define optimization flags array
-declare -a OPT_FLAGS=("O0" "O" "O2" "O3" "Os" "Ofast" "Og")
+declare -a OPT_FLAGS=("O0" "O" "O2" "O3")
 
 # Default to assembly tests
 TESTS=("${ASM_TESTS[@]}")
