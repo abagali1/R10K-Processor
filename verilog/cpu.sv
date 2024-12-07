@@ -254,6 +254,7 @@ module cpu (
     // output of mult
     FU_PACKET [`NUM_FU_MULT-1:0] mult_fu_out;
     logic     [`NUM_FU_MULT-1:0] mult_done;
+    logic     [`NUM_FU_MULT-1:0] mult_busy;
 
     logic sq_full;
 
@@ -428,6 +429,9 @@ module cpu (
     logic [`NUM_FU_ALU-1:0] fu_alu_busy;
     assign fu_alu_busy = cdb_stall_sig[`NUM_FU_ALU-1:0] | alu_rd_en;
 
+    logic [`NUM_FU_MULT-1:0] fu_mult_busy;
+    assign fu_mult_busy = cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT-1:`NUM_FU_ALU] | mult_busy;
+
     rs rasam (
         .clock(clock),
         .reset(reset),
@@ -450,7 +454,7 @@ module cpu (
 
         // busy bits from FUs to mark when available to issue
         .fu_alu_busy(fu_alu_busy),
-        .fu_mult_busy(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT-1:`NUM_FU_ALU]),
+        .fu_mult_busy(fu_mult_busy),
         .fu_ld_busy(ld_full),
         .fu_br_busy(1'b0),
 
@@ -665,7 +669,8 @@ module cpu (
                 .rem_b_id(br_fu_out.decoded_vals.b_id),
 
                 .fu_pack(mult_fu_out[i]),
-                .data_ready(mult_done[i])
+                .data_ready(mult_done[i]),
+                .busy(mult_busy[i])
             );
         end
     endgenerate
