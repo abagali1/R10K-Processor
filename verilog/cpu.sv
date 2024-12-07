@@ -340,23 +340,6 @@ module cpu (
     logic [2:0] num_input;
     INST_PACKET [3:0] in_insts;
 
-    ADDR PC;
-
-    assign NPC = (br_task == SQUASH) ? br_fu_out.target_addr : PC + num_input * 4; // TODO branch prediction
-    
-
-    always @(posedge clock) begin
-        if (reset) begin
-            PC <= 0;
-        end 
-        // else if (!br_fu_out.pred_correct) begin
-        //     PC <= br_fu_out.result;
-        // end 
-        else begin
-            PC <= NPC;
-        end
-    end
-
     bhr goop (
         .clock(clock),
         .reset(reset),
@@ -371,7 +354,7 @@ module cpu (
         .clock(clock),
         .reset(reset),
 
-        .target(NPC),
+        .target(br_fu_out.target_addr),
         .arbiter_signal(d_proc2mem_command == MEM_NONE), 
         .br_task(br_task),
         .ibuff_open(ib_open),
@@ -381,7 +364,8 @@ module cpu (
         .mem_en(fetch_mem_en),
         .mem_addr_out(fetch_proc2mem_addr),
         .out_insts(in_insts),
-        .out_num_insts(num_input)
+        .out_num_insts(num_input),
+        .NPC(NPC)
         `ifdef DEBUG
         ,   .debug_mshr_data(debug_mshr_data),
             .debug_mshr_valid(debug_mshr_valid)
