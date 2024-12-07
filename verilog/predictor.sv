@@ -32,7 +32,7 @@ module predictor #(
     always_comb begin
         rd_index = '0;
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
-            rd_index[i] = rd_pc[i][BHR_DEPTH-1:0] ^ rd_bhr;
+            rd_index[i] = rd_pcs[i][BHR_DEPTH-1:0] ^ rd_bhr;
         end
     end
     assign wr_index = wr_pc[BHR_DEPTH-1:0] ^ wr_bhr;
@@ -57,7 +57,7 @@ module predictor #(
     btb bibibop (
         .clock(clock),
         .reset(reset),
-        .rd_pc(rd_pc),
+        .rd_pc(rd_pcs),
         .wr_en(wr_en),
         .wr_pc(wr_pc),
         .wr_target(wr_target),
