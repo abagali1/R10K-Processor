@@ -408,9 +408,9 @@ module testbench;
             if (clock_count % 10000 == 0) begin
                 $display("  %16t : %d cycles", $realtime, clock_count);
             end
-            if(clock_count > 2000) begin
+            //if(clock_count > 15000) begin
                 dump_state();
-            end
+            //end
 
 
             // print the pipeline debug outputs via c code to the pipeline output file
