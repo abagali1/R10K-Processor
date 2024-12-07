@@ -54,7 +54,6 @@ module icache #(
     input ADDR write_addr,
     input MEM_BLOCK write_data,
     input BR_TASK br_task,
-
     // To memory
     //output MEM_COMMAND proc2Imem_command,
     //output ADDR        proc2Imem_addr,
@@ -101,6 +100,12 @@ module icache #(
 
     // ---- Addresses and final outputs ---- //
 
+    // 02e4 = 0000 0010| 1110 0| 000
+
+    // 02e8 = 0000 0010| 1110 1| 000
+    // 03e8 = 0000 0011| 1110 1| 000
+
+
     assign {current_tag, current_index} = proc2Icache_addr[15:3];
     assign {write_tag, write_index} = write_addr[15:3];
     assign {alloc_tag, alloc_index} = alloc_addr[15:3];
@@ -108,12 +113,17 @@ module icache #(
     //
     always_comb begin
         Icache_valid_out = '0;
+        $display("ICACHE TAGS:");
+        $display("| Tags | Current tag | i | valid |");
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
-            Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && (icache_tags[(current_index+i)% `ICACHE_LINES].tags == (current_tag+i)); 
+            //Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && (icache_tags[(current_index+i)% `ICACHE_LINES].tags) == (current_tag+i); 
+            Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && ((icache_tags[(current_index+i)% `ICACHE_LINES].tags) == ((current_index+i) >= `ICACHE_LINES ? current_tag + 1 : current_tag)); 
             Icache_alloc_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].alloc;
-            //$write("ICACHE TAGS:: %b %b %d %b\n", icache_tags[current_index+i].tags, current_tag, i, Icache_valid_out[i]);
+            $write("| %h | %h | %d | %b |\n", icache_tags[(current_index+i)% `ICACHE_LINES].tags, current_tag, i, Icache_valid_out[i]);
         end
+        $display("");
     end
+    // 
     /*
     assign Icache_valid_out =  icache_tags[current_index].valid &&
                               (icache_tags[current_index].tags == current_tag);*/
@@ -161,14 +171,15 @@ module icache #(
             //miss_outstanding <= unanswered_miss;
             // if (update_mem_tag) begin
             //     current_mem_tag <= Imem2proc_transaction_tag;
-            // end
+            // end/*
+
             if (br_task == SQUASH) begin
                 for (int i = 0; i < `ICACHE_LINES; i++) begin
                     icache_tags[i].alloc <= 1'b0;
                 end
             end else begin
                 if (write_en) begin // If data, meaning tag matches
-                    $write("ICACHE WRITING %d %b", write_index, write_data);
+                    $write("ICACHE WRITING %d %b\n", write_index, write_data);
                     icache_tags[write_index].tags  <= write_tag;
                     icache_tags[write_index].valid <= 1'b1;
                     icache_tags[write_index].alloc <= 1'b0;

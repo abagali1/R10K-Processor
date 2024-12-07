@@ -596,13 +596,13 @@ module testbench;
         $display("FETCH");
 
         $display("                   target                        |                          mem_data");
-        $display("  %b   |   %b   |", 
+        $display("  %h   |   %b   |", 
                 debug_fetch_target,
                 debug_fetch_mem_data
             );
 
         $display("|   mem_en   |  mem_addr_out   | out_num_insts |");
-        $display(" %d |      %b      |  %d |",
+        $display(" %d |      %h      |  %d |",
                 debug_fetch_mem_en,
                 debug_fetch_mem_addr_out,
                 debug_fetch_out_num_insts
@@ -619,14 +619,14 @@ module testbench;
         $display("MSHR:");
         $display("| Tag | Valid |");
         for (int i = 1; i <= `NUM_MEM_TAGS; i++) begin
-            $display("|%0d | %0d |", debug_mshr_data[i], debug_mshr_valid[i]);
+            $display("|%4h | %d |", debug_mshr_data[i], debug_mshr_valid[i]);
         end
         $display("");
 
         $display("ICACHE:");
         $display("| Data | Valid |");
         for (int i = 0; i < 4; i++) begin
-            $display("| %d | %d |", debug_icache_data[i], debug_icache_valid[i]);
+            $display("| %h | %d |", debug_icache_data[i], debug_icache_valid[i]);
         end
         $display("");
         
