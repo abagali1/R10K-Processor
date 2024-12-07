@@ -27,8 +27,8 @@ import "DPI-C" function string decode_inst(int inst);
 //import "DPI-C" function void close_pipeline_output_file();
 
 
-`define TB_MAX_CYCLES 110000 
-
+`define TB_MAX_CYCLES 1_000_000 
+    
 
 module testbench;
     // string inputs for loading memory and output files
@@ -364,7 +364,7 @@ module testbench;
             if (clock_count % 10000 == 0) begin
                 $display("  %16t : %d cycles", $realtime, clock_count);
             end
-            if(clock_count > 15000) begin
+            if(clock_count > 230_000) begin
                 dump_state();
             end
 

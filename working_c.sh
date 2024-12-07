@@ -1,4 +1,4 @@
-declare -a TESTS=(dft)
+declare -a TESTS=(backtrack basic_malloc bfs dft fc_forward graph insertionsort matrix_mult_rec mergesort omegalul outer_product priority_queue quicksort sort_search)
 
 function cleanup() {
     sed -i "24s/.*/\`define DEBUG 1/" verilog/sys_defs.svh
@@ -12,8 +12,7 @@ failed_test=0
 start_n=$1
 end_n=$2
 sed -i "24s/.*/\/\/\`define DEBUG 1/" verilog/sys_defs.svh
-# for i in $(seq ${start_n:=1} ${end_n:=6}); do
-for i in {6..1}; do
+for i in $(seq ${start_n:=1} ${end_n:=6}); do
     sed -i "31s/.*/\`define N $i/" verilog/sys_defs.svh
     make nuke > /dev/null
     make cpu.out > /dev/null

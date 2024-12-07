@@ -65,6 +65,7 @@ module br_stack #(
         next_free_entries = free_entries;
         next_b_mask = b_mask;
         cp_out = '0;
+        assigned_b_id = '0;
 
         `ifdef DEBUG
             debug_entries = entries;

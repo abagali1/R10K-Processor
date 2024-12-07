@@ -83,6 +83,10 @@ module rob #(
                 next_entries[(head+i) % DEPTH] = '0;
                 next_head = (((head+i) % DEPTH) + 1) % DEPTH;
                 num_retired++;
+
+                if(retiring_data[i].halt) begin
+                    break;
+                end
             end else begin
                 break;
             end
