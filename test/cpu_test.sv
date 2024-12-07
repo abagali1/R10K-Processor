@@ -310,7 +310,7 @@ module testbench;
             out_outfile       = {output_name,".out"}; // this is how you concatenate strings in verilog
             cpi_outfile       = {output_name,".cpi"};
             writeback_outfile = {output_name,".wb"};
-            writeback_t_outfile = {output_name, "wbt"};
+            writeback_t_outfile = {output_name, ".wbt"};
             //pipeline_outfile  = {output_name,".ppln"};
         end else begin
             $display("\nDid not receive '+OUTPUT=' argument. Exiting.\n");
@@ -364,7 +364,9 @@ module testbench;
             if (clock_count % 10000 == 0) begin
                 $display("  %16t : %d cycles", $realtime, clock_count);
             end
-            dump_state();
+            if(clock_count > 15000) begin
+                dump_state();
+            end
 
 
             // print the pipeline debug outputs via c code to the pipeline output file
@@ -446,7 +448,7 @@ module testbench;
                 if (committed_insts[n].reg_idx == `ZERO_REG) begin
                     $fdisplay(wb_fileno, "PC %4x:%-8s| ---", pc, decode_inst(inst));
                     `ifdef DEBUG
-                        $fdisplay(wbt_fileno, "PC %4x:%-8s| --- (%02d)", pc, decode_inst(inst), committed_insts[n].tag);
+                        $fdisplay(wbt_fileno, "PC %4x:%-8s| --- (%02d) #%02d", pc, decode_inst(inst), committed_insts[n].tag, clock_count);
                     `endif
                 end else begin
                     $fdisplay(wb_fileno, "PC %4x:%-8s| r%02d=%-8x",
@@ -455,12 +457,13 @@ module testbench;
                               committed_insts[n].reg_idx,
                               committed_insts[n].data);
                     `ifdef DEBUG
-                        $fdisplay(wbt_fileno, "PC %4x:%-8s| r%02d=%-8x (%02d)",
+                        $fdisplay(wbt_fileno, "PC %4x:%-8s| r%02d=%-8x (%02d) #%02d",
                                 pc,
                                 decode_inst(inst),
                                 committed_insts[n].reg_idx,
                                 committed_insts[n].data,
-                                committed_insts[n].tag
+                                committed_insts[n].tag,
+                                clock_count
                                 );
                     `endif
                 end
@@ -634,9 +637,9 @@ module testbench;
         for(int i=`NUM_FU_ALU-1;i>=0;i--) begin
             $display("%02d: %b", i, debug_alu_issued_bus[i]);
         end
-        $display("#  | valid |  PC   |  NPC  |fu_type| t |t1 |t2 |b_id|b_mask| sq tail|alu issued|mult issued|br issued|ld issued|st issued|");
+        $display("#  | valid |  PC   |  NPC  |fu_type| t |t1 |t2 |b_id|b_mask| sq tail|alu issued|mult issued|br issued|ld issued|st issued|ld ready");
         for (int i = `RS_SZ-1; i >= 0; i--) begin
-            $display("%02d |  %d    | %05x | %05x |  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |     %d   |     %d   |", 
+            $display("%02d |  %d    | %05x | %05x |  %02d   | %02d|%02d%s|%02d%s|%04b| %04b |  %05d |    %d     |     %d     |     %d   |     %d   |     %d   |     %d   |", 
                         i,
                         debug_rs_entries[i].decoded_vals.valid,
                         debug_rs_entries[i].decoded_vals.PC,
@@ -654,7 +657,8 @@ module testbench;
                         debug_all_issued_mult[i],
                         debug_all_issued_br[i],
                         debug_all_issued_ld[i],
-                        debug_all_issued_st[i]
+                        debug_all_issued_st[i],
+                        debug_rs_entries[i].ld_ready
                         );
         end
     endfunction
