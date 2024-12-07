@@ -118,11 +118,7 @@ module icache #(
             //Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && (icache_tags[(current_index+i)% `ICACHE_LINES].tags) == (current_tag+i); 
             Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && ((icache_tags[(current_index+i)% `ICACHE_LINES].tags) == ((current_index+i) >= `ICACHE_LINES ? current_tag + 1 : current_tag)); 
             Icache_alloc_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].alloc;
-<<<<<<< HEAD
             $write("| %h | %h | %d | %b |\n", icache_tags[(current_index+i)% `ICACHE_LINES].tags, current_tag, i, Icache_valid_out[i]);
-=======
-            //$write("ICACHE TAGS:: %b %b %d %b\n", icache_tags[current_index+i].tags, current_tag, i, Icache_valid_out[i]);
->>>>>>> 1f0b48a (fixes mshr bug and removes some prints)
         end
         $display("");
     end
