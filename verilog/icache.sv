@@ -172,12 +172,12 @@ module icache #(
             // if (update_mem_tag) begin
             //     current_mem_tag <= Imem2proc_transaction_tag;
             // end/*
-
+/*
             if (br_task == SQUASH) begin
                 for (int i = 0; i < `ICACHE_LINES; i++) begin
                     icache_tags[i].alloc <= 1'b0;
                 end
-            end else begin
+            end else begin*/
                 if (write_en) begin // If data, meaning tag matches
                     $write("ICACHE WRITING %d %b\n", write_index, write_data);
                     icache_tags[write_index].tags  <= write_tag;
@@ -187,7 +187,7 @@ module icache #(
                 if (alloc_en) begin
                     icache_tags[alloc_index].alloc <= 1'b1;
                 end
-            end
+            //end
         end
         `ifdef DEBUG
             //$write("raddr: %b\n", raddr[PREFETCH_DISTANCE-1:0]);
