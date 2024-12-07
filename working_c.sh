@@ -1,4 +1,4 @@
-declare -a TESTS=(insertionsort)
+declare -a TESTS=(dft)
 
 function cleanup() {
     sed -i "24s/.*/\`define DEBUG 1/" verilog/sys_defs.svh
@@ -20,9 +20,9 @@ for i in {6..1}; do
     for test in "${TESTS[@]}"; do
         echo -n "$test (N=$i)"
         make $test.out > /dev/null
-        diff output/$test.wb ../p3-f24.abagali/correct_out/$test.wb > /dev/null 2>&1
+        diff output/$test.wb correct_out/$test.wb > /dev/null 2>&1
         wb_status=$?
-        diff <(grep "@@@" output/$test.out) <(grep "@@@" ../p3-f24.abagali/correct_out/$test.out) > /dev/null 2>&1
+        diff <(grep "@@@" output/$test.out) <(grep "@@@" correct_out/$test.out) > /dev/null 2>&1
         out_status=$?
 
         if [ $wb_status -ne 0 ] || [ $out_status -ne 0 ]
