@@ -1,5 +1,13 @@
 declare -a TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
 
+function cleanup() {
+    sed -i "24s/.*/\`define DEBUG 1/" verilog/sys_defs.svh
+    exit 1
+}
+
+trap cleanup SIGINT
+trap cleanup SIGQUIT
+
 failed_test=0
 start_n=$1
 end_n=$2
@@ -23,7 +31,6 @@ for i in $(seq ${start_n:=1} ${end_n:=6}); do
         else
             echo -e " - \033[0;32mPassed\033[0m"
         fi
-        echo ""
     done
     echo "=========="
 done

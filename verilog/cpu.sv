@@ -107,6 +107,7 @@ module cpu (
         output logic                    [`LD_SZ-1:0]                                            debug_ld_broadcast_entry,
         output logic                                                                            debug_ld_full,
         output logic                    [`LD_SZ-1:0]                                            debug_ld_stall_sig,
+        output logic                    [`LD_SZ-1:0]                                            debug_ld_squashed,
 
         output logic                                                                            debug_Dcache_ld_out,
         output ADDR                                                                             debug_Dcache_addr_out,
@@ -723,7 +724,8 @@ module cpu (
             .debug_alloc_spot(debug_ld_alloc_spot),
             .debug_issued_entry(debug_ld_issued_entry),
             .debug_broadcast_entry(debug_ld_broadcast_entry),
-            .debug_ld_stall_sig(debug_ld_stall_sig)
+            .debug_ld_stall_sig(debug_ld_stall_sig),
+            .debug_ld_squashed(debug_ld_squashed)
         `endif
     );
 
@@ -878,6 +880,9 @@ module cpu (
             committed_insts[i].halt = retiring_data[i].halt;
             committed_insts[i].illegal = '0; //TODO
             committed_insts[i].valid = (i < num_retired) ? 1 : 0;
+            `ifdef DEBUG
+                committed_insts[i].tag = retiring_data[i].t;
+            `endif
         end
     end
 
