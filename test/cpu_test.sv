@@ -177,8 +177,11 @@ module testbench;
         INST_PACKET              [3:0]                                                      debug_fetch_out_insts;
         logic                    [2:0]                                                      debug_fetch_out_num_insts;
 
-        ADDR                    [`NUM_MEM_TAGS:1]                            debug_mshr_data;
-        logic                   [`NUM_MEM_TAGS:1]                            debug_mshr_valid;
+        ADDR                    [`NUM_MEM_TAGS:1]                                           debug_mshr_data;
+        logic                   [`NUM_MEM_TAGS:1]                                           debug_mshr_valid;
+        MEM_BLOCK                [`PREFETCH_DISTANCE-1:0]                                   debug_icache_data;
+        logic                    [`PREFETCH_DISTANCE-1:0]                                   debug_icache_valid;
+    
     `endif
 
 
@@ -308,7 +311,10 @@ module testbench;
             .debug_fetch_out_num_insts(debug_fetch_out_num_insts),
 
             .debug_mshr_data(debug_mshr_data),
-            .debug_mshr_valid(debug_mshr_valid)
+            .debug_mshr_valid(debug_mshr_valid),
+            .debug_icache_data(debug_icache_data),
+            .debug_icache_valid(debug_icache_valid)
+    
         `endif
     );
 
@@ -615,6 +621,14 @@ module testbench;
         for (int i = 1; i <= `NUM_MEM_TAGS; i++) begin
             $display("|%0d | %0d |", debug_mshr_data[i], debug_mshr_valid[i]);
         end
+        $display("");
+
+        $display("ICACHE:");
+        $display("| Data | Valid |");
+        for (int i = 0; i < 4; i++) begin
+            $display("| %d | %d |", debug_icache_data[i], debug_icache_valid[i]);
+        end
+        $display("");
         
         
         // for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin

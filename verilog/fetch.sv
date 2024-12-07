@@ -32,7 +32,9 @@ module fetch #(
 
     `ifdef DEBUG
     ,   output  ADDR [NUM_MEM_TAGS:1] debug_mshr_data,
-        output  logic [NUM_MEM_TAGS:1] debug_mshr_valid
+        output  logic [NUM_MEM_TAGS:1] debug_mshr_valid,
+        output MEM_BLOCK [PREFETCH_DISTANCE-1:0]  Icache_data_out, 
+        output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out
     `endif
 );
     //typedef enum logic [1:0] {FETCH, PREFETCH, STALL, DEF} STATE;
@@ -60,7 +62,7 @@ module fetch #(
     ADDR            cache_write_addr;
 
     MEM_BLOCK   [PREFETCH_DISTANCE-1:0] cache_read_data;
-    logic       [PREFETCH_DISTANCE-1:0] icache_valid, icache_alloc;
+    logic       [PREFETCH_DISTANCE-1:0] icache_valid;//, icache_alloc;
 
     //logic mem_transaction_started;
     logic mem_done;
@@ -106,24 +108,24 @@ module fetch #(
             cache_write_addr = mshr_data[mem_data_tag];
             next_mshr_data[mem_data_tag] = '0;
             next_mshr_valid[mem_data_tag] = '0;
-            $write("WRITING TO %h\n", mshr_data[mem_data_tag]);
+            //$write("MSHR WRITING %0d TO %h\n", mem_data, mshr_data[mem_data_tag]);
         end
 
         // FETCHING + PREFETCHING
         mem_addr_out = '0;
 
         //$display("MSHRFULL: %0d", ~mshr_full);
-        $display("ARBITER SIGNAL: %0d", arbiter_signal);
+        //$display("ARBITER SIGNAL: %0d", arbiter_signal);
         if (arbiter_signal & ~mshr_full) begin
             for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
                 // check if in icache first\
                 found_in_mshr = 0;
-                $write("\nicache alloc %b\n", icache_alloc);
+                //$write("\nicache alloc %b\n", icache_alloc);
                 if (~icache_valid[i]) begin
                     // check in mhr
                     prefetch_target = ({NPC[31:3], 3'b0} + (i*8));
                     for (int j = 1; j <= NUM_MEM_TAGS; j++) begin
-                        $display("MSHR_DATA: %d,  PREFETCH_TARGET %d, EQUALS? %0d, SUMMARY: %0d", mshr_data[j], prefetch_target, (mshr_data[j] == prefetch_target), (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])));
+                        //$display("MSHR_DATA: %d,  PREFETCH_TARGET %d, EQUALS? %0d, SUMMARY: %0d", mshr_data[j], prefetch_target, (mshr_data[j] == prefetch_target), (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])));
                         if (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])) begin
                             found_in_mshr = 1;
                             break;
@@ -144,6 +146,7 @@ module fetch #(
         end
     end
     
+    
     logic [2:0] j;
     // FETCH TO INST_BUF
     always_comb begin
@@ -151,7 +154,7 @@ module fetch #(
         next_out_insts = '0;
         next_cache_target = NPC;
         
-        $write("ICACHE VALID: %b", icache_valid);
+        //$write("ICACHE VALID: %b", icache_valid);
         // Changed this to three to handle this case
         // [0|1] [1|1] [1|1]
         // Now it can output 4 instructions instead of the previous 3
@@ -182,7 +185,7 @@ module fetch #(
             ADDR current;
             current = NPC + (i * 4);
             j = i + NPC[2];
-            $write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], NPC, icache_valid[j/2]);
+            //$write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], NPC, icache_valid[j/2]);
             if (j < next_num_insts + NPC[2]) begin
                 //$write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
                 next_out_insts[i].inst = cache_read_data[j/2].word_level[current[2]];
@@ -236,15 +239,15 @@ module fetch #(
         .reset                      (reset),
         .proc2Icache_addr           (NPC),
         .br_task                    (br_task),
-        .alloc_addr                 (mem_addr_out),
-        .alloc_en                   (mem_en),
+        //.alloc_addr                 (mem_addr_out),
+        //.alloc_en                   (mem_en),
         .write_en                   (cache_write_en),
         .write_addr                 (cache_write_addr),
         .write_data                 (cache_write_data),
         // outputs
         .Icache_data_out            (cache_read_data),
-        .Icache_valid_out           (icache_valid),
-        .Icache_alloc_out           (icache_alloc)
+        .Icache_valid_out           (icache_valid)
+        //.Icache_alloc_out           (icache_alloc)
     );
 
     assign NPC = (br_task == SQUASH) ? target : cache_target;
@@ -261,6 +264,8 @@ module fetch #(
             out_insts            <= '0;
             num_insts            <= '0;
             cache_target         <= target;
+            mshr_data            <= next_mshr_data;
+            mshr_valid           <= next_mshr_valid;
         end else begin
             out_insts            <= next_out_insts;
             num_insts            <= next_num_insts;
@@ -271,6 +276,7 @@ module fetch #(
             cache_target         <= next_cache_target;
         end
 
+        /*
         if (NPC == 4'h0060) begin
             $display("DDD What am I %b \n", icache_valid);
         end
@@ -278,8 +284,13 @@ module fetch #(
             $display("OUT INSTSS: %b", out_insts[i]);
         end
         $display("MEM DONE: %b %b %b %b", mem_done, cache_write_en, cache_write_addr, cache_write_data);
-
+        */
         //$display("          mem_addr: %h -- mem_en: %b -- mem_transaction_handshake: %b", mem_addr, mem_en, mem_transaction_handshake);
         //$display("          cache_target: %h -- cache_write_en: %b -- icache_valid: %b", cache_target, cache_write_en, icache_valid);
     end
+
+    `ifdef DEBUG
+        assign Icache_data_out = cache_read_data;
+        assign Icache_valid_out = icache_valid;
+    `endif
 endmodule

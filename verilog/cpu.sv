@@ -136,8 +136,10 @@ module cpu (
         output INST_PACKET              [3:0]                                                   debug_fetch_out_insts, 
         output logic                    [2:0]                                                   debug_fetch_out_num_insts,
 
-        output ADDR                     [`NUM_MEM_TAGS:1]                    debug_mshr_data,
-        output logic                    [`NUM_MEM_TAGS:1]                    debug_mshr_valid
+        output ADDR                     [`NUM_MEM_TAGS:1]                                       debug_mshr_data,
+        output logic                    [`NUM_MEM_TAGS:1]                                       debug_mshr_valid,
+        output MEM_BLOCK                [`PREFETCH_DISTANCE-1:0]                                 debug_icache_data,
+        output logic                    [`PREFETCH_DISTANCE-1:0]                                 debug_icache_valid
     `endif
 );
 
@@ -368,7 +370,9 @@ module cpu (
         .NPC(NPC)
         `ifdef DEBUG
         ,   .debug_mshr_data(debug_mshr_data),
-            .debug_mshr_valid(debug_mshr_valid)
+            .debug_mshr_valid(debug_mshr_valid),
+            .Icache_data_out(debug_icache_data),
+            .Icache_valid_out(debug_icache_valid)
         `endif
     );
 
