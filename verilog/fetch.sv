@@ -77,7 +77,7 @@ module fetch #(
     //ADDR mem_addr;
 
     // TODO
-    assign mem_done = mem_data_tag != 0 & mshr_valid[mem_data_tag];
+    assign mem_done = (mem_data_tag != 0) & mshr_valid[mem_data_tag];
     
     //assign mem_command = mem_en ? MEM_LOAD : MEM_NONE;
     //assign br_en = br_task == SQUASH | br_task == CLEAR;
@@ -115,7 +115,7 @@ module fetch #(
         mem_addr_out = '0;
 
         //$display("MSHRFULL: %0d", ~mshr_full);
-        //$display("ARBITER SIGNAL: %0d", arbiter_signal);
+        $display("ARBITER SIGNAL: %0d MSHR FULL: %0d", arbiter_signal, mshr_full);
         if (arbiter_signal & ~mshr_full) begin
             for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
                 // check if in icache first\
@@ -128,11 +128,13 @@ module fetch #(
                         //$display("MSHR_DATA: %d,  PREFETCH_TARGET %d, EQUALS? %0d, SUMMARY: %0d", mshr_data[j], prefetch_target, (mshr_data[j] == prefetch_target), (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])));
                         if (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])) begin
                             found_in_mshr = 1;
+                            $display("INNIT SIGNAL: found target %h in mshr at mem tag %0d", {prefetch_target[31:3], 3'b0}, j);
                             break;
                         end
                     end
                     if (~found_in_mshr) begin
                         // request from memory
+
                         mem_en = 1;
                         mem_addr_out = prefetch_target;
                         //mem_command = MEM_LOAD;
@@ -158,7 +160,8 @@ module fetch #(
         // Changed this to three to handle this case
         // [0|1] [1|1] [1|1]
         // Now it can output 4 instructions instead of the previous 3
-        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+        // TODO this should be 3 not four
+        for (int i = 0; i < 3; i++) begin
             // if the cache block is valid, increment next_num_insts by 2 (2 insts per block)
             if (icache_valid[i]) begin
                 if (~NPC[2] | i > 0) begin 
