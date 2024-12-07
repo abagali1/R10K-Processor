@@ -1,3 +1,4 @@
+#!/bin/bash
 declare -a TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
 
 function cleanup() {
