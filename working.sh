@@ -1,5 +1,26 @@
 #!/bin/bash
-declare -a TESTS=(outer_product mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
+
+# Define the assembly tests array
+declare -a ASM_TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
+
+# Define the C tests array based on the files shown with "C" icon
+declare -a C_TESTS=(alexnet backtrack basic_malloc bfs dft fc_forward graph insertionsort matrix_mult_rec mergesort omegalul outer_product priority_queue quicksort sort_search)
+
+# Default to assembly tests
+TESTS=("${ASM_TESTS[@]}")
+
+# Parse command line arguments
+while getopts "c" opt; do
+    case $opt in
+        c)
+            TESTS=("${C_TESTS[@]}")
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
+done
 
 # Define the assembly tests array
 declare -a ASM_TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
@@ -33,6 +54,7 @@ while getopts "c" opt; do
 done
 
 failed_test=0
+<<<<<<< HEAD
 # Only run optimization tests if -c flag was specified
 if [[ " ${TESTS[@]} " =~ " ${C_TESTS[0]} " ]]; then
     echo "Testing C files with different optimization flags..."
@@ -95,6 +117,30 @@ else
         echo "=========="
     done
 fi
+=======
+for i in $(seq 1 6); do
+    sed -i "31s/.*/\`define N $i/" verilog/sys_defs.svh
+    make nuke > /dev/null
+    make cpu.out > /dev/null
+    for test in "${TESTS[@]}"; do
+        echo -n "$test (N=$i)"
+        make $test.out > /dev/null
+        diff output/$test.wb correct_out/$test.wb > /dev/null 2>&1
+        wb_status=$?
+        diff <(grep "@@@" output/$test.out) <(grep "@@@" correct_out/$test.out) > /dev/null 2>&1
+        out_status=$?
+
+        if [ $wb_status -ne 0 ] || [ $out_status -ne 0 ]
+        then
+            echo -e " - \033[0;31mFailed WB: $wb_status MEM: $out_status\033[0m"
+            failed_test=1
+        else
+            echo -e " - \033[0;32mPassed\033[0m"
+        fi
+    done
+    echo "=========="
+done
+>>>>>>> 45f81ae (working.sh runs c files)
 
 if [ $failed_test -ne 1 ];
 then
