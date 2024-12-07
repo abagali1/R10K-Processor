@@ -106,6 +106,7 @@ module fetch #(
             cache_write_addr = mshr_data[mem_data_tag];
             next_mshr_data[mem_data_tag] = '0;
             next_mshr_valid[mem_data_tag] = '0;
+            $write("WRITING TO %h\n", mshr_data[mem_data_tag]);
         end
 
         // FETCHING + PREFETCHING
@@ -120,7 +121,7 @@ module fetch #(
                 $write("\nicache alloc %b\n", icache_alloc);
                 if (~icache_valid[i]) begin
                     // check in mhr
-                    prefetch_target = ({cache_target[31:3], 3'b0} + (i*8));
+                    prefetch_target = ({NPC[31:3], 3'b0} + (i*8));
                     for (int j = 1; j <= NUM_MEM_TAGS; j++) begin
                         $display("MSHR_DATA: %d,  PREFETCH_TARGET %d, EQUALS? %0d, SUMMARY: %0d", mshr_data[j], prefetch_target, (mshr_data[j] == prefetch_target), (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])));
                         if (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])) begin
@@ -157,7 +158,7 @@ module fetch #(
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
             // if the cache block is valid, increment next_num_insts by 2 (2 insts per block)
             if (icache_valid[i]) begin
-                if (~target[2] | i > 0) begin 
+                if (~NPC[2] | i > 0) begin 
                     next_num_insts += 2;
                 end else begin
                     next_num_insts += 1;
@@ -259,7 +260,7 @@ module fetch #(
         end else if (br_task == SQUASH) begin
             out_insts            <= '0;
             num_insts            <= '0;
-            cache_target         <= next_cache_target;
+            cache_target         <= target;
         end else begin
             out_insts            <= next_out_insts;
             num_insts            <= next_num_insts;
@@ -269,7 +270,10 @@ module fetch #(
             //mem_addr             <= next_mem_addr;
             cache_target         <= next_cache_target;
         end
-        
+
+        if (NPC == 4'h0060) begin
+            $display("DDD What am I %b \n", icache_valid);
+        end
         for (int i = 0; i < 4; i++) begin
             $display("OUT INSTSS: %b", out_insts[i]);
         end
