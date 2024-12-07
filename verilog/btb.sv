@@ -2,27 +2,34 @@
 `include "ISA.svh"
 
 module btb #(
-    parameter DEPTH = `BRANCH_TARGET_BUFFER_SIZE
+    parameter DEPTH = `BRANCH_TARGET_BUFFER_SIZE,
+    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE
 )
 (
-    input               clock, 
-    input               reset,
+    input                                           clock, 
+    input                                           reset,
 
-    input ADDR          rd_pc,
+    input ADDR      [PREFETCH_DISTANCE-1:0]         rd_pc,
 
-    input logic         wr_en,
-    input ADDR          wr_pc,
-    input ADDR          wr_target,
+    input logic                                     wr_en,
+    input ADDR                                      wr_pc,
+    input ADDR                                      wr_target,
 
-    output logic        is_branch,
-    output ADDR         pred_target
+    output logic    [PREFETCH_DISTANCE-1:0]         is_branch,
+    output ADDR     [PREFETCH_DISTANCE-1:0]         pred_target
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     ADDR [DEPTH-1:0] btb, next_btb;
 
-    assign pred_target = btb[rd_pc[LOG_DEPTH-1:0]];
-    assign is_branch = |btb[rd_pc[LOG_DEPTH-1:0]];
+    always_comb begin
+        pred_target = '0;
+        is_branch = '0;
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+            pred_target = btb[rd_pc[i][LOG_DEPTH-1:0]];
+            is_branch = |btb[rd_pc[i][LOG_DEPTH-1:0]];
+        end
+    end
 
     always_comb begin
         next_btb = btb;

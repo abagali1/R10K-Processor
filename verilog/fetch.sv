@@ -293,4 +293,24 @@ module fetch #(
         assign Icache_data_out = cache_read_data;
         assign Icache_valid_out = icache_valid;
     `endif
+    /*
+    predictor pred (
+        .clock(clock),
+        .reset(reset),
+
+        .rd_pc(),
+        .rd_bhr(),
+
+        .wr_en(),
+        .wr_taken(),
+        .wr_target().
+        .wr_pc(),
+        .wr_bhr(),
+
+        .pred_taken(),
+        .pred_target()
+    );
+    */
+
+
 endmodule

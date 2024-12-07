@@ -5,13 +5,14 @@
 
 module predictor #(
     parameter BHR_DEPTH = `BRANCH_HISTORY_REG_SZ,
-    parameter BHT_DEPTH = `BRANCH_HISTORY_TABLE_SIZE
+    parameter BHT_DEPTH = `BRANCH_HISTORY_TABLE_SIZE,
+    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE
 )
 (
-    input                                   clock, 
+    input                                   clock,
     input                                   reset,
 
-    input ADDR                              rd_pc, // pc of current branch
+    input ADDR      [PREFETCH_DISTANCE-1:0] rd_pcs, // pc of current branch
     input logic     [BHR_DEPTH-1:0]         rd_bhr, // current branch history register
 
     input logic                             wr_en, // enabled when a branch gets resolved to update predictor
@@ -20,14 +21,20 @@ module predictor #(
     input ADDR                              wr_pc, // pc of the branch instruction
     input logic     [BHR_DEPTH-1:0]         wr_bhr, // branch history register of this instruction when predicted
 
-    output logic                            pred_taken, // true if predictor predicts branch is taken
-    output ADDR                             pred_target // predicted target address
+    output logic    [PREFETCH_DISTANCE-1:0] pred_taken, // true if predictor predicts branch is taken
+    output ADDR     [PREFETCH_DISTANCE-1:0] pred_target // predicted target address
 );
-    logic is_branch;
+    logic [PREFETCH_DISTANCE-1:0]   is_branch;
 
-    logic [BHR_DEPTH-1:0] rd_index, wr_index;
+    logic [PREFETCH_DISTANCE-1:0]   [BHR_DEPTH-1:0] rd_index;
+    logic [BHR_DEPTH-1:0] wr_index;
 
-    assign rd_index = rd_pc[BHR_DEPTH-1:0] ^ rd_bhr;
+    always_comb begin
+        rd_index = '0;
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+            rd_index[i] = rd_pc[i][BHR_DEPTH-1:0] ^ rd_bhr;
+        end
+    end
     assign wr_index = wr_pc[BHR_DEPTH-1:0] ^ wr_bhr;
 
     logic [BHT_DEPTH-1:0] bht_taken;
@@ -58,7 +65,12 @@ module predictor #(
         .pred_target(pred_target)
     );
 
-    assign pred_taken = is_branch ? bht_pred[rd_index] : 0;
+    always_comb begin
+        pred_taken = '0;
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+            pred_taken[i] = is_branch ? bht_pred[rd_index[i]] : 0;
+        end
+    end
 
     always_comb begin
         bht_taken = '0;
