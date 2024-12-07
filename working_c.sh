@@ -1,5 +1,4 @@
-#!/bin/bash
-declare -a TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
+declare -a TESTS=(backtrack basic_malloc bfs dft fc_forward graph insertionsort matrix_mult_rec mergesort omegalul outer_product priority_queue quicksort sort_search)
 
 function cleanup() {
     sed -i "24s/.*/\`define DEBUG 1/" verilog/sys_defs.svh
