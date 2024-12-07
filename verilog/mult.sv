@@ -18,8 +18,8 @@ module mult (
     input logic         rd_in,
 
     output FU_PACKET    fu_pack,
-    output logic        data_ready
-    //output logic        full
+    output logic        data_ready,
+    output logic        busy
 );
     logic [`MULT_STAGES-2:0] internal_dones;
     logic [(64*(`MULT_STAGES-1))-1:0] internal_sums, internal_mcands, internal_mpliers;
@@ -33,7 +33,6 @@ module mult (
     assign rs2 = is_pack.rs2_value;
 
     logic done;
-    //assign full = (packets != '0);
 
     // keep track of each instruction's is_pack
     RS_PACKET [`MULT_STAGES-1:0] packets, next_packets;
@@ -41,6 +40,8 @@ module mult (
 
     MULT_FUNC [`MULT_STAGES-2:0] internal_funcs;
     MULT_FUNC func_out;
+
+    assign busy = packets[`MULT_STAGES-2] != '0;
 
     // instantiate an array of mult_stage modules
     // this uses concatenation syntax for internal wiring, see lab 2 slides

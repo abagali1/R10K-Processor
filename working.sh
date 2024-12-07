@@ -1,7 +1,10 @@
 declare -a TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
 
 failed_test=0
-for i in $(seq 1 6); do
+start_n=$1
+end_n=$2
+sed -i "24s/.*/\/\/\`define DEBUG 1/" verilog/sys_defs.svh
+for i in $(seq ${start_n:=1} ${end_n:=6}); do
     sed -i "31s/.*/\`define N $i/" verilog/sys_defs.svh
     make nuke > /dev/null
     make cpu.out > /dev/null
@@ -24,6 +27,7 @@ for i in $(seq 1 6); do
     done
     echo "=========="
 done
+sed -i "24s/.*/\`define DEBUG 1/" verilog/sys_defs.svh
 
 if [ $failed_test -ne 1 ];
 then
