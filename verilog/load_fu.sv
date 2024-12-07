@@ -72,7 +72,7 @@ module load_fu #(
 
     // psel to start transaction
     logic [DEPTH-1:0] issued_req, issued_entry;
-    assign issued_req = ready_spots & !squashed_spots;
+    assign issued_req = ready_spots & ~squashed_spots;
     psel_gen #(
         .WIDTH(DEPTH),
         .REQS(1)
@@ -84,7 +84,7 @@ module load_fu #(
     );
 
     logic [DEPTH-1:0] broadcast_req, broadcasted_entry;
-    assign broadcast_req = data_ready_spots & !squashed_spots;
+    assign broadcast_req = data_ready_spots & ~squashed_spots;
     psel_gen #(
         .WIDTH(DEPTH),
         .REQS(DEPTH)
@@ -159,7 +159,6 @@ module load_fu #(
                     next_entries[i].decoded_vals.b_mask = '0;
 
                     next_open_spots[i] = '0;
-                    next_ready_spots[i] = '0;
                 end
             end
 
