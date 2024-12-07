@@ -1,7 +1,6 @@
 
 # misc
 *.pdf
-correct_out/
 
 # zip files
 *.zip
