@@ -1,19 +1,14 @@
 #!/bin/bash
-declare -a TESTS=(outer_product mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
 
 # Define the assembly tests array
 declare -a ASM_TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
 
 # Define the C tests array based on the files shown with "C" icon
-# declare -a C_TESTS=(alexnet backtrack basic_malloc bfs dft fc_forward graph insertionsort matrix_mult_rec mergesort omegalul outer_product priority_queue quicksort sort_search)
-declare -a C_TESTS=(basic_malloc)
+declare -a C_TESTS=(alexnet backtrack basic_malloc bfs dft fc_forward graph insertionsort matrix_mult_rec mergesort omegalul outer_product priority_queue quicksort sort_search)
 # declare -a C_TESTS=(backtrack basic_malloc bfs dft graph insertionsort matrix_mult_rec mergesort omegalul priority_queue quicksort sort_search)
 
 # Define optimization flags array
 declare -a OPT_FLAGS=("O0" "O" "O2" "O3" "Os")
-
-# Define optimization flags array
-declare -a OPT_FLAGS=("O0" "O" "O2" "O3")
 
 # Default to assembly tests
 TESTS=("${ASM_TESTS[@]}")
@@ -36,7 +31,7 @@ done
 failed_test=0
 sed -i "24s/.*/\/\/\`define DEBUG 1/" verilog/sys_defs.svh
 # Only run optimization tests if -c flag was specified
-if [[ " ${TESTS[@]} " =~ " ${C_TESTS[0]} " ]]; then
+if [[ flag != 0 ]]; then
     echo "Testing C files with different optimization flags..."
     echo "=========="
     
