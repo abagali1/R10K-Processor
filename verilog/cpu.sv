@@ -393,6 +393,7 @@ module cpu (
         assign debug_fetch_out_num_insts        = num_input;
     `endif
 
+
     inst_buffer buffet (
         .clock(clock),
         .reset(reset),
