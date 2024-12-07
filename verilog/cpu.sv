@@ -352,6 +352,7 @@ module cpu (
         .out_bhr(out_bhr)
     );
 
+
     fetch rufus (
         .clock(clock),
         .reset(reset),
