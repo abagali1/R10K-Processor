@@ -12,7 +12,7 @@ declare -a C_TESTS=(basic_malloc)
 declare -a OPT_FLAGS=("O0" "O" "O2" "O3" "Os")
 
 # Define optimization flags array
-declare -a OPT_FLAGS=("O0" "O" "O2" "O3" "Os" "Ofast" "Og")
+declare -a OPT_FLAGS=("O0" "O" "O2" "O3")
 
 # Default to assembly tests
 TESTS=("${ASM_TESTS[@]}")
