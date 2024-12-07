@@ -40,7 +40,8 @@ module load_fu #(
         output logic                    [DEPTH-1:0]                 debug_alloc_spot,
         output logic                    [DEPTH-1:0]                 debug_issued_entry,
         output logic                    [DEPTH-1:0]                 debug_broadcast_entry,
-        output logic                    [DEPTH-1:0]                 debug_ld_stall_sig
+        output logic                    [DEPTH-1:0]                 debug_ld_stall_sig,
+        output logic                    [DEPTH-1:0]                 debug_ld_squashed
     `endif
 );
 
@@ -104,6 +105,7 @@ module load_fu #(
         assign debug_issued_entry = (!dm_stalled && !start_store) ? issued_entry : '0;
         assign debug_broadcast_entry = broadcasted_entry;
         assign debug_ld_stall_sig = cdb_stall;
+        assign debug_ld_squashed = squashed_spots;
     `endif
 
     always_comb begin
@@ -121,25 +123,6 @@ module load_fu #(
         data_ready = '0;
 
         for(int i=0;i<DEPTH;i++) begin
-            // EBR
-            if((entries[i].decoded_vals.b_mask & rem_b_id) != '0) begin
-                if(rem_br_task == SQUASH) begin
-                    next_entries[i] = '0;
-
-                    squashed_spots[i] = '1;
-
-                    next_open_spots[i] = '1;
-                    next_ready_spots[i] = '0;
-                    next_data_ready_spots[i] = '0;
-                end
-                if(rem_br_task == CLEAR) begin
-                    next_entries[i].decoded_vals.b_mask = '0;
-
-                    next_open_spots[i] = '0;
-                    next_ready_spots[i] = '0;
-                end
-            end
-
             // Read in new issued packet
             if(rd_en && alloc_spot[i]) begin
                 next_entries[i] = '{
@@ -158,6 +141,25 @@ module load_fu #(
                 end else begin
                     next_ready_spots[i] = '1;
                     next_data_ready_spots[i] = '0;
+                end
+            end
+
+            // EBR
+            if((next_entries[i].decoded_vals.b_mask & rem_b_id) != '0) begin
+                if(rem_br_task == SQUASH) begin
+                    next_entries[i] = '0;
+
+                    squashed_spots[i] = '1;
+
+                    next_open_spots[i] = '1;
+                    next_ready_spots[i] = '0;
+                    next_data_ready_spots[i] = '0;
+                end
+                if(rem_br_task == CLEAR) begin
+                    next_entries[i].decoded_vals.b_mask = '0;
+
+                    next_open_spots[i] = '0;
+                    next_ready_spots[i] = '0;
                 end
             end
 

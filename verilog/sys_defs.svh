@@ -535,6 +535,9 @@ typedef struct packed {
     logic   halt;
     logic   illegal;
     logic   valid;
+    `ifdef DEBUG
+    PHYS_REG_IDX tag;
+    `endif
 } COMMIT_PACKET;
 
 typedef struct packed {

@@ -27,7 +27,7 @@ import "DPI-C" function string decode_inst(int inst);
 //import "DPI-C" function void close_pipeline_output_file();
 
 
-`define TB_MAX_CYCLES 50000
+`define TB_MAX_CYCLES 50000 
 
 
 module testbench;
@@ -36,8 +36,8 @@ module testbench;
     // this testbench will generate 4 output files based on the output
     // named OUTPUT.{out cpi, wb, ppln} for the memory, cpi, writeback, and pipeline outputs.
     string program_memory_file, output_name;
-    string out_outfile, cpi_outfile, writeback_outfile;//, pipeline_outfile;
-    int out_fileno, cpi_fileno, wb_fileno; // verilog uses integer file handles with $fopen and $fclose
+    string out_outfile, cpi_outfile, writeback_outfile, writeback_t_outfile;//, pipeline_outfile;
+    int out_fileno, cpi_fileno, wb_fileno, wbt_fileno; // verilog uses integer file handles with $fopen and $fclose
 
 
     MEM_COMMAND proc2mem_command;
@@ -143,6 +143,7 @@ module testbench;
         logic                   [`LD_SZ-1:0]                                                debug_ld_broadcast_entry;
         logic                                                                               debug_ld_full;
         logic                   [`LD_SZ-1:0]                                                debug_ld_stall_sig;
+        logic                   [`LD_SZ-1:0]                                                debug_ld_squashed;
 
         MSHR                                                                                debug_mshr;
         DCACHE_TAG               [`DCACHE_LINES-1:0]                                        debug_dcache_tags;
@@ -256,6 +257,7 @@ module testbench;
             .debug_ld_broadcast_entry(debug_ld_broadcast_entry),
             .debug_ld_full(debug_ld_full),
             .debug_ld_stall_sig(debug_ld_stall_sig),
+            .debug_ld_squashed(debug_ld_squashed),
 
             .debug_mshr(debug_mshr),
             .debug_dcache_tags(debug_dcache_tags),
@@ -308,6 +310,7 @@ module testbench;
             out_outfile       = {output_name,".out"}; // this is how you concatenate strings in verilog
             cpi_outfile       = {output_name,".cpi"};
             writeback_outfile = {output_name,".wb"};
+            writeback_t_outfile = {output_name, "wbt"};
             //pipeline_outfile  = {output_name,".ppln"};
         end else begin
             $display("\nDid not receive '+OUTPUT=' argument. Exiting.\n");
@@ -334,7 +337,9 @@ module testbench;
         reset = 1'b0;
 
         wb_fileno = $fopen(writeback_outfile);
+        wbt_fileno = $fopen(writeback_t_outfile);
         $fdisplay(wb_fileno, "Register writeback output (hexadecimal)");
+        $fdisplay(wbt_fileno, "Register writeback + tag output (hexadecimal)");
 
         // Open pipeline output file AFTER throwing the reset otherwise the reset state is displayed
         // open_pipeline_output_file(pipeline_outfile);
@@ -408,6 +413,7 @@ module testbench;
                 // close the writeback and pipeline output files
                 // close_pipeline_output_file();
                 $fclose(wb_fileno);
+                $fclose(wbt_fileno);
 
                 // display the final memory and status
                 show_final_mem_and_status(error_status);
@@ -427,6 +433,7 @@ module testbench;
         ADDR pc;
         DATA inst;
         MEM_BLOCK block;
+        PHYS_REG_IDX tag;
         for (int n = 0; n < `N; ++n) begin
             if (committed_insts[n].valid) begin
                 // update the count for every committed instruction
@@ -438,12 +445,24 @@ module testbench;
                 // print the committed instructions to the writeback output file
                 if (committed_insts[n].reg_idx == `ZERO_REG) begin
                     $fdisplay(wb_fileno, "PC %4x:%-8s| ---", pc, decode_inst(inst));
+                    `ifdef DEBUG
+                        $fdisplay(wbt_fileno, "PC %4x:%-8s| --- (%02d)", pc, decode_inst(inst), committed_insts[n].tag);
+                    `endif
                 end else begin
                     $fdisplay(wb_fileno, "PC %4x:%-8s| r%02d=%-8x",
                               pc,
                               decode_inst(inst),
                               committed_insts[n].reg_idx,
                               committed_insts[n].data);
+                    `ifdef DEBUG
+                        $fdisplay(wbt_fileno, "PC %4x:%-8s| r%02d=%-8x (%02d)",
+                                pc,
+                                decode_inst(inst),
+                                committed_insts[n].reg_idx,
+                                committed_insts[n].data,
+                                committed_insts[n].tag
+                                );
+                    `endif
                 end
 
                 // exit if we have an illegal instruction or a halt
@@ -601,9 +620,9 @@ module testbench;
         $display("\nLoad Unit (Full: %b) (Rd_en: %b) (Dcache_ld_out: %b) (mshr2cache_wr: %b)", debug_ld_full, debug_ld_rd_en, debug_Dcache_ld_out, debug_mshr2cache_wr);
         $display("CDB Stall: %b", debug_cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:`NUM_FU_ALU+`NUM_FU_MULT]);
         $display("Dcache Addr Out: 0h%05x", debug_Dcache_addr_out);
-        $display("#  |    PC   |Target Addr| Result | State | Open? | Ready? | Alloc? | Issued? | BCast? | Stalled?");
+        $display("#  |    PC   |Target Addr| Result | State | Open? | Ready? | Alloc? | Issued? | BCast? | Stalled? | Squashed? | b_mask");
         for(int i=0;i<`LD_SZ;i++) begin
-            $display("%02d |  %05x  |   %05x   | %05x  |   %d   |   %b   |   %b    |   %b    |    %b    |   %b    |  %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_broadcast_entry[i], debug_ld_stall_sig[i]);
+            $display("%02d |  %05x  |   %05x   | %05x  |   %d   |   %b   |   %b    |   %b    |    %b    |   %b    |  %b       |    %b      |  %b", i, debug_ld_entries[i].decoded_vals.decoded_vals.PC, debug_ld_entries[i].target_addr, debug_ld_entries[i].result, debug_ld_entries[i].ld_state, debug_ld_open_spots[i], debug_ld_ready_spots[i], debug_ld_alloc_spot[i], debug_ld_issued_entry[i], debug_ld_broadcast_entry[i], debug_ld_stall_sig[i], debug_ld_squashed[i], debug_ld_entries[i].decoded_vals.b_mask);
         end
     endfunction
 
