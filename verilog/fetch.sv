@@ -115,7 +115,7 @@ module fetch #(
         mem_addr_out = '0;
 
         //$display("MSHRFULL: %0d", ~mshr_full);
-        $display("ARBITER SIGNAL: %0d MSHR FULL: %0d", arbiter_signal, mshr_full);
+        //$display("ARBITER SIGNAL: %0d MSHR FULL: %0d", arbiter_signal, mshr_full);
         if (arbiter_signal & ~mshr_full) begin
             for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
                 // check if in icache first\
@@ -128,7 +128,7 @@ module fetch #(
                         //$display("MSHR_DATA: %d,  PREFETCH_TARGET %d, EQUALS? %0d, SUMMARY: %0d", mshr_data[j], prefetch_target, (mshr_data[j] == prefetch_target), (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])));
                         if (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])) begin
                             found_in_mshr = 1;
-                            $display("INNIT SIGNAL: found target %h in mshr at mem tag %0d", {prefetch_target[31:3], 3'b0}, j);
+                            //$display("INNIT SIGNAL: found target %h in mshr at mem tag %0d", {prefetch_target[31:3], 3'b0}, j);
                             break;
                         end
                     end
