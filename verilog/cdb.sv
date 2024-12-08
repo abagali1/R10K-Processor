@@ -76,7 +76,7 @@ module cdb #(
 
         // Branch clear or branch squash
         if (rem_br_task == SQUASH) begin
-            for (int i = 0; i < NUM_FU; i++) begin
+            for (int i = 0; i < N; i++) begin
                 if (out_entries[i].decoded_vals.b_id != rem_b_id && out_entries[i].decoded_vals.b_mask & rem_b_id) begin
                     out_entries[i] = '0;
                 end
@@ -84,7 +84,7 @@ module cdb #(
         end 
 
         if (rem_br_task == CLEAR) begin
-            for (int i = 0; i < NUM_FU; i++) begin
+            for (int i = 0; i < N; i++) begin
                 if (out_entries[i].decoded_vals.b_mask & rem_b_id) begin
                     out_entries[i].decoded_vals.b_mask &= ~rem_b_id;
                 end

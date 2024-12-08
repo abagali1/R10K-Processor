@@ -44,6 +44,7 @@ module btb #(
     always_comb begin
         next_btb = btb;
         next_btb_valid = btb_valid;
+        next_btb_tags = btb_tags;
         if (wr_en) begin
             next_btb[wr_index] = wr_target;
             next_btb_tags[wr_index] = wr_tag;
