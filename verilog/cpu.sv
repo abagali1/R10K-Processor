@@ -520,8 +520,13 @@ module cpu (
     cdb cbd (
         .clock(clock),
         .reset(reset),
+
         .fu_done({br_done, ld_done, mult_done, alu_done}),
         .wr_data({br_fu_out, ld_fu_out, mult_fu_out, alu_fu_out}),
+
+        .rem_br_task(br_task),
+        .rem_b_id(br_fu_out.decoded_vals.b_id),
+
         .entries(cdb_entries),
         .stall_sig(cdb_stall_sig)
 

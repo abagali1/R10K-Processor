@@ -71,7 +71,12 @@ module inst_buffer #(
     end
 
     always_ff @(posedge clock) begin
-        if (reset || br_en) begin
+        if (reset) begin
+            num_entries <= '0;
+            head <= '0;
+            tail <= '0;
+            entries <= '0;
+        end else if (br_en) begin
             num_entries <= '0;
             head <= '0;
             tail <= '0;
