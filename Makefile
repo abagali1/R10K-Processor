@@ -124,7 +124,7 @@ SHELL := $(SHELL) -o pipefail
 # https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Options.html
 CFLAGS     = -mno-relax -march=rv32im -mabi=ilp32 -nostartfiles -std=gnu11 -mstrict-align -mno-div
 # adjust the optimization if you want programs to run faster; this may obfuscate/change their instructions
-OFLAGS     = -O3
+OFLAGS     = -O0
 ASFLAGS    = -mno-relax -march=rv32im -mabi=ilp32 -nostartfiles -Wno-main -mstrict-align
 OBJFLAGS   = -SD -M no-aliases
 OBJCFLAGS  = --set-section-flags .bss=contents,alloc,readonly
@@ -206,9 +206,14 @@ autograder_milestone_1_coverage: $(MS_1_MODULE).cov ;
 # ---- Modules to Test ---- #
 
 # TODO: add more modules here
-MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack alu addr_calc regfile memDP issue branch_fu decoder sq load_fu mshr dcache counter predictor btb bhr
+MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack alu addr_calc regfile memDP issue branch_fu decoder fetch sq load_fu mshr dcache counter predictor btb bhr icache
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
+
+FETCH_FILES = verilog/sys_defs.svh verilog/icache.sv verilog/memDP.sv
+build/fetch.simv: $(DISP_FILES)
+build/fetch.cov: $(DISP_FILES)
+synth/fetch.vg: $(DISP_FILES)
 
 # TODO: add extra source file dependencies below
 DISP_FILES = verilog/sys_defs.svh verilog/decoder.sv verilog/decode.sv
@@ -286,6 +291,8 @@ CPU_SOURCES = verilog/cpu.sv \
 			  verilog/mult.sv \
 			  verilog/decode.sv \
 			  verilog/decoder.sv \
+			  verilog/fetch.sv \
+			  verilog/icache.sv \
 			  verilog/sq.sv \
 			  verilog/load_fu.sv \
 			  verilog/dcache.sv \
@@ -654,6 +661,9 @@ clean_output:
 clean_programs:
 	@$(call PRINT_COLOR, 3, removing program memory files)
 	rm -rf programs/*.mem
+	@$(call PRINT_COLOR, 3, removing program memory files)
+	rm -rf programs/mem/*.mem
+	rm -rf programs/mem/*.elf
 	@$(call PRINT_COLOR, 3, removing dump files)
 	rm -rf programs/*.dump*
 

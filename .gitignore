@@ -1,6 +1,7 @@
 
 # misc
 *.pdf
+failed_tests/
 
 # zip files
 *.zip
@@ -55,4 +56,3 @@ novas*
 # ignore the output folder
 # don't ignore the correct_out folder
 output/
-!correct_out/*
