@@ -118,12 +118,16 @@ module fetch #(
             `ifdef PREDICTOR_EN
                 if (i + 2 < PREFETCH_INSTS) begin
                     if (pred_taken[i]) begin
+                        `ifndef DC
                         $display("PREDICTING A TAKEN BRANCH IN YOUR FUTURE; target: %h", pred_target[i]);
+                        `endif
                         prefetch_valid[(i+2)/2] = 1;
                         prefetch_target[(i+2)/2] = pred_target[i];
                         break;
                     end else if (pred_taken[i+1]) begin
+                        `ifndef DC
                         $display("PREDICTING A TAKEN BRANCH IN YOUR FUTURE; target: %h", pred_target[i+1]);
+                        `endif
                         prefetch_valid[(i+2)/2] = 1;
                         prefetch_target[(i+2)/2] = pred_target[i+1];
                         break;
@@ -257,7 +261,9 @@ module fetch #(
         j = '0;
         for (int i = 0; i < 4; i++) begin
             if (prefetch_valid[i/2]) begin
+                `ifndef DC
                 $write("VALID FOR %d\n", i);
+                `endif
                 j = i + base_addr[i][2];
                 //$write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], NPC, icache_valid[j/2]);
                 if (j < next_num_insts + base_addr[i][2]) begin
@@ -336,7 +342,9 @@ module fetch #(
     assign NPC = (br_task == SQUASH) ? target : cache_target;
 
     always_ff @(posedge clock) begin
+        `ifndef DC
         $display("  WRITING TO PREDICTOR: %0d", pred_wr_en);
+        `endif
         if (reset) begin // TODO squash doesn't necessarily mean to empty everything, could be beneficial to keep icache (imagine short loops)
             out_insts            <= '0;
             num_insts            <= '0;

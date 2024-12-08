@@ -306,6 +306,9 @@ build/cpu.simv: $(CPU_SOURCES) $(CPU_HEADERS) $(CPU_TESTBENCH)
 build/cpu.syn.simv: $(CPU_TESTBENCH)
 build/cpu.cov: $(CPU_SOURCES) $(CPU_HEADERS)
 synth/cpu.vg: $(CPU_SOURCES) $(CPU_HEADERS)
+
+simv: build/cpu.simv ;
+syn_simv: build/cpu.syn.simv ;
 # ---- Running ---- #
 #####################
 

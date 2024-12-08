@@ -957,9 +957,11 @@ module cpu (
             `ifdef DEBUG
                 committed_insts[i].tag = retiring_data[i].t;
             `endif
+            `ifndef DC
             if (committed_insts[i].halt) begin
                 $write("SETTING HALT BIT FOR INST %h\n", retiring_data[i].PC);
             end
+            `endif
         end
     end
 
