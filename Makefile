@@ -124,7 +124,7 @@ SHELL := $(SHELL) -o pipefail
 # https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Options.html
 CFLAGS     = -mno-relax -march=rv32im -mabi=ilp32 -nostartfiles -std=gnu11 -mstrict-align -mno-div
 # adjust the optimization if you want programs to run faster; this may obfuscate/change their instructions
-OFLAGS     = -O0
+OFLAGS     = -O3
 ASFLAGS    = -mno-relax -march=rv32im -mabi=ilp32 -nostartfiles -Wno-main -mstrict-align
 OBJFLAGS   = -SD -M no-aliases
 OBJCFLAGS  = --set-section-flags .bss=contents,alloc,readonly
