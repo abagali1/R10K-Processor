@@ -196,6 +196,7 @@ module fetch #(
         next_num_insts = '0;
         next_out_insts = '0;
         next_cache_target = NPC;
+        current = '0;
         
         //$write("ICACHE VALID: %b", icache_valid);
         // Changed this to three to handle this case
@@ -255,7 +256,6 @@ module fetch #(
                     next_out_insts[i].valid = 1'b1;
                     next_out_insts[i].PC = current[i];
                     next_out_insts[i].NPC = current[i+1];
-
                     next_out_insts[i].pred_taken = 1'b0; // TODO branch prediction
                     next_out_insts[i].bhr = '0;
 

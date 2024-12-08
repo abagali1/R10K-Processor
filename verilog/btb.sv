@@ -22,28 +22,37 @@ module btb #(
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     ADDR [DEPTH-1:0] btb, next_btb;
+    logic [12-LOG_DEPTH:0] btb_tags, next_btb_tags;
+    logic [12-LOG_DEPTH:0] wr_tag, rd_tag;
+    logic [LOG_DEPTH-1:0] wr_index, rd_index;
+
+    assign {wr_tag, wr_index} = wr_pc[15:3];
 
     always_comb begin
         pred_target = '0;
         is_branch = '0;
         for (int i = 0; i < PREFETCH_INSTS; i++) begin
-            pred_target[i] = btb[rd_pc[i][LOG_DEPTH-1:0]];
-            is_branch[i] = |btb[rd_pc[i][LOG_DEPTH-1:0]];
+            {rd_tag, rd_index} = rd_pc[i][15:3];
+            pred_target[i] = btb[rd_index];
+            is_branch[i] = |btb[rd_index] & btb_tags[rd_index] == rd_tag;
         end
     end
 
     always_comb begin
         next_btb = btb;
         if (wr_en) begin
-            next_btb[wr_pc[LOG_DEPTH-1:0]] = wr_target;
+            next_btb[wr_index] = wr_target;
+            next_btb_tags[wr_index] = wr_tag;
         end
     end
 
     always_ff @(posedge clock) begin
         if (reset) begin
-            btb <= '0;
+            btb         <= '0;
+            btb_tags    <= '0;
         end else begin
-            btb <= next_btb;
+            btb         <= next_btb;
+            btb_tags    <= next_btb_tags;
         end
     end
 
