@@ -116,10 +116,12 @@ module fetch #(
                 if (i + 2 < PREFETCH_INSTS) begin
                     if (pred_taken[i]) begin
                         $display("PREDICTING A TAKEN BRANCH IN YOUR FUTURE; target: %h", pred_target[i]);
+                        prefetch_valid[(i+2)/2] = 1;
                         prefetch_target[(i+2)/2] = pred_target[i];
                         break;
                     end else if (pred_taken[i+1]) begin
                         $display("PREDICTING A TAKEN BRANCH IN YOUR FUTURE; target: %h", pred_target[i]);
+                        prefetch_valid[(i+2)/2] = 1;
                         prefetch_target[(i+2)/2] = pred_target[i+1];
                         break;
                     end 
@@ -252,7 +254,7 @@ module fetch #(
                     next_out_insts[i].inst = cache_read_data[j/2].word_level[current[i][2]];
                     next_out_insts[i].valid = 1'b1;
                     next_out_insts[i].PC = current[i];
-                    next_out_insts[i].NPC = current[i] + 4;
+                    next_out_insts[i].NPC = current[i+1];
 
                     next_out_insts[i].pred_taken = 1'b0; // TODO branch prediction
                     next_out_insts[i].bhr = '0;
