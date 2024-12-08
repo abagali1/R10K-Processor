@@ -22,6 +22,7 @@ module btb #(
     localparam LOG_DEPTH = $clog2(DEPTH);
 
     ADDR [DEPTH-1:0] btb, next_btb;
+    logic [DEPTH-1:0] btb_valid, next_btb_valid;
     logic [DEPTH-1:0][13-LOG_DEPTH:0] btb_tags, next_btb_tags;
     logic [13-LOG_DEPTH:0] wr_tag, rd_tag;
     logic [LOG_DEPTH-1:0] wr_index, rd_index;
@@ -33,16 +34,20 @@ module btb #(
         is_branch = '0;
         for (int i = 0; i < PREFETCH_INSTS; i++) begin
             {rd_tag, rd_index} = rd_pc[i][15:2];
-            pred_target[i] = btb[rd_index];
-            is_branch[i] = |btb[rd_index] & btb_tags[rd_index] == rd_tag;
+            if (btb_valid[rd_index] & btb_tags[rd_index] == rd_tag) begin
+                pred_target[i] = btb[rd_index];
+                is_branch[i] = 1;
+            end
         end
     end
 
     always_comb begin
         next_btb = btb;
+        next_btb_valid = btb_valid;
         if (wr_en) begin
             next_btb[wr_index] = wr_target;
             next_btb_tags[wr_index] = wr_tag;
+            next_btb_valid[wr_index] = 1;
         end
     end
 
@@ -50,9 +55,11 @@ module btb #(
         if (reset) begin
             btb         <= '0;
             btb_tags    <= '0;
+            btb_valid   <= '0;
         end else begin
             btb         <= next_btb;
             btb_tags    <= next_btb_tags;
+            btb_valid   <= next_btb_valid;
         end
     end
 
