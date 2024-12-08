@@ -144,7 +144,8 @@ module cpu (
         output ADDR                     [`NUM_MEM_TAGS:1]                                       debug_mshr_data,
         output logic                    [`NUM_MEM_TAGS:1]                                       debug_mshr_valid,
         output MEM_BLOCK                [`PREFETCH_DISTANCE-1:0]                                 debug_icache_data,
-        output logic                    [`PREFETCH_DISTANCE-1:0]                                 debug_icache_valid
+        output logic                    [`PREFETCH_DISTANCE-1:0]                                 debug_icache_valid,
+        output ADDR                     [`PREFETCH_DISTANCE-1:0]                                debug_icache_raddr
     `endif
 );
 
@@ -387,7 +388,8 @@ module cpu (
         ,   .debug_mshr_data(debug_mshr_data),
             .debug_mshr_valid(debug_mshr_valid),
             .Icache_data_out(debug_icache_data),
-            .Icache_valid_out(debug_icache_valid)
+            .Icache_valid_out(debug_icache_valid),
+            .debug_icache_raddr(debug_icache_raddr)
         `endif
     );
 

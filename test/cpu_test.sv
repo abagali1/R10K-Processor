@@ -186,6 +186,7 @@ module testbench;
         logic                   [`NUM_MEM_TAGS:1]                                           debug_mshr_valid;
         MEM_BLOCK                [`PREFETCH_DISTANCE-1:0]                                   debug_icache_data;
         logic                    [`PREFETCH_DISTANCE-1:0]                                   debug_icache_valid;
+        ADDR                    [`PREFETCH_DISTANCE-1:0]                                    debug_icache_raddr;
     
     `endif
 
@@ -322,7 +323,8 @@ module testbench;
             .debug_mshr_data(debug_mshr_data),
             .debug_mshr_valid(debug_mshr_valid),
             .debug_icache_data(debug_icache_data),
-            .debug_icache_valid(debug_icache_valid)
+            .debug_icache_valid(debug_icache_valid),
+            .debug_icache_raddr(debug_icache_raddr)
     
         `endif
     );
@@ -650,9 +652,9 @@ module testbench;
         $display("");
 
         $display("ICACHE:");
-        $display("| Data | Valid |");
+        $display("| Data | Valid | Addr |");
         for (int i = 0; i < 4; i++) begin
-            $display("| %h | %d |", debug_icache_data[i], debug_icache_valid[i]);
+            $display("| %h | %d | %h |", debug_icache_data[i], debug_icache_valid[i], debug_icache_raddr[i]);
         end
         $display("");
         
