@@ -8,7 +8,7 @@
 /////////////////////////////////////////////////////////////////////////
 
 `include "sys_defs.svh"
-//`include "memDP.sv"
+`include "memDP.sv"
 
 /**
  * A quick overview of the cache and memory:
