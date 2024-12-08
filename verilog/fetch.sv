@@ -83,7 +83,6 @@ module fetch #(
     //assign br_en = br_task == SQUASH | br_task == CLEAR;
     // removed br_en, we should only clear state on a squash, a "clear" task means our prediction was correct and we should keep chugging
 
-    assign mshr_full = &next_mshr_valid;
     //assign mem_en = ~mshr_full & ~icache_valid;
 
     // if there is a branch, prefetch_target = target
@@ -116,7 +115,7 @@ module fetch #(
 
         //$display("MSHRFULL: %0d", ~mshr_full);
         //$display("ARBITER SIGNAL: %0d MSHR FULL: %0d", arbiter_signal, mshr_full);
-        if (arbiter_signal & ~mshr_full) begin
+        if (arbiter_signal) begin
             for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
                 // check if in icache first\
                 found_in_mshr = 0;
