@@ -127,7 +127,6 @@ module testbench;
         ISSUE_PACKET            [`SQ_SZ-1:0]                                                debug_issued_st_pack;
         ISSUE_PACKET                                                                        debug_issued_ld_pack;
 
-
         logic                   [$clog2(`SQ_SZ)-1:0]                                        debug_sq_head;
         logic                   [$clog2(`SQ_SZ)-1:0]                                        debug_sq_tail;
         logic                   [$clog2(`N+1)-1:0]                                          debug_sq_open;
@@ -856,14 +855,16 @@ module testbench;
                     debug_issued_st_pack[i].rs1_value,
                     debug_issued_st_pack[i].rs2_value);
         end
-        $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
-            0,
-            debug_issued_ld_pack.decoded_vals.decoded_vals.valid,
-            debug_issued_ld_pack.decoded_vals.decoded_vals.inst,
-            debug_issued_ld_pack.decoded_vals.decoded_vals.PC,
-            debug_issued_ld_pack.decoded_vals.decoded_vals.NPC,
-            debug_issued_ld_pack.rs1_value,
-            debug_issued_ld_pack.rs2_value);
+        $display("LD packets");
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
+            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
+                    0,
+                    debug_issued_ld_pack.decoded_vals.decoded_vals.valid,
+                    debug_issued_ld_pack.decoded_vals.decoded_vals.inst,
+                    debug_issued_ld_pack.decoded_vals.decoded_vals.PC,
+                    debug_issued_ld_pack.decoded_vals.decoded_vals.NPC,
+                    debug_issued_ld_pack.rs1_value,
+                    debug_issued_ld_pack.rs2_value);
     endfunction
 
     function void print_alu_data();
