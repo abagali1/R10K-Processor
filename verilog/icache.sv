@@ -48,7 +48,7 @@ module icache #(
     // From fetch stage
     input ADDR alloc_addr,
     input logic alloc_en,
-    input ADDR proc2Icache_addr, // read addr
+    input ADDR [PREFETCH_DISTANCE-1:0] proc2Icache_addr, // read addr
     input logic write_en,
     input ADDR write_addr,
     input MEM_BLOCK write_data,
@@ -63,16 +63,19 @@ module icache #(
 );
 
     // Note: cache tags, not memory tags
-    logic [12-`ICACHE_LINE_BITS:0] current_tag, write_tag, alloc_tag;
-    logic [`ICACHE_LINE_BITS-1:0] current_index, write_index, alloc_index;
+    logic [12-`ICACHE_LINE_BITS:0] write_tag, alloc_tag;
+    logic [`ICACHE_LINE_BITS-1:0] write_index, alloc_index;
     //logic                          got_mem_data;
+
+    logic [PREFETCH_DISTANCE-1:0] [12-`ICACHE_LINE_BITS:0] current_tag;
+    logic [PREFETCH_DISTANCE-1:0] [`ICACHE_LINE_BITS-1:0] current_index;
 
     logic [PREFETCH_DISTANCE-1:0] [`ICACHE_LINE_BITS-1:0] raddr; // TODO
 
     always_comb begin
         raddr = '0;
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
-            raddr[i] = (current_index + i) % `ICACHE_LINES;
+            raddr[i] = proc2Icache_addr[i][`ICACHE_LINE_BITS+2:3];
         end
     end
 
@@ -104,8 +107,14 @@ module icache #(
     // 02e8 = 0000 0010| 1110 1| 000
     // 03e8 = 0000 0011| 1110 1| 000
 
+    always_comb begin
+        current_tag = '0;
+        current_index = '0;
+        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
+            {current_tag[i], current_index[i]} = proc2Icache_addr[i][15:3];
+        end
+    end
 
-    assign {current_tag, current_index} = proc2Icache_addr[15:3];
     assign {write_tag, write_index} = write_addr[15:3];
     assign {alloc_tag, alloc_index} = alloc_addr[15:3];
 
@@ -116,9 +125,9 @@ module icache #(
         $display("| Tags | Current tag | i | valid |");
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
             //Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && (icache_tags[(current_index+i)% `ICACHE_LINES].tags) == (current_tag+i); 
-            Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && ((icache_tags[(current_index+i)% `ICACHE_LINES].tags) == ((current_index+i) >= `ICACHE_LINES ? current_tag + 1 : current_tag)); 
-            Icache_alloc_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].alloc;
-            $write("| %h | %h | %d | %b |\n", icache_tags[(current_index+i)% `ICACHE_LINES].tags, current_tag, i, Icache_valid_out[i]);
+            Icache_valid_out[i] = icache_tags[current_index[i]].valid && ((icache_tags[current_index[i]].tags) == ((current_index[i]+i) >= `ICACHE_LINES ? current_tag[i] + 1 : current_tag[i])); 
+            Icache_alloc_out[i] = icache_tags[current_index[i]].alloc;
+            $write("| %h | %h | %d | %b |\n", icache_tags[current_index[i]].tags, current_tag[i], i, Icache_valid_out[i]);
         end
         $display("");
     end

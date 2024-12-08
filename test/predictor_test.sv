@@ -14,6 +14,8 @@ module predictor_tb();
 
     parameter BHR_DEPTH = `BRANCH_HISTORY_REG_SZ;
     parameter BHT_DEPTH = `BRANCH_HISTORY_TABLE_SIZE;
+    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE;
+    parameter PREFETCH_INSTS = `PREFETCH_DISTANCE*2;
 
     logic               clock; 
     logic               reset;
@@ -27,8 +29,8 @@ module predictor_tb();
     ADDR                              wr_pc; // pc of the branch instruction
     logic     [BHR_DEPTH-1:0]         wr_bhr; // branch history register of this instruction when predicted
 
-    logic                            pred_taken; // true if predictor predicts branch is taken
-    ADDR                             pred_target; // predicted target address
+    logic    [PREFETCH_INSTS-1:0] pred_taken; // true if predictor predicts branch is taken
+    ADDR     [PREFETCH_INSTS-1:0] pred_target; // predicted target address
 
     predictor #(
         .BHR_DEPTH(`BRANCH_HISTORY_REG_SZ),
@@ -103,7 +105,9 @@ module predictor_tb();
         #(`CLOCK_PERIOD * 0.2);
         if (~reset) begin
             $display("Cycle: %0d", cycle_number);
-            $display("Prediction: %0d", pred_taken);
+            for (int i = 0; i < PREFETCH_INSTS; i++) begin
+                $display("Prediction i=%0d: taken=%0d, target=%0d", i, pred_taken[i], pred_target[i]);
+            end
         end
         cycle_number++;
     end

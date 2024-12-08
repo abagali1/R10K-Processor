@@ -3,20 +3,21 @@
 
 module btb #(
     parameter DEPTH = `BRANCH_TARGET_BUFFER_SIZE,
-    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE
+    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE,
+    parameter PREFETCH_INSTS = `PREFETCH_DISTANCE*2
 )
 (
     input                                           clock, 
     input                                           reset,
 
-    input ADDR      [PREFETCH_DISTANCE-1:0]         rd_pc,
+    input ADDR      [PREFETCH_INSTS-1:0]            rd_pc,
 
     input logic                                     wr_en,
     input ADDR                                      wr_pc,
     input ADDR                                      wr_target,
 
-    output logic    [PREFETCH_DISTANCE-1:0]         is_branch,
-    output ADDR     [PREFETCH_DISTANCE-1:0]         pred_target
+    output logic    [PREFETCH_INSTS-1:0]         is_branch,
+    output ADDR     [PREFETCH_INSTS-1:0]         pred_target
 );
     localparam LOG_DEPTH = $clog2(DEPTH);
 
@@ -25,9 +26,9 @@ module btb #(
     always_comb begin
         pred_target = '0;
         is_branch = '0;
-        for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
-            pred_target = btb[rd_pc[i][LOG_DEPTH-1:0]];
-            is_branch = |btb[rd_pc[i][LOG_DEPTH-1:0]];
+        for (int i = 0; i < PREFETCH_INSTS; i++) begin
+            pred_target[i] = btb[rd_pc[i][LOG_DEPTH-1:0]];
+            is_branch[i] = |btb[rd_pc[i][LOG_DEPTH-1:0]];
         end
     end
 

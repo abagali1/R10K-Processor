@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 
-//`define DEBUG 1
+`define DEBUG 1
 // `define DEBUG_ROB '1
 // `define DEBUG_MT '1
 // `define DEBUG_FL '1
@@ -31,6 +31,9 @@
 `define N 1
 `define CDB_SZ `N // This MUST match your superscalar width
 
+`define PREDICTOR_EN 1
+`define ANALYTICS_EN 1
+
 // sizes
 `define ROB_SZ 32
 `define RS_SZ 32
@@ -39,7 +42,7 @@
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 
 // sizes: these are directly correlated
-`define BRANCH_HISTORY_REG_SZ 8
+`define BRANCH_HISTORY_REG_SZ 4
 `define BRANCH_HISTORY_TABLE_SIZE 256 // 2^(BRANCH_HISTORY_REG_SZ)
 `define BRANCH_TARGET_BUFFER_SIZE 256
 
@@ -409,6 +412,7 @@ typedef struct packed {
     INST  inst;
     ADDR  PC;
     ADDR  NPC; // PC + 4
+    logic [`BRANCH_HISTORY_REG_SZ-1:0] bhr;
     logic valid;
     logic pred_taken;
 } INST_PACKET;
@@ -422,6 +426,7 @@ typedef struct packed {
     INST inst;
     ADDR PC;
     ADDR NPC; // PC + 4
+    logic [`BRANCH_HISTORY_REG_SZ-1:0] bhr;
 
     FU_TYPE fu_type;
     REG_IDX reg1;

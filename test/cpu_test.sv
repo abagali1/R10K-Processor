@@ -59,7 +59,13 @@ module testbench;
     logic         [3:0] num_input;
 
     logic         [3:0] ib_open;
-    ADDR                 NPC;
+    ADDR                    NPC;
+
+    `ifdef ANALYTICS_EN
+        int             num_branches, num_branches_correct;
+        logic           pred_valid;  
+        logic           pred_correct;  
+    `endif
 
     COMMIT_PACKET [`N-1:0] committed_insts;
 
@@ -199,6 +205,10 @@ module testbench;
         .retired_insts(retired_insts),
         .ib_open(ib_open),
         .NPC(NPC)
+        `ifdef ANALYTICS_EN
+        ,   .pred_valid(pred_valid),
+            .pred_correct(pred_correct)
+        `endif
 
         `ifdef DEBUG
         ,   .debug_bhr(debug_bhr),
@@ -412,6 +422,13 @@ module testbench;
                 dump_state();
             //end
 
+            if (pred_valid) begin
+                num_branches++;
+                if (pred_correct) begin
+                    num_branches_correct++;
+                end
+            end
+
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count - 1);
@@ -463,12 +480,18 @@ module testbench;
                 // close the writeback and pipeline output files
                 // close_pipeline_output_file();
                 $fclose(wb_fileno);
+
+                `ifdef ANALYTICS_EN
+                    output_analytics();
+                `endif
+
                 $fclose(wbt_fileno);
 
                 // display the final memory and status
                 show_final_mem_and_status(error_status);
                 // output the final CPI
-                //output_cpi_file();
+                output_cpi_file();
+
 
                 $display("\n---- Finished CPU Testbench ----\n");
 
@@ -529,19 +552,23 @@ module testbench;
     endtask // task output_reg_writeback_and_maybe_halt
 
 
-    // // Task to output the final CPI and # of elapsed clock edges
-    // task output_cpi_file;
-    //     real cpi;
-    //     begin
-    //         cpi = $itor(clock_count) / instr_count; // must convert int to real
-    //         cpi_fileno = $fopen(cpi_outfile);
-    //         $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
-    //                   clock_count, instr_count, cpi);
-    //         $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
-    //                   clock_count * `CLOCK_PERIOD);
-    //         $fclose(cpi_fileno);
-    //     end
-    // endtask // task output_cpi_file
+    // Task to output the final CPI and # of elapsed clock edges
+    task output_cpi_file;
+        real cpi;
+        begin
+            cpi = $itor(clock_count) / instr_count; // must convert int to real
+            cpi_fileno = $fopen(cpi_outfile);
+            $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
+                      clock_count, instr_count, cpi);
+            $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
+                      clock_count * `CLOCK_PERIOD);
+            $fclose(cpi_fileno);
+        end
+    endtask // task output_cpi_file
+
+    task output_analytics;
+        $fdisplay(wbt_fileno, "\nFinal Branch Prediction Accuracy: %0d / %0d\n", num_branches_correct, num_branches);
+    endtask
 
 
     // Show contents of Unified Memory in both hex and decimal

@@ -27,6 +27,7 @@ module decode #(
             id_packet[i].inst = insts[i].inst;
             id_packet[i].PC   = insts[i].PC;
             id_packet[i].NPC  = insts[i].NPC;
+            id_packet[i].bhr  = insts[i].bhr;
             id_packet[i].valid = insts[i].valid;
             id_packet[i].reg1 = (id_packet[i].opa_select == OPA_IS_RS1 && !id_packet[i].halt || id_packet[i].cond_branch || id_packet[i].wr_mem) ? insts[i].inst.r.rs1 : 0;
             id_packet[i].reg2 = (id_packet[i].opb_select == OPB_IS_RS2 && !id_packet[i].halt || id_packet[i].cond_branch || id_packet[i].wr_mem) ?  insts[i].inst.r.rs2 : 0;

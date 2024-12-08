@@ -6,7 +6,9 @@ module fetch #(
     parameter N = `N,
     parameter NUM_MEM_TAGS = `NUM_MEM_TAGS,
     parameter INST_BUFF_DEPTH = `INST_BUFF_DEPTH,
-    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE
+    parameter PREFETCH_DISTANCE = `PREFETCH_DISTANCE,
+    parameter PREFETCH_INSTS = `PREFETCH_DISTANCE*2,
+    parameter BHR_DEPTH = `BRANCH_HISTORY_REG_SZ
 )
 (
     input logic                     clock,
@@ -22,13 +24,21 @@ module fetch #(
     input MEM_TAG                   mem_data_tag, // Tag for finished transactions (0 = no value)
     input MEM_BLOCK                 mem_data, // Data for a load
 
+    input logic     [BHR_DEPTH-1:0]         rd_bhr, // current branch history register
+
+    input logic                             pred_wr_en, // enabled when a branch gets resolved to update predictor
+    input logic                             pred_wr_taken, // true if resolved branch is taken
+    input ADDR                              pred_wr_target, // target address of a branch
+    input ADDR                              pred_wr_pc, // pc of the branch instruction
+    input logic     [BHR_DEPTH-1:0]         pred_wr_bhr, // branch history register of this instruction when predicted
+
     output logic                    mem_en,
     output ADDR                     mem_addr_out,   // address we want to read from memory
     //output MEM_COMMAND              mem_command,
 
     output INST_PACKET  [3:0]       out_insts, // hardcoded to 4
     output logic        [2:0]       out_num_insts, // need 3 bits to represent 4
-    output ADDR                     NPC
+    output ADDR                     NPC_out
 
     `ifdef DEBUG
     ,   output  ADDR [NUM_MEM_TAGS:1] debug_mshr_data,
@@ -38,6 +48,8 @@ module fetch #(
     `endif
 );
     //typedef enum logic [1:0] {FETCH, PREFETCH, STALL, DEF} STATE;
+    ADDR NPC;
+    assign NPC_out = NPC;
 
     //STATE state, next_state;
     INST_PACKET [3:0] next_out_insts;
@@ -72,7 +84,13 @@ module fetch #(
     logic [2:0] insts_to_return;
     //logic br_en;
 
-    ADDR prefetch_target, cache_target, next_cache_target;
+    ADDR cache_target, next_cache_target;
+    ADDR [PREFETCH_DISTANCE-1:0] prefetch_target;
+    logic [PREFETCH_DISTANCE-1:0] prefetch_valid;
+
+    // PREDICTOR THINGS
+    logic    [PREFETCH_INSTS-1:0] pred_taken; // true if predictor predicts branch is taken
+    ADDR     [PREFETCH_INSTS-1:0] pred_target; // predicted target address
 
     //ADDR mem_addr;
 
@@ -89,13 +107,35 @@ module fetch #(
     // if the icache isn't valid, prefetch_target = next_miss_addr
     // otherwise, prefetch_target = current_fetch_addr + 8 (next instruction)
     always_comb begin
+        prefetch_target = '0;
+        prefetch_valid = '0;
+        for (int i = 0; i < PREFETCH_INSTS; i+=2) begin
+            prefetch_valid[i/2] = 1;
+            prefetch_target[i/2] = ({NPC[31:3], 3'b0} + (i*4));
+            `ifdef PREDICTOR_EN
+                if (i + 2 < PREFETCH_INSTS) begin
+                    if (pred_taken[i]) begin
+                        $display("PREDICTING A TAKEN BRANCH IN YOUR FUTURE; target: %h", pred_target[i]);
+                        prefetch_target[(i+2)/2] = pred_target[i];
+                        break;
+                    end else if (pred_taken[i+1]) begin
+                        $display("PREDICTING A TAKEN BRANCH IN YOUR FUTURE; target: %h", pred_target[i]);
+                        prefetch_target[(i+2)/2] = pred_target[i+1];
+                        break;
+                    end 
+                end
+            `endif
+        end
+    end
+
+
+    always_comb begin
         cache_write_en = '0;
         cache_write_addr = '0;
         cache_write_data = '0;
         next_mshr_data = mshr_data;
         next_mshr_valid = mshr_valid;
         mem_en = 0;
-        prefetch_target = '0;
         //cache_target = target;
 
         // check for mshr eviction and cache updates
@@ -120,12 +160,11 @@ module fetch #(
                 // check if in icache first\
                 found_in_mshr = 0;
                 //$write("\nicache alloc %b\n", icache_alloc);
-                if (~icache_valid[i]) begin
+                if (~icache_valid[i] & prefetch_valid[i]) begin
                     // check in mhr
-                    prefetch_target = ({NPC[31:3], 3'b0} + (i*8));
                     for (int j = 1; j <= NUM_MEM_TAGS; j++) begin
                         //$display("MSHR_DATA: %d,  PREFETCH_TARGET %d, EQUALS? %0d, SUMMARY: %0d", mshr_data[j], prefetch_target, (mshr_data[j] == prefetch_target), (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])));
-                        if (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[31:3])) begin
+                        if (mshr_valid[j] & (mshr_data[j][31:3] == prefetch_target[i][31:3])) begin
                             found_in_mshr = 1;
                             //$display("INNIT SIGNAL: found target %h in mshr at mem tag %0d", {prefetch_target[31:3], 3'b0}, j);
                             break;
@@ -135,10 +174,10 @@ module fetch #(
                         // request from memory
 
                         mem_en = 1;
-                        mem_addr_out = prefetch_target;
+                        mem_addr_out = {prefetch_target[i][31:3], 3'b0};
                         //mem_command = MEM_LOAD;
 
-                        next_mshr_data[mem_transaction_tag] = prefetch_target;
+                        next_mshr_data[mem_transaction_tag] = {prefetch_target[i][31:3], 3'b0};
                         next_mshr_valid[mem_transaction_tag] = 1;
                         break;
                     end
@@ -149,6 +188,7 @@ module fetch #(
     
     
     logic [2:0] j;
+    ADDR [4:0] current;
     // FETCH TO INST_BUF
     always_comb begin
         next_num_insts = '0;
@@ -162,11 +202,27 @@ module fetch #(
         // TODO this should be 3 not four
         for (int i = 0; i < 3; i++) begin
             // if the cache block is valid, increment next_num_insts by 2 (2 insts per block)
-            if (icache_valid[i]) begin
+            if (icache_valid[i] & prefetch_valid[i]) begin
                 if (~NPC[2] | i > 0) begin 
-                    next_num_insts += 2;
+                    // [1|1]
+                    if (pred_taken[i*2]) begin
+                        // [B|1]
+                        next_num_insts += 1;
+                        break;
+                    end else begin
+                        next_num_insts += 2;
+                    end
+                    if (pred_taken[(i*2)+1]) begin
+                        // [1|B]
+                        break;
+                    end
                 end else begin
+                    // [0|1]
                     next_num_insts += 1;
+                    if (pred_taken[(i*2)+1]) begin
+                        // [0|B]
+                        break;
+                    end
                 end
             end else begin
                 break;
@@ -182,21 +238,34 @@ module fetch #(
         // [0|1] [1|1] [1|1]
         // i = 0; i < next_num_insts + target[2]
         // TODO: J is gross, we use it to get all four instructions out in the [0|1] [1|1] [1|1] case.
+        current[0] = NPC;
+        for (int i = 0; i < 4; i++) begin
+            current[i+1] = pred_taken[i] ? pred_target[i] : current[i] + 4;
+        end
         j = '0;
         for (int i = 0; i < 4; i++) begin
-            ADDR current;
-            current = NPC + (i * 4);
-            j = i + NPC[2];
-            //$write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], NPC, icache_valid[j/2]);
-            if (j < next_num_insts + NPC[2]) begin
-                //$write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
-                next_out_insts[i].inst = cache_read_data[j/2].word_level[current[2]];
-                next_out_insts[i].valid = 1'b1;
-                next_out_insts[i].PC = current;
-                next_out_insts[i].NPC = current + 4;
-                next_out_insts[i].pred_taken = 1'b0; // TODO branch prediction
+            if (prefetch_valid[i]) begin
+                j = i + NPC[2];
+                //$write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], NPC, icache_valid[j/2]);
+                if (j < next_num_insts + NPC[2]) begin
+                    //$write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
+                    next_out_insts[i].inst = cache_read_data[j/2].word_level[current[i][2]];
+                    next_out_insts[i].valid = 1'b1;
+                    next_out_insts[i].PC = current[i];
+                    next_out_insts[i].NPC = current[i] + 4;
 
-                next_cache_target = next_cache_target > current ? next_cache_target : current + 4;
+                    next_out_insts[i].pred_taken = 1'b0; // TODO branch prediction
+                    next_out_insts[i].bhr = '0;
+
+                    `ifdef PREDICTOR_EN
+                        next_out_insts[i].pred_taken = pred_taken[i]; //TODO
+                        next_out_insts[i].bhr = rd_bhr;
+                    `endif
+
+                    next_cache_target = current[i+1];
+                end else begin
+                    break;
+                end
             end else begin
                 break;
             end
@@ -239,7 +308,7 @@ module fetch #(
         // inputs
         .clock                      (clock),
         .reset                      (reset),
-        .proc2Icache_addr           (NPC),
+        .proc2Icache_addr           (prefetch_target),
         .br_task                    (br_task),
         //.alloc_addr                 (mem_addr_out),
         //.alloc_en                   (mem_en),
@@ -255,6 +324,7 @@ module fetch #(
     assign NPC = (br_task == SQUASH) ? target : cache_target;
 
     always_ff @(posedge clock) begin
+        $display("  WRITING TO PREDICTOR: %0d", pred_wr_en);
         if (reset) begin // TODO squash doesn't necessarily mean to empty everything, could be beneficial to keep icache (imagine short loops)
             out_insts            <= '0;
             num_insts            <= '0;
@@ -295,24 +365,24 @@ module fetch #(
         assign Icache_data_out = cache_read_data;
         assign Icache_valid_out = icache_valid;
     `endif
-    /*
+    
     predictor pred (
         .clock(clock),
         .reset(reset),
 
-        .rd_pc(),
-        .rd_bhr(),
+        .rd_pc(NPC),
+        .rd_bhr(rd_bhr),
 
-        .wr_en(),
-        .wr_taken(),
-        .wr_target().
-        .wr_pc(),
-        .wr_bhr(),
+        .wr_en(pred_wr_en),
+        .wr_taken(pred_wr_taken),
+        .wr_target(pred_wr_target),
+        .wr_pc(pred_wr_pc),
+        .wr_bhr(pred_wr_bhr),
 
-        .pred_taken(),
-        .pred_target()
+        .pred_taken(pred_taken),
+        .pred_target(pred_target)
     );
-    */
+    
 
 
 endmodule
