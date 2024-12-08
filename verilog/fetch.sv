@@ -196,7 +196,6 @@ module fetch #(
         next_num_insts = '0;
         next_out_insts = '0;
         next_cache_target = NPC;
-        current = '0;
         
         //$write("ICACHE VALID: %b", icache_valid);
         // Changed this to three to handle this case
