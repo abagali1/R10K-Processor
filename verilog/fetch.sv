@@ -120,7 +120,7 @@ module fetch #(
                         prefetch_target[(i+2)/2] = pred_target[i];
                         break;
                     end else if (pred_taken[i+1]) begin
-                        $display("PREDICTING A TAKEN BRANCH IN YOUR FUTURE; target: %h", pred_target[i]);
+                        $display("PREDICTING A TAKEN BRANCH IN YOUR FUTURE; target: %h", pred_target[i+1]);
                         prefetch_valid[(i+2)/2] = 1;
                         prefetch_target[(i+2)/2] = pred_target[i+1];
                         break;
@@ -190,7 +190,7 @@ module fetch #(
     
     
     logic [2:0] j;
-    ADDR [4:0] current;
+    ADDR [4:0] current, base_addr;
     // FETCH TO INST_BUF
     always_comb begin
         next_num_insts = '0;
@@ -205,6 +205,11 @@ module fetch #(
         for (int i = 0; i < 3; i++) begin
             // if the cache block is valid, increment next_num_insts by 2 (2 insts per block)
             if (icache_valid[i] & prefetch_valid[i]) begin
+                if (pred_taken[i*2]) begin
+                    // [B|1]
+                    next_num_insts += 1;
+                    break;
+                end
                 if (~NPC[2] | i > 0) begin 
                     // [1|1]
                     if (pred_taken[i*2]) begin
@@ -241,16 +246,19 @@ module fetch #(
         // i = 0; i < next_num_insts + target[2]
         // TODO: J is gross, we use it to get all four instructions out in the [0|1] [1|1] [1|1] case.
         current[0] = NPC;
+        base_addr[0] = NPC;
         for (int i = 0; i < 4; i++) begin
             current[i+1] = pred_taken[i] ? pred_target[i] : current[i] + 4;
+            base_addr[i+1] = pred_taken[i] ? pred_target[i] : current[i];
         end
         j = '0;
         for (int i = 0; i < 4; i++) begin
-            if (prefetch_valid[i]) begin
-                j = i + NPC[2];
+            if (prefetch_valid[i/2]) begin
+                $write("VALID FOR %d\n", i);
+                j = i + base_addr[i][2];
                 //$write("\nCACHE_READ_DATA[i/2].word_level[current[2]] = %b AND target = %b AND valid = %b\n", cache_read_data[j/2].word_level[current[2]], NPC, icache_valid[j/2]);
-                if (j < next_num_insts + NPC[2]) begin
-                    //$write("SETTING OUT INST: %h -- %s %b\n", current, decode_inst(cache_read_data[j/2].word_level[current[2]]), icache_valid[j/2]);
+                if (j < next_num_insts + base_addr[i][2]) begin
+                    //$write("SETTING OUT INST: %h -- %s %b\n", current[i], decode_inst(cache_read_data[j/2].word_level[current[i][2]]), current[i]);
                     next_out_insts[i].inst = cache_read_data[j/2].word_level[current[i][2]];
                     next_out_insts[i].valid = 1'b1;
                     next_out_insts[i].PC = current[i];
