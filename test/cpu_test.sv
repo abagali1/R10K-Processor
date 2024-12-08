@@ -124,6 +124,8 @@ module testbench;
         ISSUE_PACKET            [`NUM_FU_MULT-1:0]                                          debug_issued_mult_pack;
         ISSUE_PACKET                                                                        debug_issued_br_pack;
         ISSUE_PACKET            [`SQ_SZ-1:0]                                                debug_issued_st_pack;
+        ISSUE_PACKET                                                                        debug_issued_ld_pack;
+
 
         logic                   [$clog2(`SQ_SZ)-1:0]                                        debug_sq_head;
         logic                   [$clog2(`SQ_SZ)-1:0]                                        debug_sq_tail;
@@ -238,6 +240,7 @@ module testbench;
             .debug_issued_mult_pack(debug_issued_mult_pack),
             .debug_issued_br_pack(debug_issued_br_pack),
             .debug_issued_st_pack(debug_issued_st_pack),
+            .debug_issued_ld_pack(debug_issued_ld_pack),
 
             .debug_sq_head(debug_sq_head),
             .debug_sq_tail(debug_sq_tail),
@@ -364,9 +367,9 @@ module testbench;
             if (clock_count % 10000 == 0) begin
                 $display("  %16t : %d cycles", $realtime, clock_count);
             end
-            //if(clock_count > 15000) begin
+            if(clock_count > 2000) begin
                 dump_state();
-            //end
+            end
 
 
             // print the pipeline debug outputs via c code to the pipeline output file
@@ -755,6 +758,14 @@ module testbench;
                     debug_issued_st_pack[i].rs1_value,
                     debug_issued_st_pack[i].rs2_value);
         end
+        $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
+            0,
+            debug_issued_ld_pack.decoded_vals.decoded_vals.valid,
+            debug_issued_ld_pack.decoded_vals.decoded_vals.inst,
+            debug_issued_ld_pack.decoded_vals.decoded_vals.PC,
+            debug_issued_ld_pack.decoded_vals.decoded_vals.NPC,
+            debug_issued_ld_pack.rs1_value,
+            debug_issued_ld_pack.rs2_value);
     endfunction
 
     function void print_alu_data();
