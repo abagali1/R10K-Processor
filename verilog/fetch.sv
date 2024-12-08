@@ -44,7 +44,8 @@ module fetch #(
     ,   output  ADDR [NUM_MEM_TAGS:1] debug_mshr_data,
         output  logic [NUM_MEM_TAGS:1] debug_mshr_valid,
         output MEM_BLOCK [PREFETCH_DISTANCE-1:0]  Icache_data_out, 
-        output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out
+        output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out,
+        output ADDR [PREFETCH_DISTANCE-1:0] debug_icache_raddr
     `endif
 );
     //typedef enum logic [1:0] {FETCH, PREFETCH, STALL, DEF} STATE;
@@ -87,6 +88,8 @@ module fetch #(
     ADDR cache_target, next_cache_target;
     ADDR [PREFETCH_DISTANCE-1:0] prefetch_target;
     logic [PREFETCH_DISTANCE-1:0] prefetch_valid;
+
+    assign debug_icache_raddr = prefetch_target;
 
     // PREDICTOR THINGS
     logic    [PREFETCH_INSTS-1:0] pred_taken; // true if predictor predicts branch is taken
@@ -249,7 +252,7 @@ module fetch #(
         base_addr[0] = NPC;
         for (int i = 0; i < 4; i++) begin
             current[i+1] = pred_taken[i] ? pred_target[i] : current[i] + 4;
-            base_addr[i+1] = pred_taken[i] ? pred_target[i] : current[i];
+            base_addr[i+1] = pred_taken[i] ? pred_target[i] : base_addr[i];
         end
         j = '0;
         for (int i = 0; i < 4; i++) begin

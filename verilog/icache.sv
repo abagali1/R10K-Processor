@@ -57,9 +57,9 @@ module icache #(
     //output MEM_COMMAND proc2Imem_command,
     //output ADDR        proc2Imem_addr,
 
-    output MEM_BLOCK [1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
-    output logic     [1:0]  Icache_valid_out, // When valid is high
-    output logic     [1:0]  Icache_alloc_out // When valid is high
+    output MEM_BLOCK [PREFETCH_DISTANCE-1:0]  Icache_data_out, // Data is mem[proc2Icache_addr]
+    output logic     [PREFETCH_DISTANCE-1:0]  Icache_valid_out, // When valid is high
+    output logic     [PREFETCH_DISTANCE-1:0]  Icache_alloc_out // When valid is high
 );
 
     // Note: cache tags, not memory tags
@@ -125,7 +125,7 @@ module icache #(
         $display("| Tags | Current tag | i | valid |");
         for (int i = 0; i < PREFETCH_DISTANCE; i++) begin
             //Icache_valid_out[i] = icache_tags[(current_index+i)% `ICACHE_LINES].valid && (icache_tags[(current_index+i)% `ICACHE_LINES].tags) == (current_tag+i); 
-            Icache_valid_out[i] = icache_tags[current_index[i]].valid && ((icache_tags[current_index[i]].tags) == ((current_index[i]+i) >= `ICACHE_LINES ? current_tag[i] + 1 : current_tag[i])); 
+            Icache_valid_out[i] = icache_tags[current_index[i]].valid && ((icache_tags[current_index[i]].tags) == current_tag[i]); 
             Icache_alloc_out[i] = icache_tags[current_index[i]].alloc;
             $write("| %h | %h | %d | %b |\n", icache_tags[current_index[i]].tags, current_tag[i], i, Icache_valid_out[i]);
         end
@@ -187,7 +187,7 @@ module icache #(
                 end
             end else begin*/
                 if (write_en) begin // If data, meaning tag matches
-                    $write("ICACHE WRITING %d %b\n", write_index, write_data);
+                    $write("ICACHE WRITING %h to idx %d for addr %h (tag: %b)\n", write_data, write_index, write_addr, write_tag);
                     icache_tags[write_index].tags  <= write_tag;
                     icache_tags[write_index].valid <= 1'b1;
                     icache_tags[write_index].alloc <= 1'b0;
