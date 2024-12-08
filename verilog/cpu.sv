@@ -87,6 +87,7 @@ module cpu (
         output ISSUE_PACKET             [`NUM_FU_MULT-1:0]                                      debug_issued_mult_pack,
         output ISSUE_PACKET                                                                     debug_issued_br_pack,
         output ISSUE_PACKET             [`SQ_SZ-1:0]                                            debug_issued_st_pack,
+        output ISSUE_PACKET                                                                     debug_issued_ld_pack,
 
         output logic                    [$clog2(`SQ_SZ)-1:0]                                    debug_sq_head,
         output logic                    [$clog2(`SQ_SZ)-1:0]                                    debug_sq_tail,
@@ -312,6 +313,7 @@ module cpu (
         assign debug_issued_mult_pack = issued_mult_pack;
         assign debug_issued_br_pack = issued_br_pack;
         assign debug_issued_st_pack = issued_st_pack;
+        assign debug_issued_ld_pack = issued_ld_pack;
 
         assign debug_sq_head = sq_head;
         assign debug_sq_tail = sq_tail;
