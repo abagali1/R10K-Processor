@@ -31,6 +31,11 @@ module cpu (
     output logic                        [3:0]                                                   ib_open,
     output ADDR                                                                                 NPC
 
+    `ifdef ANALYTICS_EN
+    ,   output logic                                                                                pred_valid,
+        output logic                                                                                pred_correct
+    `endif
+
     `ifdef DEBUG
     ,   output logic                    [`BRANCH_HISTORY_REG_SZ-1:0]                            debug_bhr,
         output logic                    [$clog2(`N+1)-1:0]                                      debug_num_dispatched,
@@ -364,11 +369,20 @@ module cpu (
         .mem_transaction_tag(mem2proc_transaction_tag),
         .mem_data_tag(mem2proc_data_tag),
         .mem_data(mem2proc_data),
+
+        .rd_bhr(out_bhr),
+
+        .pred_wr_en(br_task != NOTHING),
+        .pred_wr_taken(br_taken),
+        .pred_wr_target(br_fu_out.target_addr),
+        .pred_wr_pc(br_fu_out.decoded_vals.decoded_vals.PC),
+        .pred_wr_bhr(br_fu_out.decoded_vals.decoded_vals.bhr),
+
         .mem_en(fetch_mem_en),
         .mem_addr_out(fetch_proc2mem_addr),
         .out_insts(in_insts),
         .out_num_insts(num_input),
-        .NPC(NPC)
+        .NPC_out(NPC)
         `ifdef DEBUG
         ,   .debug_mshr_data(debug_mshr_data),
             .debug_mshr_valid(debug_mshr_valid),
@@ -943,6 +957,12 @@ module cpu (
             `endif
         end
     end
+
+    // Statistics & Analytics
+    `ifdef ANALYTICS_EN
+        assign pred_valid = br_task != NOTHING;
+        assign pred_correct = br_task == CLEAR;
+    `endif
 
     // DEBUG OUTPUTS
     `ifdef DEBUG
