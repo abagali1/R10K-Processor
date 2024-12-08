@@ -127,7 +127,7 @@ module load_fu #(
             if(rd_en && alloc_spot[i]) begin
                 next_entries[i] = '{
                     decoded_vals: is_pack.decoded_vals,
-                    target_addr: addr_result,
+                    target_addr: {16'b0, addr_result[15:0]},
                     result: 0,
                     ld_state: READY_TO_ISSUE,
                     rs2_value: is_pack.rs2_value,
@@ -156,7 +156,7 @@ module load_fu #(
                     next_data_ready_spots[i] = '0;
                 end
                 if(rem_br_task == CLEAR) begin
-                    next_entries[i].decoded_vals.b_mask = '0;
+                    next_entries[i].decoded_vals.b_mask ^= rem_b_id;
 
                     next_open_spots[i] = '0;
                 end
@@ -164,7 +164,7 @@ module load_fu #(
 
             if(!dm_stalled && !start_store && issued_entry[i]) begin
                 start_load = 1;
-                Dmem_addr = {entries[i].target_addr[31:3], 3'b0};
+                Dmem_addr = {next_entries[i].target_addr[31:3], 3'b0};
 
                 next_entries[i].ld_state = WAITING_FOR_DATA;
 
@@ -178,18 +178,18 @@ module load_fu #(
                 // aligned result
                 case(MEM_SIZE'(next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[1:0]))
                     BYTE: begin
-                        next_entries[i].result = {24'b0, Dmem_load_data.byte_level[entries[i].target_addr[2:0]]};
+                        next_entries[i].result = {24'b0, Dmem_load_data.byte_level[next_entries[i].target_addr[2:0]]};
                         if(!next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[2]) begin
                             next_entries[i].result[31:8] = {(24){next_entries[i].result[7]}};
                         end
                     end
                     HALF: begin 
-                        next_entries[i].result = {16'b0, Dmem_load_data.half_level[entries[i].target_addr[2:1]]};
+                        next_entries[i].result = {16'b0, Dmem_load_data.half_level[next_entries[i].target_addr[2:1]]};
                         if(!next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[2]) begin
                             next_entries[i].result[31:16] = {(16){next_entries[i].result[15]}};
                         end
                     end
-                    WORD: next_entries[i].result = Dmem_load_data.word_level[entries[i].target_addr[2]];
+                    WORD: next_entries[i].result = Dmem_load_data.word_level[next_entries[i].target_addr[2]];
                     DOUBLE: next_entries[i].result = Dmem_load_data.dbbl_level;
                     default: next_entries[i].result = 64'hbadddada;
                 endcase
