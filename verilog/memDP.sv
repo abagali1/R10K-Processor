@@ -55,7 +55,7 @@ generate
                     rdata[i] = '0;
                 end
             end else begin : non_bypass_path
-                rdata[i] = re[i] ? memData[raddr] : '0;
+                rdata[i] = re[i] ? memData[raddr[i]] : '0;
             end
         end
     end

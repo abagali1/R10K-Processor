@@ -15,16 +15,14 @@ module cpu (
     input                                                                                       clock, // System clock
     input                                                                                       reset, // System reset
 
-    input INST_PACKET                   [7:0]                                                   in_insts,
-    input logic                         [3:0]                                                   num_input,
+    input MEM_TAG   mem2proc_transaction_tag, // Memory tag for current transaction [current transaction]
+    input MEM_BLOCK mem2proc_data,            // Data coming back from memory
+    input MEM_TAG   mem2proc_data_tag,        // Tag for which finished transaction data is for
 
-    input MEM_TAG                                                                               mem2proc_transaction_tag, // Memory tag for current transaction
-    input MEM_BLOCK                                                                             mem2proc_data,            // Data coming back from memory
-    input MEM_TAG                                                                               mem2proc_data_tag,        // Tag for which transaction data is for
-
-    output MEM_COMMAND                                                                          proc2mem_command, // Command sent to memory
-    output ADDR                                                                                 proc2mem_addr,    // Address sent to memory
-    output MEM_BLOCK                                                                            proc2mem_data,    // Data sent to memory
+    output MEM_COMMAND proc2mem_command, // Command sent to memory
+    output ADDR        proc2mem_addr,    // Address sent to memory
+    output MEM_BLOCK   proc2mem_data,    // Data sent to memory
+    output MEM_SIZE    proc2mem_size,    // Data size sent to memory
 
     // Note: these are assigned at the very bottom of the modulo
     output COMMIT_PACKET                [`N-1:0]                                                committed_insts,
@@ -32,6 +30,11 @@ module cpu (
 
     output logic                        [3:0]                                                   ib_open,
     output ADDR                                                                                 NPC
+
+    `ifdef ANALYTICS_EN
+    ,   output logic                                                                                pred_valid,
+        output logic                                                                                pred_correct
+    `endif
 
     `ifdef DEBUG
     ,   output logic                    [`BRANCH_HISTORY_REG_SZ-1:0]                            debug_bhr,
@@ -121,35 +124,30 @@ module cpu (
 
         output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_data,
         output FU_PACKET                [`NUM_FU_ALU-1:0]                                       debug_alu_next_data,
-        output logic                                                                            debug_sq_full
+        output logic                                                                            debug_sq_full,
+
+        output ADDR                                                                             debug_fetch_target,
+        output logic                                                                            debug_fetch_arbiter_signal, 
+        output BR_TASK                                                                          debug_fetch_br_task,  
+        output logic                    [$clog2(`INST_BUFF_DEPTH+1)-1:0]                        debug_fetch_ibuff_open,
+
+        output MEM_TAG                                                                          debug_fetch_mem_transaction_tag, 
+        output MEM_TAG                                                                          debug_fetch_mem_data_tag, 
+        output MEM_BLOCK                                                                        debug_fetch_mem_data, 
+
+        output logic                                                                            debug_fetch_mem_en,
+        output ADDR                                                                             debug_fetch_mem_addr_out, 
+
+        output INST_PACKET              [3:0]                                                   debug_fetch_out_insts, 
+        output logic                    [2:0]                                                   debug_fetch_out_num_insts,
+
+        output ADDR                     [`NUM_MEM_TAGS:1]                                       debug_mshr_data,
+        output logic                    [`NUM_MEM_TAGS:1]                                       debug_mshr_valid,
+        output MEM_BLOCK                [`PREFETCH_DISTANCE-1:0]                                 debug_icache_data,
+        output logic                    [`PREFETCH_DISTANCE-1:0]                                 debug_icache_valid,
+        output ADDR                     [`PREFETCH_DISTANCE-1:0]                                debug_icache_raddr
     `endif
 );
-
-    //////////////////////////////////////////////////
-    //                                              //
-    //               amrita trying                  //
-    //                                              //
-    //////////////////////////////////////////////////
-
-    // the start of amrita ducking around
-
-    // fake fetch
-
-    ADDR PC;
-
-    assign NPC = PC;
-
-    always @(posedge clock) begin
-        if (reset) begin
-            PC <= 0;
-        end 
-        else if (!br_fu_out.pred_correct) begin
-            PC <= br_fu_out.target_addr;
-        end 
-        else begin
-            PC <= NPC + num_input * 4;
-        end
-    end
 
     //////////////////////////////////////////////////
     //                                              //
@@ -184,6 +182,8 @@ module cpu (
     RS_PACKET    [`SQ_SZ-1:0]           issued_store;
     RS_PACKET                           issued_br;
 
+    MEM_COMMAND d_proc2mem_command;
+    ADDR        d_proc2mem_addr, fetch_proc2mem_addr;
 
     // output of ROB
     logic [$clog2(`N+1)-1:0] rob_open, num_retired;
@@ -334,6 +334,20 @@ module cpu (
         assign debug_sq_br_tail = cp_out.sq_tail;
     `endif
 
+    //////////////////////////////////////////////////
+    //                                              //
+    //          john and rohan trying               //
+    //                                              //
+    //////////////////////////////////////////////////
+
+    logic fetch_mem_en;
+    //assign proc2mem_command = fetch_mem_en & ~reset; // TODO replace with arbiter
+    assign proc2mem_command = d_proc2mem_command == MEM_NONE ? (fetch_mem_en ? MEM_LOAD : MEM_NONE) : d_proc2mem_command;
+    assign proc2mem_addr = d_proc2mem_command == MEM_NONE ? (fetch_mem_en ? fetch_proc2mem_addr : '0) : d_proc2mem_addr;
+
+    logic [2:0] num_input;
+    INST_PACKET [3:0] in_insts;
+
     bhr goop (
         .clock(clock),
         .reset(reset),
@@ -343,6 +357,59 @@ module cpu (
 
         .out_bhr(out_bhr)
     );
+
+
+    fetch rufus (
+        .clock(clock),
+        .reset(reset),
+
+        .target(br_fu_out.target_addr),
+        .arbiter_signal(d_proc2mem_command == MEM_NONE), 
+        .br_task(br_task),
+        .ibuff_open(ib_open),
+        .mem_transaction_tag(mem2proc_transaction_tag),
+        .mem_data_tag(mem2proc_data_tag),
+        .mem_data(mem2proc_data),
+
+        .rd_bhr(out_bhr),
+
+        .pred_wr_en(br_task != NOTHING),
+        .pred_wr_taken(br_taken),
+        .pred_wr_target(br_fu_out.target_addr),
+        .pred_wr_pc(br_fu_out.decoded_vals.decoded_vals.PC),
+        .pred_wr_bhr(br_fu_out.decoded_vals.decoded_vals.bhr),
+
+        .mem_en(fetch_mem_en),
+        .mem_addr_out(fetch_proc2mem_addr),
+        .out_insts(in_insts),
+        .out_num_insts(num_input),
+        .NPC_out(NPC)
+        `ifdef DEBUG
+        ,   .debug_mshr_data(debug_mshr_data),
+            .debug_mshr_valid(debug_mshr_valid),
+            .Icache_data_out(debug_icache_data),
+            .Icache_valid_out(debug_icache_valid),
+            .debug_icache_raddr(debug_icache_raddr)
+        `endif
+    );
+
+    `ifdef DEBUG
+        assign debug_fetch_target               = NPC;
+        assign debug_fetch_arbiter_signal       = 1'b1;
+        assign debug_fetch_br_task              = br_task;
+        assign debug_fetch_ibuff_open           = ib_open;
+
+        assign debug_fetch_mem_transaction_tag  = mem2proc_transaction_tag;
+        assign debug_fetch_mem_data_tag         = mem2proc_data_tag;
+        assign debug_fetch_mem_data             = mem2proc_data;
+
+        assign debug_fetch_mem_en               = fetch_mem_en;
+        assign debug_fetch_mem_addr_out         = proc2mem_addr;
+
+        assign debug_fetch_out_insts            = in_insts;
+        assign debug_fetch_out_num_insts        = num_input;
+    `endif
+
 
     inst_buffer buffet (
         .clock(clock),
@@ -778,7 +845,7 @@ module cpu (
     assign st_size = mshr2cache_wr ? mshr2cache_st_size : Dmem_size;
     assign in_data = mshr2cache_wr ? mshr2cache_data : Dmem_store_data;
     assign proc2Dcache_addr = mshr2cache_wr ? mshr2cache_addr : Dmem_addr;
-    assign proc2mem_addr = Dcache_addr_out;
+    assign d_proc2mem_addr = Dcache_addr_out;
     assign proc2mem_data = Dcache_data_out;
 
     mshr miss_human_resources (
@@ -800,7 +867,7 @@ module cpu (
         .mem2proc_data(mem2proc_data),
 
         // To memory
-        .proc2mem_command(proc2mem_command),
+        .proc2mem_command(d_proc2mem_command),
 
         // To cache
         .mshr2cache_addr(mshr2cache_addr),
@@ -890,8 +957,17 @@ module cpu (
             `ifdef DEBUG
                 committed_insts[i].tag = retiring_data[i].t;
             `endif
+            if (committed_insts[i].halt) begin
+                $write("SETTING HALT BIT FOR INST %h\n", retiring_data[i].PC);
+            end
         end
     end
+
+    // Statistics & Analytics
+    `ifdef ANALYTICS_EN
+        assign pred_valid = br_task != NOTHING;
+        assign pred_correct = br_task == CLEAR;
+    `endif
 
     // DEBUG OUTPUTS
     `ifdef DEBUG

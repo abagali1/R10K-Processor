@@ -33,9 +33,9 @@ module branch_fu (
         out.b_mask = (rem_br_task == CLEAR) ? out.b_mask ^ rem_b_id : is_pack.decoded_vals.b_mask;
     end
 
-    assign correct = is_pack.decoded_vals.decoded_vals.pred_taken == br_taken; // TODO: Add target addr check
+    assign correct = (is_pack.decoded_vals.decoded_vals.pred_taken == br_taken) && (is_pack.decoded_vals.decoded_vals.NPC == target); // TODO: Add target addr check
 
-    assign target = br_taken ? branch_target : is_pack.decoded_vals.decoded_vals.NPC;
+    assign target = br_taken ? branch_target : is_pack.decoded_vals.decoded_vals.PC+4;
 
     basic_adder branch_target_calc (
         .is_pack(is_pack),
@@ -69,7 +69,7 @@ module branch_fu (
             data_ready  <= '0;
             br_task     <= NOTHING;
         end else if (rd_en) begin
-            fu_pack     <= '{result: is_pack.decoded_vals.decoded_vals.NPC, decoded_vals: out, pred_correct: correct, rs2_value: 0, ld_state: 0, target_addr: {16'b0, target[15:0]}};
+            fu_pack     <= '{result: is_pack.decoded_vals.decoded_vals.PC + 4, decoded_vals: out, pred_correct: correct, rs2_value: 0, ld_state: 0, target_addr: target};
             data_ready  <= 1;
             br_task     <= (correct ? CLEAR : SQUASH);
         end else begin

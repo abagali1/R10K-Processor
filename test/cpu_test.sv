@@ -40,29 +40,36 @@ module testbench;
     int out_fileno, cpi_fileno, wb_fileno, wbt_fileno; // verilog uses integer file handles with $fopen and $fclose
 
 
-    MEM_COMMAND proc2mem_command;
-    ADDR        proc2mem_addr;
-    MEM_BLOCK   proc2mem_data;
-    MEM_TAG     mem2proc_transaction_tag;
-    MEM_BLOCK   mem2proc_data;
-    MEM_TAG     mem2proc_data_tag;
-
     // variables used in the testbench
     logic        clock;
     logic        reset;
     logic [31:0] clock_count; // also used for terminating infinite loops
     logic [31:0] instr_count;
 
+    MEM_COMMAND proc2mem_command;
+    ADDR        proc2mem_addr;
+    MEM_BLOCK   proc2mem_data;
+    MEM_TAG     mem2proc_transaction_tag;
+    MEM_BLOCK   mem2proc_data;
+    MEM_TAG     mem2proc_data_tag;
+    MEM_SIZE    proc2mem_size;
+
+
     INST_PACKET   [7:0] in_insts;
     logic         [3:0] num_input;
 
     logic         [3:0] ib_open;
-    ADDR                 NPC;
+    ADDR                    NPC;
+
+    `ifdef ANALYTICS_EN
+        int             num_branches, num_branches_correct;
+        logic           pred_valid;  
+        logic           pred_correct;  
+    `endif
 
     COMMIT_PACKET [`N-1:0] committed_insts;
 
     ROB_PACKET [`N-1:0] retired_insts;
-
 
     // DECODED_PACKET [`N-1:0] dis_insts;
 
@@ -126,7 +133,6 @@ module testbench;
         ISSUE_PACKET            [`SQ_SZ-1:0]                                                debug_issued_st_pack;
         ISSUE_PACKET                                                                        debug_issued_ld_pack;
 
-
         logic                   [$clog2(`SQ_SZ)-1:0]                                        debug_sq_head;
         logic                   [$clog2(`SQ_SZ)-1:0]                                        debug_sq_tail;
         logic                   [$clog2(`N+1)-1:0]                                          debug_sq_open;
@@ -160,6 +166,28 @@ module testbench;
         FU_PACKET               [`NUM_FU_ALU-1:0]                                           debug_alu_next_data;
         logic                                                                               debug_sq_full;
         logic                   [$clog2(`SQ_SZ+1)-1:0]                                      debug_sq_br_tail;
+
+        ADDR                                                                                debug_fetch_target;
+        logic                                                                               debug_fetch_arbiter_signal; 
+        BR_TASK                                                                             debug_fetch_br_task;
+        logic                    [$clog2(`INST_BUFF_DEPTH+1)-1:0]                           debug_fetch_ibuff_open;
+
+        MEM_TAG                                                                             debug_fetch_mem_transaction_tag; 
+        MEM_TAG                                                                             debug_fetch_mem_data_tag;
+        MEM_BLOCK                                                                           debug_fetch_mem_data;
+
+        logic                                                                               debug_fetch_mem_en;
+        ADDR                                                                                debug_fetch_mem_addr_out; 
+
+        INST_PACKET              [3:0]                                                      debug_fetch_out_insts;
+        logic                    [2:0]                                                      debug_fetch_out_num_insts;
+
+        ADDR                    [`NUM_MEM_TAGS:1]                                           debug_mshr_data;
+        logic                   [`NUM_MEM_TAGS:1]                                           debug_mshr_valid;
+        MEM_BLOCK                [`PREFETCH_DISTANCE-1:0]                                   debug_icache_data;
+        logic                    [`PREFETCH_DISTANCE-1:0]                                   debug_icache_valid;
+        ADDR                    [`PREFETCH_DISTANCE-1:0]                                    debug_icache_raddr;
+    
     `endif
 
 
@@ -167,22 +195,21 @@ module testbench;
     cpu dut(
         .clock(clock),
         .reset(reset),
-        .in_insts(in_insts),
-        .num_input(num_input),
-
-        .mem2proc_transaction_tag (mem2proc_transaction_tag),
-        .mem2proc_data            (mem2proc_data),
-        .mem2proc_data_tag        (mem2proc_data_tag),
-
-        // Outputs
-        .proc2mem_command (proc2mem_command),
-        .proc2mem_addr    (proc2mem_addr),
-        .proc2mem_data    (proc2mem_data),
-
+        .mem2proc_transaction_tag(mem2proc_transaction_tag),
+        .mem2proc_data(mem2proc_data),
+        .mem2proc_data_tag(mem2proc_data_tag),
+        .proc2mem_command(proc2mem_command),
+        .proc2mem_addr(proc2mem_addr),
+        .proc2mem_data(proc2mem_data),
+        .proc2mem_size(proc2mem_size),
         .committed_insts(committed_insts),
         .retired_insts(retired_insts),
         .ib_open(ib_open),
         .NPC(NPC)
+        `ifdef ANALYTICS_EN
+        ,   .pred_valid(pred_valid),
+            .pred_correct(pred_correct)
+        `endif
 
         `ifdef DEBUG
         ,   .debug_bhr(debug_bhr),
@@ -275,16 +302,43 @@ module testbench;
             .debug_alu_data(debug_alu_data),
             .debug_alu_next_data(debug_alu_next_data),
             .debug_sq_full(debug_sq_full),
-            .debug_sq_br_tail(debug_sq_br_tail)
+            .debug_sq_br_tail(debug_sq_br_tail),
+
+
+            .debug_fetch_target(debug_fetch_target),
+            .debug_fetch_arbiter_signal(debug_fetch_arbiter_signal),
+            .debug_fetch_br_task(debug_fetch_br_task),
+            .debug_fetch_ibuff_open(debug_fetch_ibuff_open),
+
+            .debug_fetch_mem_transaction_tag(debug_fetch_mem_transaction_tag),
+            .debug_fetch_mem_data_tag(debug_fetch_mem_data_tag),
+            .debug_fetch_mem_data(debug_fetch_mem_data),
+
+            .debug_fetch_mem_en(debug_fetch_mem_en),
+            .debug_fetch_mem_addr_out(debug_fetch_mem_addr_out),
+
+            .debug_fetch_out_insts(debug_fetch_out_insts),
+            .debug_fetch_out_num_insts(debug_fetch_out_num_insts),
+
+            .debug_mshr_data(debug_mshr_data),
+            .debug_mshr_valid(debug_mshr_valid),
+            .debug_icache_data(debug_icache_data),
+            .debug_icache_valid(debug_icache_valid),
+            .debug_icache_raddr(debug_icache_raddr)
+    
         `endif
     );
 
-    mem mem (
+    // Instantiate the Data Memory
+    mem memory (
         // Inputs
         .clock            (clock),
+        .proc2mem_command (proc2mem_command),
         .proc2mem_addr    (proc2mem_addr),
         .proc2mem_data    (proc2mem_data),
-        .proc2mem_command (proc2mem_command),
+`ifndef CACHE_MODE
+        .proc2mem_size    (proc2mem_size),
+`endif
 
         // Outputs
         .mem2proc_transaction_tag (mem2proc_transaction_tag),
@@ -331,8 +385,7 @@ module testbench;
 
         $display("  %16t : Loading Unified Memory", $realtime);
         // load the compiled program's hex data into the memory module
-        $readmemh(program_memory_file, unified_memory);
-        $readmemh(program_memory_file, mem.unified_memory);
+        $readmemh(program_memory_file, memory.unified_memory);
         @(posedge clock);
         @(posedge clock);
         #1; // This reset is at an odd time to avoid the pos & neg clock edges
@@ -367,8 +420,15 @@ module testbench;
             if (clock_count % 10000 == 0) begin
                 $display("  %16t : %d cycles", $realtime, clock_count);
             end
-            if(clock_count > 2000) begin
+            //if(clock_count > 15000) begin
                 dump_state();
+            //end
+
+            if (pred_valid) begin
+                num_branches++;
+                if (pred_correct) begin
+                    num_branches_correct++;
+                end
             end
 
 
@@ -384,27 +444,31 @@ module testbench;
             // print_membus({30'b0,proc2mem_command}, proc2mem_addr[31:0],
             //              proc2mem_data[63:32], proc2mem_data[31:0]);
 
-            num_input = 0;
-            for (int i = 0; i < ib_open; i++) begin
-                current = NPC + i * 4;
+            // num_input = 0;
+            // for (int i = 0; i < ib_open; i++) begin
+            //     current = NPC + i * 4;
 
-                block = unified_memory[current[31:3]];
-                in_insts[i].inst = block.word_level[current[2]];
+            //     block = unified_memory[current[31:3]];
+            //     in_insts[i].inst = block.word_level[current[2]];
+                
+            //     if (in_insts[i].inst) begin
+            //         in_insts[i].valid = 1;
+            //         in_insts[i].PC = current;
+            //         in_insts[i].NPC = current + 4;
+            //         in_insts[i].pred_taken = 0;
+            //         num_input++;
+            //     end else begin
+            //         in_insts[i].valid = 0;
+            //     end
 
-                in_insts[i].valid = 1;
-                in_insts[i].PC = current;
-                in_insts[i].NPC = current + 4;
-                in_insts[i].pred_taken = 0;
-                num_input++;
+            //     // $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
 
-                // $display("index: %0d, inst: %0h, pc: %0d", i, block.word_level[current[2]], current);
-
-                // if (in_insts[i].inst == 32'h10500073) begin
-                //     $display("halting...");
-                //     error_status = NO_ERROR;
-                //     #200 $finish;
-                // end
-            end
+            //     // if (in_insts[i].inst == 32'h10500073) begin
+            //     //     $display("halting...");
+            //     //     error_status = NO_ERROR;
+            //     //     #200 $finish;
+            //     // end
+            // end
 
             //print_custom_data();
 
@@ -418,12 +482,18 @@ module testbench;
                 // close the writeback and pipeline output files
                 // close_pipeline_output_file();
                 $fclose(wb_fileno);
+
+                `ifdef ANALYTICS_EN
+                    output_analytics();
+                `endif
+
                 $fclose(wbt_fileno);
 
                 // display the final memory and status
                 show_final_mem_and_status(error_status);
                 // output the final CPI
-                //output_cpi_file();
+                output_cpi_file();
+
 
                 $display("\n---- Finished CPU Testbench ----\n");
 
@@ -445,7 +515,7 @@ module testbench;
                 instr_count = instr_count + 1;
 
                 pc = committed_insts[n].NPC - 4;
-                block = mem.unified_memory[pc[31:3]];
+                block = memory.unified_memory[pc[31:3]];
                 inst = block.word_level[pc[2]];
                 // print the committed instructions to the writeback output file
                 if (committed_insts[n].reg_idx == `ZERO_REG) begin
@@ -484,19 +554,23 @@ module testbench;
     endtask // task output_reg_writeback_and_maybe_halt
 
 
-    // // Task to output the final CPI and # of elapsed clock edges
-    // task output_cpi_file;
-    //     real cpi;
-    //     begin
-    //         cpi = $itor(clock_count) / instr_count; // must convert int to real
-    //         cpi_fileno = $fopen(cpi_outfile);
-    //         $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
-    //                   clock_count, instr_count, cpi);
-    //         $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
-    //                   clock_count * `CLOCK_PERIOD);
-    //         $fclose(cpi_fileno);
-    //     end
-    // endtask // task output_cpi_file
+    // Task to output the final CPI and # of elapsed clock edges
+    task output_cpi_file;
+        real cpi;
+        begin
+            cpi = $itor(clock_count) / instr_count; // must convert int to real
+            cpi_fileno = $fopen(cpi_outfile);
+            $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
+                      clock_count, instr_count, cpi);
+            $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
+                      clock_count * `CLOCK_PERIOD);
+            $fclose(cpi_fileno);
+        end
+    endtask // task output_cpi_file
+
+    task output_analytics;
+        $fdisplay(wbt_fileno, "\nFinal Branch Prediction Accuracy: %0d / %0d\n", num_branches_correct, num_branches);
+    endtask
 
 
     // Show contents of Unified Memory in both hex and decimal
@@ -510,9 +584,9 @@ module testbench;
             $fdisplay(out_fileno, "@@@");
             showing_data = 0;
             for (int k = 0; k <= `MEM_64BIT_LINES - 1; k = k+1) begin
-                if (mem.unified_memory[k] != 0) begin
-                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, mem.unified_memory[k],
-                                                             mem.unified_memory[k]);
+                if (memory.unified_memory[k] != 0) begin
+                    $fdisplay(out_fileno, "@@@ mem[%5d] = %x : %0d", k*8, memory.unified_memory[k],
+                                                             memory.unified_memory[k]);
                     showing_data = 1;
                 end else if (showing_data != 0) begin
                     $fdisplay(out_fileno, "@@@");
@@ -545,6 +619,58 @@ module testbench;
     // DEBUGGER
 
     `ifdef DEBUG
+    // print fetch/prefetcher
+    function void print_fetch();
+        $display("FETCH");
+
+        $display("                   target                        |                          mem_data");
+        $display("  %h   |   %b   |", 
+                debug_fetch_target,
+                debug_fetch_mem_data
+            );
+
+        $display("|   mem_en   |  mem_addr_out   | out_num_insts |");
+        $display(" %d |      %h      |  %d |",
+                debug_fetch_mem_en,
+                debug_fetch_mem_addr_out,
+                debug_fetch_out_num_insts
+            );
+
+        $display("mem_transaction_tag    |    mem_data_tag    |                      mem_data                     |");
+        $display("  %b   |   %b   | %b  | %b", 
+                debug_fetch_mem_transaction_tag,
+                debug_fetch_mem_data_tag,
+                debug_fetch_mem_data,
+                debug_fetch_ibuff_open
+            );
+
+        $display("MSHR:");
+        $display("| Tag | Valid |");
+        for (int i = 1; i <= `NUM_MEM_TAGS; i++) begin
+            $display("|%4h | %d |", debug_mshr_data[i], debug_mshr_valid[i]);
+        end
+        $display("");
+
+        $display("ICACHE:");
+        $display("| Data | Valid | Addr |");
+        for (int i = 0; i < 4; i++) begin
+            $display("| %h | %d | %h |", debug_icache_data[i], debug_icache_valid[i], debug_icache_raddr[i]);
+        end
+        $display("");
+        
+        
+        // for (int i = 0; i < `INST_BUFF_DEPTH; i++) begin
+        //     $display("  %b   |   %b   | %d |      %b      |  %d |", 
+        //         i, 
+        //         debug_inst_buff_entries[i].valid, 
+        //         debug_inst_buff_entries[i].inst, 
+        //         debug_inst_buff_entries[i].PC, 
+        //         debug_inst_buff_entries[i].NPC, 
+        //         debug_inst_buff_entries[i].pred_taken ? "t" : "nt"
+        //     );
+        // end
+    endfunction
+
     // inst buff
     function void print_inst_buff();
         $display("Instruction Buffer");
@@ -758,14 +884,16 @@ module testbench;
                     debug_issued_st_pack[i].rs1_value,
                     debug_issued_st_pack[i].rs2_value);
         end
-        $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
-            0,
-            debug_issued_ld_pack.decoded_vals.decoded_vals.valid,
-            debug_issued_ld_pack.decoded_vals.decoded_vals.inst,
-            debug_issued_ld_pack.decoded_vals.decoded_vals.PC,
-            debug_issued_ld_pack.decoded_vals.decoded_vals.NPC,
-            debug_issued_ld_pack.rs1_value,
-            debug_issued_ld_pack.rs2_value);
+        $display("LD packets");
+        $display("#  | valid |    inst    |     PC      |     NPC     |   rs1_value    |   rs2_value    |");
+            $display("%02d |  %d    |  %08x  |  0h%08x |  0h%08x |  %08x      |  %08x      |", 
+                    0,
+                    debug_issued_ld_pack.decoded_vals.decoded_vals.valid,
+                    debug_issued_ld_pack.decoded_vals.decoded_vals.inst,
+                    debug_issued_ld_pack.decoded_vals.decoded_vals.PC,
+                    debug_issued_ld_pack.decoded_vals.decoded_vals.NPC,
+                    debug_issued_ld_pack.rs1_value,
+                    debug_issued_ld_pack.rs2_value);
     endfunction
 
     function void print_alu_data();
@@ -870,7 +998,7 @@ module testbench;
             $display("%02d: 0h%05x", i, retired_insts[i].PC);
         end
         $display("\n");
-
+        print_fetch();
         print_inst_buff();
         print_dispatch();
         print_sq();

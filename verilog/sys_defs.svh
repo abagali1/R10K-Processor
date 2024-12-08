@@ -28,8 +28,11 @@
 // `define DEBUG_RS '1
 
 // superscalar width
-`define N 6
+`define N 2
 `define CDB_SZ `N // This MUST match your superscalar width
+
+`define PREDICTOR_EN 1
+`define ANALYTICS_EN 1
 
 // sizes
 `define ROB_SZ 32
@@ -39,7 +42,7 @@
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 
 // sizes: these are directly correlated
-`define BRANCH_HISTORY_REG_SZ 8
+`define BRANCH_HISTORY_REG_SZ 4
 `define BRANCH_HISTORY_TABLE_SIZE 256 // 2^(BRANCH_HISTORY_REG_SZ)
 `define BRANCH_TARGET_BUFFER_SIZE 256
 
@@ -110,12 +113,14 @@ typedef logic [$clog2(`PHYS_REG_SZ_R10K)-1:0] PHYS_REG_IDX;
 `define NUM_MEM_TAGS 15
 typedef logic [3:0] MEM_TAG;
 
-// icache definitions
+// icache 
 `define ICACHE_LINES 32
 `define ICACHE_LINE_BITS $clog2(`ICACHE_LINES)
 
 `define DCACHE_LINES 32
 `define DCACHE_LINE_BITS $clog2(`DCACHE_LINES)
+// Number of blocks to prefetch (not instructions - )
+`define PREFETCH_DISTANCE 4
 
 `define MEM_SIZE_IN_BYTES (64*1024)
 `define MEM_64BIT_LINES   (`MEM_SIZE_IN_BYTES/8)
@@ -146,6 +151,7 @@ typedef enum logic [1:0] {
 typedef struct packed {
     logic [12-`ICACHE_LINE_BITS:0] tags;
     logic                          valid;
+    logic                          alloc;
 } ICACHE_TAG;
 
 typedef struct packed {
@@ -406,6 +412,7 @@ typedef struct packed {
     INST  inst;
     ADDR  PC;
     ADDR  NPC; // PC + 4
+    logic [`BRANCH_HISTORY_REG_SZ-1:0] bhr;
     logic valid;
     logic pred_taken;
 } INST_PACKET;
@@ -419,6 +426,7 @@ typedef struct packed {
     INST inst;
     ADDR PC;
     ADDR NPC; // PC + 4
+    logic [`BRANCH_HISTORY_REG_SZ-1:0] bhr;
 
     FU_TYPE fu_type;
     REG_IDX reg1;
