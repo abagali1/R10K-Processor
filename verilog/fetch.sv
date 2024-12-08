@@ -1,5 +1,4 @@
 `include "sys_defs.svh"
-`include "icache.sv"
 //import "DPI-C" function string decode_inst(int inst);
 //`include "icache.sv"
 

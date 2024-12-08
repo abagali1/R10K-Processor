@@ -210,6 +210,11 @@ MODULES = cpu mult rob rs freelist map_table cdb inst_buffer dispatch br_stack a
 # TODO: update this if you add more header files
 ALL_HEADERS = $(CPU_HEADERS)
 
+FETCH_FILES = verilog/sys_defs.svh verilog/icache.sv verilog/memDP.sv
+build/fetch.simv: $(DISP_FILES)
+build/fetch.cov: $(DISP_FILES)
+synth/fetch.vg: $(DISP_FILES)
+
 # TODO: add extra source file dependencies below
 DISP_FILES = verilog/sys_defs.svh verilog/decoder.sv verilog/decode.sv
 build/dispatch.simv: $(DISP_FILES)
