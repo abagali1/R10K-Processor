@@ -124,7 +124,7 @@ SHELL := $(SHELL) -o pipefail
 # https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Options.html
 CFLAGS     = -mno-relax -march=rv32im -mabi=ilp32 -nostartfiles -std=gnu11 -mstrict-align -mno-div
 # adjust the optimization if you want programs to run faster; this may obfuscate/change their instructions
-OFLAGS     = -O3
+OFLAGS     = -O
 ASFLAGS    = -mno-relax -march=rv32im -mabi=ilp32 -nostartfiles -Wno-main -mstrict-align
 OBJFLAGS   = -SD -M no-aliases
 OBJCFLAGS  = --set-section-flags .bss=contents,alloc,readonly
@@ -656,6 +656,9 @@ clean_output:
 clean_programs:
 	@$(call PRINT_COLOR, 3, removing program memory files)
 	rm -rf programs/*.mem
+	@$(call PRINT_COLOR, 3, removing program memory files)
+	rm -rf programs/mem/*.mem
+	rm -rf programs/mem/*.elf
 	@$(call PRINT_COLOR, 3, removing dump files)
 	rm -rf programs/*.dump*
 
