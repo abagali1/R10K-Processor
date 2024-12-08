@@ -1,39 +1,99 @@
-declare -a TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
+#!/bin/bash
 
-function cleanup() {
-    sed -i "24s/.*/\`define DEBUG 1/" verilog/sys_defs.svh
-    exit 1
-}
+# Define the assembly tests array
+declare -a ASM_TESTS=(mult_no_lsq btest1 btest2 no_hazard basic_load basic_store simple_store fib simp_branch simp_mult simple evens_long evens haha halt parallel copy_long copy fib_long sampler saxpy insertion fib_rec)
 
-trap cleanup SIGINT
-trap cleanup SIGQUIT
+# Define the C tests array based on the files shown with "C" icon
+declare -a C_TESTS=(alexnet backtrack basic_malloc bfs dft fc_forward graph insertionsort matrix_mult_rec mergesort omegalul outer_product priority_queue quicksort sort_search)
+# declare -a C_TESTS=(backtrack basic_malloc bfs dft graph insertionsort matrix_mult_rec mergesort omegalul priority_queue quicksort sort_search)
+
+# Define optimization flags array
+declare -a OPT_FLAGS=("O0" "O" "O2" "O3" "Os")
+
+# Default to assembly tests
+TESTS=("${ASM_TESTS[@]}")
+flag=0
+
+# Parse command line arguments
+while getopts "c" opt; do
+    case $opt in
+        c)
+            TESTS=("${C_TESTS[@]}")
+            flag=1
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
+done
 
 failed_test=0
-start_n=$1
-end_n=$2
 sed -i "24s/.*/\/\/\`define DEBUG 1/" verilog/sys_defs.svh
-for i in $(seq ${start_n:=1} ${end_n:=6}); do
-    sed -i "31s/.*/\`define N $i/" verilog/sys_defs.svh
-    make nuke > /dev/null
-    make cpu.out > /dev/null
-    for test in "${TESTS[@]}"; do
-        echo -n "$test (N=$i)"
-        make $test.out > /dev/null
-        diff output/$test.wb correct_out/$test.wb > /dev/null 2>&1
-        wb_status=$?
-        diff <(grep "@@@" output/$test.out) <(grep "@@@" correct_out/$test.out) > /dev/null 2>&1
-        out_status=$?
-
-        if [ $wb_status -ne 0 ] || [ $out_status -ne 0 ]
-        then
-            echo -e " - \033[0;31mFailed WB: $wb_status MEM: $out_status\033[0m"
-            failed_test=1
-        else
-            echo -e " - \033[0;32mPassed\033[0m"
-        fi
-    done
+# Only run optimization tests if -c flag was specified
+if [[ flag != 0 ]]; then
+    echo "Testing C files with different optimization flags..."
     echo "=========="
-done
+    
+    for opt_flag in "${OPT_FLAGS[@]}"; do
+        echo "Testing with -$opt_flag"
+        # Replace the optimization flag in the Makefile
+        sed -i "127s/OFLAGS     = .*/OFLAGS     = -$opt_flag/" Makefile
+        
+        for i in $(seq 1 6); do
+            echo "N=$i with -$opt_flag"
+            sed -i "31s/.*/\`define N $i/" verilog/sys_defs.svh
+            make nuke > /dev/null
+            make cpu.out > /dev/null
+            
+            for test in "${C_TESTS[@]}"; do
+                echo -n "$test (N=$i, -$opt_flag)"
+                make $test.out > /dev/null
+                diff output/$test.wb correct_out/$opt_flag/$test.wb > /dev/null 2>&1
+                wb_status=$?
+                diff <(grep "@@@" output/$test.out) <(grep "@@@" correct_out/$opt_flag/$test.out) > /dev/null 2>&1
+                out_status=$?
+
+                if [ $wb_status -ne 0 ] || [ $out_status -ne 0 ]
+                then
+                    echo -e " - \033[0;31mFailed WB: $wb_status MEM: $out_status\033[0m"
+                    failed_test=1
+                    mkdir -p failed_tests/$i/$opt_flag
+                    cp output/$test.* failed_tests/$i/$opt_flag 
+                else
+                    echo -e " - \033[0;32mPassed\033[0m"
+                fi
+                echo ""
+            done
+            echo "----------"
+        done
+        echo "=========="
+    done
+else
+    for i in $(seq 1 6); do
+        sed -i "31s/.*/\`define N $i/" verilog/sys_defs.svh
+        make nuke > /dev/null
+        make cpu.out > /dev/null
+        for test in "${TESTS[@]}"; do
+            echo -n "$test (N=$i)"
+            make $test.out > /dev/null
+            diff output/$test.wb correct_out/$test.wb > /dev/null 2>&1
+            wb_status=$?
+            diff <(grep "@@@" output/$test.out) <(grep "@@@" correct_out/$test.out) > /dev/null 2>&1
+            out_status=$?
+
+            if [ $wb_status -ne 0 ] || [ $out_status -ne 0 ]
+            then
+                echo -e " - \033[0;31mFailed WB: $wb_status MEM: $out_status\033[0m"
+                failed_test=1
+            else
+                echo -e " - \033[0;32mPassed\033[0m"
+            fi
+            echo ""
+        done
+        echo "=========="
+    done
+fi
 sed -i "24s/.*/\`define DEBUG 1/" verilog/sys_defs.svh
 
 if [ $failed_test -ne 1 ];
