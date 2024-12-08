@@ -30,6 +30,9 @@ module cdb #(
     input logic         [NUM_FU-1:0]                    fu_done,
     input FU_PACKET     [NUM_FU-1:0]                    wr_data,
 
+    input BR_TASK                                       rem_br_task,
+    input BR_MASK                                       rem_b_id,
+
     output CDB_PACKET   [N-1:0]                         entries,
     output logic        [NUM_FU-1:0]                    stall_sig
 
@@ -41,6 +44,7 @@ module cdb #(
 
     logic [NUM_FU-1:0] cdb_gnt;
     logic [N-1:0][NUM_FU-1:0] cdb_gnt_bus;
+    CDB_PACKET [N-1:0] next_entries;
 
     assign stall_sig = cdb_gnt ^ fu_done;
 
@@ -54,6 +58,7 @@ module cdb #(
         .empty()
     );
 
+    FU_PACKET [N-1:0] out_entries;
     wor FU_PACKET [N-1:0] selected_packets; // need a little more explanation on this
 
     generate
@@ -66,18 +71,45 @@ module cdb #(
     endgenerate
 
     always_comb begin
-        entries = '0;
-        for (int i = 0; i < N; i++) begin
-            entries[i].reg_idx = selected_packets[i].decoded_vals.decoded_vals.dest_reg_idx;
-            entries[i].p_reg_idx = selected_packets[i].decoded_vals.t.reg_idx;
-            entries[i].reg_val = selected_packets[i].result;
-            entries[i].valid = selected_packets[i].decoded_vals.decoded_vals.valid;
+        next_entries = '0;
+        out_entries = selected_packets;
+
+        // Branch clear or branch squash
+        if (rem_br_task == SQUASH) begin
+            for (int i = 0; i < NUM_FU; i++) begin
+                if (out_entries[i].decoded_vals.b_id != rem_b_id && out_entries[i].decoded_vals.b_mask & rem_b_id) begin
+                    out_entries[i] = '0;
+                end
+            end
+        end 
+
+        if (rem_br_task == CLEAR) begin
+            for (int i = 0; i < NUM_FU; i++) begin
+                if (out_entries[i].decoded_vals.b_mask & rem_b_id) begin
+                    out_entries[i].decoded_vals.b_mask &= ~rem_b_id;
+                end
+            end
         end
 
-         `ifdef DEBUG
+        for (int i = 0; i < N; i++) begin
+            next_entries[i].reg_idx = out_entries[i].decoded_vals.decoded_vals.dest_reg_idx;
+            next_entries[i].p_reg_idx = out_entries[i].decoded_vals.t.reg_idx;
+            next_entries[i].reg_val = out_entries[i].result;
+            next_entries[i].valid = out_entries[i].decoded_vals.decoded_vals.valid;
+        end
+
+        `ifdef DEBUG
             debug_cdb_gnt = cdb_gnt;
             debug_cdb_gnt_bus = cdb_gnt_bus;
         `endif
+    end
+
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            entries <= '0;
+        end else begin
+            entries <= next_entries;
+        end
     end
 
     `ifdef DEBUG
