@@ -13,6 +13,7 @@ module rob #(
     input                                                               reset,
 
     input DECODED_PACKET                        [N-1:0]                 wr_data,
+    input logic                                                         complete_taken,
     input PHYS_REG_IDX                          [N-1:0]                 t,
     input PHYS_REG_IDX                          [N-1:0]                 t_old,
 
@@ -97,6 +98,9 @@ module rob #(
                 if(entries[k].t == complete_t[j]) begin
                     next_entries[k].complete = '1;
                     next_entries[k].data = cdb_wr_data[j];
+                    if (j == 0) begin
+                        next_entries[k].taken = complete_taken;
+                    end
                 end
             end
             for(int i=0;i<`SQ_SZ;i++) begin
@@ -132,6 +136,10 @@ module rob #(
                 next_entries[(tail+j) % DEPTH].t_old = (wr_data[j].dest_reg_idx == '0) ? t[j] : t_old[j];
 
                 next_entries[(tail+j) % DEPTH].wr_mem = wr_data[j].wr_mem;
+
+                next_entries[(tail+j) % DEPTH].is_branch = wr_data[j].cond_branch | wr_data[j].uncond_branch;
+                next_entries[(tail+j) % DEPTH].taken = wr_data[j].taken;
+                next_entries[(tail+j) % DEPTH].pred_taken = wr_data[j].pred_taken;
 
                 `ifdef DEBUG
                     next_entries[(tail+j) % DEPTH].data = '0;
