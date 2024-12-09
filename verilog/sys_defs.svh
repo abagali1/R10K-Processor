@@ -36,13 +36,13 @@
 
 // sizes
 `define ROB_SZ 32
-`define RS_SZ 32
+`define RS_SZ 16
 `define ARCH_REG_SZ 32
 `define PHYS_REG_SZ_P6 32
 `define PHYS_REG_SZ_R10K (32 + `ROB_SZ)
 
 // sizes: these are directly correlated
-`define BRANCH_HISTORY_REG_SZ 16
+`define BRANCH_HISTORY_REG_SZ 4
 `define BRANCH_HISTORY_TABLE_SIZE 64 // 2^(BRANCH_HISTORY_REG_SZ)
 `define BRANCH_TARGET_BUFFER_SIZE 64
 
