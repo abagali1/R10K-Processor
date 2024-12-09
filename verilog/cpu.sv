@@ -570,6 +570,7 @@ module cpu (
         .reset(reset),
 
         .wr_data(dis_insts),
+        .complete_taken(br_taken),
         .t(dis_free_reg),
         .t_old(t_old_data),
 
@@ -602,6 +603,7 @@ module cpu (
 
         .fu_done({br_done, ld_done, mult_done, alu_done}),
         .wr_data({br_fu_out, ld_fu_out, mult_fu_out, alu_fu_out}),
+        .taken(br_taken),
 
         .rem_br_task(br_task),
         .rem_b_id(br_fu_out.decoded_vals.b_id),

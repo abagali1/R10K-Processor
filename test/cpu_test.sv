@@ -62,9 +62,7 @@ module testbench;
     ADDR                    NPC;
 
     `ifdef ANALYTICS_EN
-        int             num_branches, num_branches_correct;
-        logic           pred_valid;  
-        logic           pred_correct;  
+        int             num_branches, num_branches_correct; 
     `endif
 
     COMMIT_PACKET [`N-1:0] committed_insts;
@@ -413,6 +411,8 @@ module testbench;
             // Count the number of cycles and number of instructions committed
             clock_count = 0;
             instr_count = 0;
+            num_branches = 0;
+            num_branches_correct = 0;
         end else begin
             #2; // wait a short time to avoid a clock edge
             clock_count = clock_count + 1;
@@ -423,14 +423,17 @@ module testbench;
             //if(clock_count > 15000) begin
                 dump_state();
             //end
-
-            if (pred_valid) begin
-                num_branches++;
-                if (pred_correct) begin
-                    num_branches_correct++;
+            for (int n = 0; n < `N; n++) begin
+                if (retired_insts[n].is_branch) begin
+                    num_branches++;
+                    if (retired_insts[n].pred_taken == retired_insts[n].taken) begin
+                        num_branches_correct++;
+                        $display("PREDICTED CORRECTLY BRANCH %h", retired_insts[n].PC);
+                    end else begin
+                        $display("MISPREDICTED BRANCH %h", retired_insts[n].PC);
+                    end
                 end
             end
-
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count - 1);
@@ -578,6 +581,9 @@ module testbench;
     task show_final_mem_and_status;
         input EXCEPTION_CODE final_status;
         int showing_data;
+        begin
+            $fdisplay(wbt_fileno, "Final branch prediction accuracy:\n");
+        end
         begin
             $fdisplay(out_fileno, "\nFinal memory state and exit status:\n");
             $fdisplay(out_fileno, "@@@ Unified Memory contents hex on left, decimal on right: ");

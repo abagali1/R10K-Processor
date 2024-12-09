@@ -359,6 +359,7 @@ typedef struct packed {
     REG_IDX reg_idx;
     PHYS_REG_IDX p_reg_idx;
     DATA reg_val;
+    logic taken;
     logic valid;
 } CDB_PACKET;
 
@@ -447,6 +448,7 @@ typedef struct packed {
     logic    halt;          // Is this a halt?
     logic    illegal;       // Is this instruction illegal?
     logic    csr_op;        // Is this a CSR operation? (we only used this as a cheap way to get return code)
+    logic    taken;
     logic    pred_taken;
 
     logic [$clog2(`SQ_SZ)-1:0] sq_tail;
@@ -558,6 +560,9 @@ typedef struct packed {
     PHYS_REG_IDX    t_old; // look up t_old in arch map table to get arch reg and update to t on retire
     logic           complete;
     logic           valid;
+    logic           is_branch;
+    logic           taken;
+    logic           pred_taken;
 
     logic           wr_mem;
     DATA            data;

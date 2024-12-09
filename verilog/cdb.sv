@@ -29,6 +29,7 @@ module cdb #(
 
     input logic         [NUM_FU-1:0]                    fu_done,
     input FU_PACKET     [NUM_FU-1:0]                    wr_data,
+    input logic                                         taken,
 
     input BR_TASK                                       rem_br_task,
     input BR_MASK                                       rem_b_id,
@@ -97,6 +98,8 @@ module cdb #(
             next_entries[i].reg_val = out_entries[i].result;
             next_entries[i].valid = out_entries[i].decoded_vals.decoded_vals.valid;
         end
+
+        next_entries[0].taken = taken;
 
         `ifdef DEBUG
             debug_cdb_gnt = cdb_gnt;
