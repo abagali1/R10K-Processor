@@ -292,12 +292,9 @@ module cpu (
     logic       mshr2cache_is_store;
     logic       mshr2cache_wr;
     logic       mshr_stall;
+    logic       mshr_squash;
     logic       valid_mem_inst;
 
-
-    // hardcoded values
-    logic dm_stalled;
-    assign dm_stalled = '0;
 
     `ifdef DEBUG
         assign debug_bhr = out_bhr;
@@ -785,6 +782,7 @@ module cpu (
         .cdb_stall(cdb_stall_sig[`NUM_FU_ALU+`NUM_FU_MULT+`LD_SZ-1:`NUM_FU_ALU+`NUM_FU_MULT]),
         .full(ld_full),
 
+        .dm_squash(mshr_squash),
         .start_load(start_load),
         .Dmem_addr(Dmem_ld_addr),
 
@@ -857,6 +855,7 @@ module cpu (
         .in_data(Dmem_store_data),
         .st_size(Dmem_size),
         .is_store(start_store),
+        .mshr_squash(mshr_squash),
 
         // From Dcache
         .Dcache_hit(Dcache_hit_out),

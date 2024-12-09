@@ -21,14 +21,14 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 
-// `define DEBUG 1
+//`define DEBUG 1
 // `define DEBUG_ROB '1
 // `define DEBUG_MT '1
 // `define DEBUG_FL '1
 // `define DEBUG_RS '1
 
 // superscalar width
-`define N 3
+`define N 5
 `define CDB_SZ `N // This MUST match your superscalar width
 
 `define PREDICTOR_EN 1

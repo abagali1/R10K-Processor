@@ -26,7 +26,8 @@ module load_fu #(
     input logic                         [DEPTH-1:0]                 cdb_stall,
 
     output logic                                                    full,
-
+ 
+    output logic                                                    dm_squash,
     output logic                                                    start_load,
     output ADDR                                                     Dmem_addr,
 
@@ -118,6 +119,7 @@ module load_fu #(
 
         start_load = '0;
         Dmem_addr = '0;
+        dm_squash = '0;
 
         fu_pack = '0;
         data_ready = '0;
@@ -150,6 +152,8 @@ module load_fu #(
                     next_entries[i] = '0;
 
                     squashed_spots[i] = '1;
+
+                    dm_squash = next_entries[i].ld_state == WAITING_FOR_DATA;
 
                     next_open_spots[i] = '1;
                     next_ready_spots[i] = '0;
