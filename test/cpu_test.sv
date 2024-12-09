@@ -411,8 +411,10 @@ module testbench;
             // Count the number of cycles and number of instructions committed
             clock_count = 0;
             instr_count = 0;
-            num_branches = 0;
-            num_branches_correct = 0;
+            `ifdef ANALYTICS_EN
+                num_branches = 0;
+                num_branches_correct = 0;
+            `endif
         end else begin
             #2; // wait a short time to avoid a clock edge
             clock_count = clock_count + 1;
@@ -423,17 +425,19 @@ module testbench;
             //if(clock_count > 15000) begin
                 dump_state();
             //end
-            for (int n = 0; n < `N; n++) begin
-                if (retired_insts[n].is_branch) begin
-                    num_branches++;
-                    if (retired_insts[n].pred_taken == retired_insts[n].taken) begin
-                        num_branches_correct++;
-                        $display("PREDICTED CORRECTLY BRANCH %h", retired_insts[n].PC);
-                    end else begin
-                        $display("MISPREDICTED BRANCH %h", retired_insts[n].PC);
+            `ifdef ANALYTICS_EN
+                for (int n = 0; n < `N; n++) begin
+                    if (retired_insts[n].is_branch) begin
+                        num_branches++;
+                        if (retired_insts[n].pred_taken == retired_insts[n].taken) begin
+                            num_branches_correct++;
+                            $display("PREDICTED CORRECTLY BRANCH %h", retired_insts[n].PC);
+                        end else begin
+                            $display("MISPREDICTED BRANCH %h", retired_insts[n].PC);
+                        end
                     end
                 end
-            end
+            `endif
 
             // print the pipeline debug outputs via c code to the pipeline output file
             // print_cycles(clock_count - 1);
@@ -572,7 +576,9 @@ module testbench;
     endtask // task output_cpi_file
 
     task output_analytics;
-        $fdisplay(wbt_fileno, "\nFinal Branch Prediction Accuracy: %0d / %0d\n", num_branches_correct, num_branches);
+        `ifdef ANALYTICS_EN
+            $fdisplay(wbt_fileno, "\nFinal Branch Prediction Accuracy: %0d / %0d\n", num_branches_correct, num_branches);
+        `endif
     endtask
 
 
