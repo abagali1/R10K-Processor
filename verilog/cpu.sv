@@ -155,6 +155,11 @@ module cpu (
     //                                              //
     //////////////////////////////////////////////////
 
+
+    // output of fetch?
+    logic fetch_bhr_wr_en;
+    logic fetch_bhr_wr_taken;
+
     // output of bhr
     logic [`BRANCH_HISTORY_REG_SZ-1:0] out_bhr;
 
@@ -349,8 +354,12 @@ module cpu (
         .clock(clock),
         .reset(reset),
 
-        .wr_en(br_done),
-        .taken(br_taken),
+        .wr_en(fetch_bhr_wr_en),
+        .taken(fetch_bhr_wr_taken),
+
+        .br_task(br_task),
+        .br_checkpoint_bhr(cp_out.bhr),
+        .br_pred_taken(cp_out.pred_taken),
 
         .out_bhr(out_bhr)
     );
@@ -370,7 +379,7 @@ module cpu (
 
         .rd_bhr(out_bhr),
 
-        .pred_wr_en(br_task != NOTHING),
+        .pred_wr_en(br_task == SQUASH & br_taken),
         .pred_wr_taken(br_taken),
         .pred_wr_target(br_fu_out.target_addr),
         .pred_wr_pc(br_fu_out.decoded_vals.decoded_vals.PC),
@@ -378,6 +387,10 @@ module cpu (
 
         .mem_en(fetch_mem_en),
         .mem_addr_out(fetch_proc2mem_addr),
+
+        .bhr_wr_en(fetch_bhr_wr_en),
+        .bhr_wr_taken(fetch_bhr_wr_taken),
+
         .out_insts(in_insts),
         .out_num_insts(num_input),
         .NPC_out(NPC)

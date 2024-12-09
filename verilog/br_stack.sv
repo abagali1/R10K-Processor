@@ -114,6 +114,9 @@ module br_stack #(
                     next_entries[k].fl_head = in_fl_head;
                     next_entries[k].rob_tail = in_rob_tail;
                     next_entries[k].sq_tail = in_sq_tail;
+                    next_entries[k].bhr = dis_inst.bhr;
+                    next_entries[k].pred_taken = dis_inst.pred_taken;
+
 
                     if (dis_inst.uncond_branch & dis_inst.dest_reg_idx != '0) begin
                         next_entries[k].rec_mt[dis_inst.dest_reg_idx].reg_idx = branch_t;

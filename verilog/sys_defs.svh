@@ -374,6 +374,8 @@ typedef struct packed {
     logic [$clog2(`ROB_SZ+1)-1:0] fl_head;
     logic [$clog2(`ROB_SZ)-1:0] rob_tail;
     logic [$clog2(`SQ_SZ)-1:0] sq_tail;
+    logic [`BRANCH_HISTORY_REG_SZ-1:0] bhr;
+    logic pred_taken;
 } CHECKPOINT;
 
 typedef enum logic [1:0] { 
