@@ -33,18 +33,18 @@ failed_test=0
 if [[ flag != 0 ]]; then
     echo "Testing C files with different optimization flags..."
     echo "=========="
-    
+
     for opt_flag in "${OPT_FLAGS[@]}"; do
         echo "Testing with -$opt_flag"
         # Replace the optimization flag in the Makefile
         sed -i "127s/OFLAGS     = .*/OFLAGS     = -$opt_flag/" Makefile
-        
+
         for i in $(seq 1 6); do
             echo "N=$i with -$opt_flag"
             sed -i "31s/.*/\`define N $i/" verilog/sys_defs.svh
             make nuke > /dev/null
             make cpu.out > /dev/null
-            
+
             for test in "${C_TESTS[@]}"; do
                 echo -n "$test (N=$i, -$opt_flag)"
                 make $test.out > /dev/null

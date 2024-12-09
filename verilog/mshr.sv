@@ -9,6 +9,7 @@ module mshr (
     input   DATA        in_data,
     input   MEM_SIZE    st_size,
     input   logic       is_store,
+    input   logic       mshr_squash,
 
     // From Dcache
     input   logic       Dcache_hit,
@@ -85,7 +86,6 @@ module mshr (
         proc2mem_command = MEM_NONE;
         mshr2cache_wr = 0;
 
-        
 
         if (valid && mshr.state == NONE) begin
             if (Dcache_hit && is_store) begin
@@ -120,6 +120,9 @@ module mshr (
                 mshr2cache_is_store = mshr.is_store;
                 mshr2cache_data = mshr.data;
             end
+        end
+        if(mshr_squash) begin
+            next_mshr = '0;
         end
 
         `ifdef DEBUG
