@@ -23,10 +23,13 @@ module predictor #(
     input logic     [BHR_DEPTH-1:0]         wr_bhr, // branch history register of this instruction when predicted
 
     output logic    [PREFETCH_INSTS-1:0] pred_taken, // true if predictor predicts branch is taken
+    output logic    [PREFETCH_INSTS-1:0] pred_is_branch,
     output ADDR     [PREFETCH_INSTS-1:0] pred_target // predicted target address
 );
     logic [PREFETCH_INSTS-1:0]   is_branch;
     ADDR  [PREFETCH_INSTS-1:0]   rd_pcs;
+
+    assign pred_is_branch = is_branch;
 
     logic [PREFETCH_INSTS-1:0]   [BHR_DEPTH-1:0] rd_index;
     logic [BHR_DEPTH-1:0] wr_index;

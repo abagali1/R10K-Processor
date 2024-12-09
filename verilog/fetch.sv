@@ -36,6 +36,9 @@ module fetch #(
     output ADDR                     mem_addr_out,   // address we want to read from memory
     //output MEM_COMMAND              mem_command,
 
+    output logic                    bhr_wr_en,
+    output logic                    bhr_wr_taken,
+
     output INST_PACKET  [3:0]       out_insts, // hardcoded to 4
     output logic        [2:0]       out_num_insts, // need 3 bits to represent 4
     output ADDR                     NPC_out
@@ -93,6 +96,7 @@ module fetch #(
 
     // PREDICTOR THINGS
     logic    [PREFETCH_INSTS-1:0] pred_taken; // true if predictor predicts branch is taken
+    logic    [PREFETCH_INSTS-1:0] pred_is_branch;
     ADDR     [PREFETCH_INSTS-1:0] pred_target; // predicted target address
 
     //ADDR mem_addr;
@@ -203,6 +207,8 @@ module fetch #(
         next_num_insts = '0;
         next_out_insts = '0;
         next_cache_target = NPC;
+        bhr_wr_en = '0;
+        bhr_wr_taken = '0;
         
         //$write("ICACHE VALID: %b", icache_valid);
         // Changed this to three to handle this case
@@ -273,11 +279,20 @@ module fetch #(
                     next_out_insts[i].PC = current[i];
                     next_out_insts[i].NPC = current[i+1];
                     next_out_insts[i].pred_taken = 1'b0; // TODO branch prediction
-                    next_out_insts[i].bhr = '0;
+                    next_out_insts[i].bhr = rd_bhr;
+
+                    if (pred_is_branch[i]) begin
+                        bhr_wr_en = 1;
+                        bhr_wr_taken = 0;
+                    end
 
                     `ifdef PREDICTOR_EN
                         next_out_insts[i].pred_taken = pred_taken[i]; //TODO
                         next_out_insts[i].bhr = rd_bhr;
+                        if (pred_is_branch[i]) begin
+                            bhr_wr_en = 1;
+                            bhr_wr_taken = pred_taken[i];
+                        end
                     `endif
 
                     next_cache_target = current[i+1];
@@ -400,6 +415,7 @@ module fetch #(
         .wr_bhr(pred_wr_bhr),
 
         .pred_taken(pred_taken),
+        .pred_is_branch(pred_is_branch),
         .pred_target(pred_target)
     );
     

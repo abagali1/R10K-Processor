@@ -11,12 +11,23 @@ module bhr #(
     input logic                     wr_en,
     input logic                     taken,
 
+    input BR_TASK                   br_task,
+    input logic [`BRANCH_HISTORY_REG_SZ-1:0] br_checkpoint_bhr,
+    input logic                     br_pred_taken,
+
     output logic    [DEPTH-1:0]     out_bhr
 );
     logic [DEPTH-1:0] state, next_state;
-    assign out_bhr = state;
+    logic [DEPTH-1:0] br_state;
 
-    assign next_state = wr_en ? {state[DEPTH-2:0], taken}: state;
+    assign br_state = {br_checkpoint_bhr[DEPTH-2:0], ~br_pred_taken};
+
+    assign out_bhr = br_task == SQUASH ? br_state : state;
+
+    always_comb begin
+        next_state = br_task == SQUASH ? br_state : state;
+        next_state = wr_en ? {next_state[DEPTH-2:0], taken}: next_state;
+    end
 
     always_ff @(posedge clock) begin
         if (reset) begin

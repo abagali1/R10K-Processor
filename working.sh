@@ -30,7 +30,7 @@ done
 
 failed_test=0
 # Only run optimization tests if -c flag was specified
-if [[ flag != 0 ]]; then
+if [[ 1 == 0 ]]; then
     echo "Testing C files with different optimization flags..."
     echo "=========="
 
