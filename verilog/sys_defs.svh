@@ -50,7 +50,7 @@
 `define BRANCH_PRED_SZ 4
 `define LSQ_SZ xx
 `define SQ_SZ 32
-`define LD_SZ 1
+`define LD_SZ 8
 `define INST_BUFF_DEPTH 8
 
 // functional units (you should decide if you want more or fewer types of FUs)
