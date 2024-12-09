@@ -17,6 +17,9 @@ module load_fu #(
     input ADDR                                                      Dmem_base_addr,
     input MEM_BLOCK                                                 Dmem_load_data,
 
+    input logic                                                     mshr2cache_wr,
+    input logic                                                     Dcache_hit,
+
     input BR_TASK                                                   rem_br_task,
     input BR_MASK                                                   rem_b_id,
 
@@ -48,6 +51,7 @@ module load_fu #(
 
     FU_PACKET [DEPTH-1:0] entries, next_entries;
     logic [DEPTH-1:0] open_spots, next_open_spots;
+    logic [DEPTH-1:0] query_spots, next_query_spots;
     logic [DEPTH-1:0] ready_spots, next_ready_spots;
     logic [DEPTH-1:0] data_ready_spots, next_data_ready_spots;
     logic [DEPTH-1:0] squashed_spots;
@@ -67,6 +71,19 @@ module load_fu #(
     ) allocator(
         .req(open_spots),
         .gnt(alloc_spot),
+        .gnt_bus(),
+        .empty()
+    );
+
+    // psel to start transaction
+    logic [DEPTH-1:0] query_req, query_entry;
+    assign query_req = query_spots & ~squashed_spots;
+    psel_gen #(
+        .WIDTH(DEPTH),
+        .REQS(1)
+    ) queryier(
+        .req(query_req),
+        .gnt(query_entry),
         .gnt_bus(),
         .empty()
     );
@@ -112,6 +129,7 @@ module load_fu #(
     always_comb begin
         next_entries = entries;
         next_open_spots = open_spots;
+        next_query_spots = query_spots;
         next_ready_spots = ready_spots;
         next_data_ready_spots = data_ready_spots;
 
@@ -131,17 +149,20 @@ module load_fu #(
                     decoded_vals: is_pack.decoded_vals,
                     target_addr: {16'b0, addr_result[15:0]},
                     result: 0,
-                    ld_state: READY_TO_ISSUE,
+                    ld_state: READY_TO_QUERY,
                     rs2_value: is_pack.rs2_value,
                     pred_correct: 0
                 };
                 next_open_spots[i] = '0;
 
                 if(is_pack.decoded_vals.decoded_vals.dest_reg_idx == 0) begin
+                    next_entries[i].ld_state = DATA_READY;
+                    next_query_spots[i] = '0;
                     next_ready_spots[i] = '0;
                     next_data_ready_spots[i] = '1;
                 end else begin
-                    next_ready_spots[i] = '1;
+                    next_query_spots[i] = '1;
+                    next_ready_spots[i] = '0;
                     next_data_ready_spots[i] = '0;
                 end
             end
@@ -156,6 +177,7 @@ module load_fu #(
                     dm_squash = next_entries[i].ld_state == WAITING_FOR_DATA;
 
                     next_open_spots[i] = '1;
+                    next_query_spots[i] = '0;
                     next_ready_spots[i] = '0;
                     next_data_ready_spots[i] = '0;
                 end
@@ -173,12 +195,25 @@ module load_fu #(
                 next_entries[i].ld_state = WAITING_FOR_DATA;
 
                 next_open_spots[i] = '0;
+                next_query_spots[i] = '0;
                 next_ready_spots[i] = '0;
                 next_data_ready_spots[i] = '0;
             end
 
+            if(!start_store && !mshr2cache_wr && query_entry[i]) begin
+                next_entries[i].ld_state = READY_TO_ISSUE;
+                next_open_spots[i] = '0;
+                next_query_spots[i] = '0;
+                next_ready_spots[i] = '1;
+                next_data_ready_spots[i] = '0;
+
+                if(dm_stalled) begin
+                    Dmem_addr = {next_entries[i].target_addr[31:3], 3'b0};
+                end
+            end
+
             // Memory transaction completed
-            if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3] && next_entries[i].ld_state == WAITING_FOR_DATA) begin
+            if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3] && (next_entries[i].ld_state == READY_TO_ISSUE  || next_entries[i].ld_state == READY_TO_QUERY || next_entries[i].ld_state == WAITING_FOR_DATA)) begin
                 // aligned result
                 case(MEM_SIZE'(next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[1:0]))
                     BYTE: begin
@@ -229,11 +264,13 @@ module load_fu #(
         if(reset) begin
             entries <= '0;
             open_spots <= '1;
+            query_spots <= '0;
             ready_spots <= '0;
             data_ready_spots <= '0;
         end else begin
             entries <= next_entries;
             open_spots <= next_open_spots;
+            query_spots <= next_query_spots;
             ready_spots <= next_ready_spots;
             data_ready_spots <= next_data_ready_spots;
         end

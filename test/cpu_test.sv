@@ -453,7 +453,7 @@ module testbench;
 
             //     block = unified_memory[current[31:3]];
             //     in_insts[i].inst = block.word_level[current[2]];
-                
+
             //     if (in_insts[i].inst) begin
             //         in_insts[i].valid = 1;
             //         in_insts[i].PC = current;

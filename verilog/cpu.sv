@@ -788,6 +788,9 @@ module cpu (
         .Dmem_base_addr(Dcache_addr_out),
         .Dmem_load_data(Dcache_data_out),
 
+        .Dcache_hit(Dcache_hit_out),
+        .mshr2cache_wr(mshr2cache_wr),
+
         .rem_br_task(br_task),
         .rem_b_id(br_fu_out.decoded_vals.b_id),
 
