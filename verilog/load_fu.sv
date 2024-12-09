@@ -174,7 +174,7 @@ module load_fu #(
             end
 
             // Memory transaction completed
-            if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3]) begin
+            if(Dmem_data_ready && Dmem_base_addr[15:3] == next_entries[i].target_addr[15:3] && next_entries[i].ld_state == WAITING_FOR_DATA) begin
                 // aligned result
                 case(MEM_SIZE'(next_entries[i].decoded_vals.decoded_vals.inst.r.funct3[1:0]))
                     BYTE: begin
