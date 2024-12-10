@@ -21,7 +21,7 @@
 // this is *your* processor, you decide these values (try analyzing which is best!)
 
 
-// `define DEBUG 1
+//`define DEBUG 1
 // `define DEBUG_ROB '1
 // `define DEBUG_MT '1
 // `define DEBUG_FL '1
@@ -49,7 +49,7 @@
 // worry about these later
 `define BRANCH_PRED_SZ 4
 `define LSQ_SZ xx
-`define SQ_SZ 32
+`define SQ_SZ 16
 `define LD_SZ 8
 `define INST_BUFF_DEPTH 8
 
