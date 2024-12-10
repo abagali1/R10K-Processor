@@ -567,10 +567,10 @@ module testbench;
         begin
             cpi = $itor(clock_count) / instr_count; // must convert int to real
             cpi_fileno = $fopen(cpi_outfile);
-            $fdisplay(cpi_fileno, "@@@  %0d cycles / %0d instrs = %f CPI",
-                      clock_count, instr_count, cpi);
-            $fdisplay(cpi_fileno, "@@@  %4.2f ns total time to execute",
-                      clock_count * `CLOCK_PERIOD);
+            $fdisplay(cpi_fileno, "Cycles: %0d", clock_count);
+            $fdisplay(cpi_fileno, "Insts: %0d", instr_count);
+            $fdisplay(cpi_fileno, "CPI: %f", cpi);
+            $fdisplay(cpi_fileno, "Time %4.2f", clock_count * `CLOCK_PERIOD);
             $fclose(cpi_fileno);
         end
     endtask // task output_cpi_file
