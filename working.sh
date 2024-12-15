@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the C tests array based on the files shown with "C" icon
-# declare -a C_TESTS=(alexnet backtrack basic_malloc bfs dft fc_forward graph insertionsort matrix_mult_rec mergesort omegalul outer_product priority_queue quicksort sort_search)
-declare -a C_TESTS=(backtrack basic_malloc bfs dft graph insertionsort matrix_mult_rec mergesort omegalul priority_queue quicksort sort_search)
+declare -a C_TESTS=(alexnet backtrack basic_malloc bfs dft fc_forward graph insertionsort matrix_mult_rec mergesort omegalul outer_product priority_queue quicksort sort_search)
+# declare -a C_TESTS=(backtrack basic_malloc bfs dft graph insertionsort matrix_mult_rec mergesort omegalul priority_queue quicksort sort_search)
 
 # Define optimization flags array
 declare -a OPT_FLAGS=("O0" "O" "O2" "O3" "Os")
@@ -38,7 +38,6 @@ for opt_flag in "${OPT_FLAGS[@]}"; do
             else
                 echo -e " - \033[0;32mPassed\033[0m"
             fi
-            echo ""
         done
         echo "----------"
     done
