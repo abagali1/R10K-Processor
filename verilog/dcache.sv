@@ -75,7 +75,7 @@ module dcache (
     assign Dcache_hit_out =  dcache_tags[current_index].valid &&
                               (dcache_tags[current_index].tags == current_tag);
 
-    assign Dcache_ld_out = (Dcache_hit_out && !is_store) || (mshr2Dcache_wr && !is_store); 
+    assign Dcache_ld_out = (Dcache_hit_out && !is_store) || mshr2Dcache_wr; 
     assign Dcache_addr_out = {proc2Dcache_addr[31:3], 3'b0};
 
     always_comb begin
