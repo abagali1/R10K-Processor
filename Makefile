@@ -99,8 +99,9 @@
 export CLOCK_PERIOD = 8.5
 
 # the Verilog Compiler command and arguments
-VCS =  vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc \
-      -debug_access+all+reverse $(VCS_BAD_WARNINGS) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) +incdir+verilog/
+# VCS =  vcs -sverilog -xprop=tmerge +vc -Mupdate -Mdir=build/csrc -line -full64 -kdb -lca -nc \
+#       -debug_access+all+reverse $(VCS_BAD_WARNINGS) +define+CLOCK_PERIOD=$(CLOCK_PERIOD) +incdir+verilog/
+VCS = verilator --binary -j 0 --Mdir build/ +define+CLOCK_PERIOD=$(CLOCK_PERIOD) +incdir+verilog/ --Wno-WIDTHTRUNC --Wno-WIDTHEXPAND --Wno-MULTIDRIVEN --Wno-UNOPTFLAT --Wno-PINMISSING --Wno-IMPLICIT --Wno-REALCVT --Wno-ALWCOMBORDER --Wno-LATCH
 # a SYNTH define is added when compiling for synthesis that can be used in testbenches
 
 RUN_VERDI = -gui=verdi -verdi_opts "-ultra"
@@ -267,8 +268,7 @@ CPU_HEADERS = verilog/sys_defs.svh \
               verilog/ISA.svh
 
 # test/cpu_test.sv is implicit
-CPU_TESTBENCH = test/pipeline_print.c \
-			    test/decode_inst.c \
+CPU_TESTBENCH = test/decode_inst.c \
                 test/mem.sv 
 # NOTE: you CANNOT alter the given memory module
 
@@ -348,7 +348,7 @@ $(MODULES:%=./%.out) $(MODULES:%=./%.syn.out): ./%.out: build/%.out
 # The normal simulation executable will run your testbench on simulated modules
 $(MODULES:%=build/%.simv): build/%.simv: test/%_test.sv verilog/%.sv | build
 	@$(call PRINT_COLOR, 5, compiling the simulation executable $@)
-	$(VCS) $(filter-out $(ALL_HEADERS),$^) -o $@
+	$(VCS) $(filter-out $(ALL_HEADERS),$^)
 	@$(call PRINT_COLOR, 6, finished compiling $@)
 
 # This also generates many other files, see the tcl script's introduction for info on each of them

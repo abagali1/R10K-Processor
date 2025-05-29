@@ -99,7 +99,7 @@ module alu(
                 decoded_vals: is_pack.decoded_vals,
                 pred_correct: 0,
                 rs2_value: 0,
-                ld_state: 0,
+                ld_state: LOAD_STATE'(0),
                 target_addr: 0
             };
         end

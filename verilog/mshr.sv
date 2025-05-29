@@ -77,7 +77,7 @@ module mshr (
 
     always_comb begin
         next_mshr = mshr;
-        mshr2cache_st_size = '0;
+        mshr2cache_st_size = MEM_SIZE'(0);
         mshr2cache_is_store = '0;
         mshr2cache_addr = '0;
         mshr2cache_data = '0;

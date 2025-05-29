@@ -28,7 +28,7 @@ module mult (
 
     MULT_FUNC func;
     DATA rs1, rs2;
-    assign func = is_pack.decoded_vals.decoded_vals.inst.r.funct3;
+    assign func = MULT_FUNC'(is_pack.decoded_vals.decoded_vals.inst.r.funct3);
     assign rs1 = is_pack.rs1_value;
     assign rs2 = is_pack.rs2_value;
 
@@ -111,7 +111,7 @@ module mult (
     assign fu_pack.pred_correct = '0;
     assign fu_pack.target_addr = '0;
     assign fu_pack.rs2_value = '0;
-    assign fu_pack.ld_state = '0;
+    assign fu_pack.ld_state = LOAD_STATE'(0);
 
     // `ifdef DEBUG
     //     `ifndef DC

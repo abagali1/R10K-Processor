@@ -100,14 +100,14 @@ module sq #(
 
         Dmem_addr = '0;
         Dmem_store_data = '0;
-        Dmem_size = '0;
+        Dmem_size = MEM_SIZE'(0);
 
         next_tail = (next_tail + num_store_dispatched) % DEPTH;
         next_num_entries += num_store_dispatched;
 
         for(int i=0;i<DEPTH;i++) begin
             if(rd_en[i]) begin
-                next_entries[is_pack[i].decoded_vals.decoded_vals.sq_tail] = '{decoded_vals: is_pack[i].decoded_vals, target_addr: addr_result[i], rs2_value: is_pack[i].rs2_value, pred_correct: 0, ld_state: 0, result: 0};
+                next_entries[is_pack[i].decoded_vals.decoded_vals.sq_tail] = '{decoded_vals: is_pack[i].decoded_vals, target_addr: addr_result[i], rs2_value: is_pack[i].rs2_value, pred_correct: 0, ld_state: LOAD_STATE'(0), result: 0};
                 // bruh
             end
         end
