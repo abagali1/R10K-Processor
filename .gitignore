@@ -1,6 +1,7 @@
 
 # misc
 *.pdf
+!report.pdf
 failed_tests/
 
 # zip files
